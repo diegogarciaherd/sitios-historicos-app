@@ -1,13 +1,17 @@
-<!DOCTYPE html>
-<html lang="es">
-	<head>
-		{% block head %>
-		<link rel="stylesheet" href="{{ url_for('static', filename='error.css') }}" />
-		{% endblock %}
-		<title>Error</title>
-	</head>
-	<body>
-		<h1>{{ error_name }}</h1>
-		<p>Error: {{ error_description }}</p>
-	</body>
-</html>
+{% extends "layout.html" %}
+
+{% block title %}Error {{ error.code }} {% endblock %}
+
+{% block content %}
+	<div>
+		<h1>Error <span class="error-title">{{ error.code }}</span></h1>
+		<h2>{{ error.message }}</h2>
+		<p>{{ error.description }}</p>
+		<a href="{{ url_for('home') }}">Volver al inicio</a>
+	<div>
+{% endblock %}
+
+
+{% block head_styles %}
+	<link rel="stylesheet" href="{{ url_for('static', filename='error.css') }}">
+{% endblock %}
