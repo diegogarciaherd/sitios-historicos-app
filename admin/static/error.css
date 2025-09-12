@@ -8,9 +8,23 @@
 	weight: bold;
 }
 
+header {
+	background: #ffa991;
+	padding: 1.5rem 0 1rem 0;
+	color: white;
+}
+
+footer {
+	position: absolute;
+	bottom: 0;
+	width: 100%;
+}
+
 body {
 	background: var(--background);
 	color: var(--foreground);
 	text-align: center;
+	margin: 0;
+	padding: 0;
 }
 
