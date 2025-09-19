@@ -19,17 +19,29 @@
     </head>
     <body>
         <header>
-            <a href="{{ url_for('home') }}">
-                <h1>Aplicación</h1>
+            <a
+                href="{{ url_for('home') }}"
+                style="width: 16rem; text-align: left"
+            >
+                <h1>Registro de sitios históricos</h1>
             </a>
-            <div>
-                <label for="user-menu">Cuenta</label>
-                <select id="user-menu">
-                    <option>Ver perfil</option>
-                    <option>Cerrar sesión</option>
-                </select>
+            <div class="dropdown">
+                <button class="btn-outline">Cuenta</button>
+                <div class="dropdown-content">
+                    <a>Ver perfil</a>
+                    <a>Cerrar sesión</a>
+                </div>
             </div>
         </header>
+
+        <aside>
+            <nav>
+                <a>Gestion de sitios históricos</a>
+                <a>Validación de propuestas</a>
+                <a>Moderación de reseñas</a>
+                <a>Gestión de usuarios</a>
+            </nav>
+        </aside>
 
         <main>{% block content %}{% endblock %}</main>
 

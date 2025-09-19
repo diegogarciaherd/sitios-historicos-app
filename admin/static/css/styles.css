@@ -1,7 +1,10 @@
 :root {
-    --background: #fff5d7;
-    --foreground: #2f1728;
-    --accent: #ff5e6c;
+    --background: #f0f0f0;
+    --foreground: #000b58;
+    --accent: #006a67;
+    --secondary: #48b3af;
+    --font-primary: "Lexend", sans-serif;
+    --font-secondary: "Abril Fatface", serif;
 }
 
 html {
@@ -12,31 +15,38 @@ body {
     background: var(--background);
     color: var(--foreground);
     text-align: center;
-    font-family: "Lexend";
-    min-height: 120vh;
+    font-family: var(--font-primary);
+    min-height: 100vh;
     margin: 0;
     padding: 0;
-}
-
-a {
-    text-decoration: none;
-    color: inherit;
 }
 
 header {
     position: fixed;
     display: flex;
-    width: 80%;
-    padding: 1.5rem 0 1rem 0;
-    padding-left: 10%;
+    background-color: var(--secondary);
+    min-width: 90%;
+    height: 7.5rem;
+    padding-left: 1rem;
+    padding-right: 10%;
     justify-content: space-between;
     align-items: center;
 }
 
 main {
-    padding-top: 8rem;
+    padding-top: 7.5rem;
     padding-bottom: 4rem;
-    min-height: 100vh;
+    margin-left: 15%;
+    min-height: calc(100vh - 14rem);
+}
+
+aside {
+    position: fixed;
+    border-right: var(--foreground) 0.15rem solid;
+    top: 7.5rem;
+    left: 0;
+    width: 15%;
+    height: 100%;
 }
 
 footer {
@@ -44,20 +54,107 @@ footer {
     width: 100%;
 }
 
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+aside nav {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 1.5rem 0;
+    margin: 0 1rem;
+    gap: 1rem;
+}
+
+aside nav a {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    width: 87%;
+    text-align: left;
+    transition: background-color 0.3s ease;
+}
+
+aside nav a:hover {
+    background-color: var(--secondary);
+    color: var(--background);
+}
+
+button {
+    background-color: var(--accent);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 1rem 2rem;
+    font-family: var(--font-primary);
+    color: var(--background);
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+button:hover {
+    color: var(--background);
+    transform: scale(1.05);
+}
+
+button.btn-outline {
+    background-color: var(--background);
+    color: var(--foreground);
+    border: 2px solid var(--foreground);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button.btn-outline:hover {
+    background-color: var(--foreground);
+    color: var(--background);
+    transform: none;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown:hover .dropdown-content {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: var(--background);
+    border: var(--foreground) 0.1rem solid;
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    padding: 0 0 0.5rem 0;
+    min-width: 130px;
+    gap: 0.5rem;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.dropdown-content a {
+    margin: 0 0.4rem;
+}
+
+.dropdown button {
+    border: var(--foreground) 0.1rem solid;
+    transition: none;
+    min-width: 130px;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+.dropdown:hover button {
+    color: inherit;
+    background-color: var(--background);
+    border-radius: 0.5rem 0.5rem 0 0;
+    border-bottom: 0.1rem solid transparent;
+}
+
 .bold-title {
-    font-family: "Abril Fatface";
+    font-family: var(--font-secondary);
     font-size: 4rem;
-}
-
-.abril-fatface-regular {
-    font-family: "Abril Fatface", serif;
-    font-weight: 400;
-    font-style: normal;
-}
-
-.lexend-regular {
-    font-family: "Lexend", sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 100;
-    font-style: normal;
 }
