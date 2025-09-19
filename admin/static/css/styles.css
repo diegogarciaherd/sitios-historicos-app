@@ -1,0 +1,63 @@
+:root {
+    --background: #fff5d7;
+    --foreground: #2f1728;
+    --accent: #ff5e6c;
+}
+
+html {
+    @apply scroll-smooth;
+}
+
+body {
+    background: var(--background);
+    color: var(--foreground);
+    text-align: center;
+    font-family: "Lexend";
+    min-height: 120vh;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+header {
+    position: fixed;
+    display: flex;
+    width: 80%;
+    padding: 1.5rem 0 1rem 0;
+    padding-left: 10%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+main {
+    padding-top: 8rem;
+    padding-bottom: 4rem;
+    min-height: 100vh;
+}
+
+footer {
+    bottom: 0;
+    width: 100%;
+}
+
+.bold-title {
+    font-family: "Abril Fatface";
+    font-size: 4rem;
+}
+
+.abril-fatface-regular {
+    font-family: "Abril Fatface", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.lexend-regular {
+    font-family: "Lexend", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 100;
+    font-style: normal;
+}
