@@ -4,7 +4,6 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{% block title %}Mi App{% endblock %}</title>
-        {% block head_styles %}
         <link
             rel="stylesheet"
             href="{{ url_for('static', filename='css/styles.css') }}"
@@ -15,7 +14,7 @@
             href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Lexend:wght@100..900&display=swap"
             rel="stylesheet"
         />
-        {% endblock %}
+        {% block head_styles %} {% endblock %}
     </head>
     <body>
         <header>
