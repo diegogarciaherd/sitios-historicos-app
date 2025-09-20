@@ -12,19 +12,13 @@
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
-            href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Lexend:wght@100..900&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Lexend:wght@100..900&display=swap"
             rel="stylesheet"
         />
         {% endblock %}
     </head>
     <body>
         <header>
-            <a
-                href="{{ url_for('home') }}"
-                style="width: 16rem; text-align: left"
-            >
-                <h1>Registro de sitios históricos</h1>
-            </a>
             <div class="dropdown">
                 <button class="btn-outline">Cuenta</button>
                 <div class="dropdown-content">
@@ -35,6 +29,28 @@
         </header>
 
         <aside>
+            <a
+                href="{{ url_for('home') }}"
+                style="
+                    width: 16rem;
+                    text-align: left;
+                    display: flex;
+                    align-items: center;
+                    flex-direction: row;
+                    gap: 1rem;
+                    padding-left: 0.5rem;
+                "
+            >
+                <img
+                    src="{{ url_for('static', filename='images/escudo_argentino.png') }}"
+                    alt="Registro de sitios históricos"
+                    style="width: 10%; height: auto"
+                />
+                <h3>
+                    Registro de sitios <br />
+                    históricos
+                </h3>
+            </a>
             <nav>
                 <a>Gestion de sitios históricos</a>
                 <a>Validación de propuestas</a>

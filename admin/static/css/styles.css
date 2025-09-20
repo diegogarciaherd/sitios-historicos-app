@@ -1,14 +1,10 @@
 :root {
-    --background: #f0f0f0;
-    --foreground: #000b58;
-    --accent: #006a67;
-    --secondary: #48b3af;
+    --background: #f0f0f5;
+    --background-accent: #ffffff;
+    --foreground: #181824;
+    --accent: #3b8ff3;
     --font-primary: "Lexend", sans-serif;
-    --font-secondary: "Abril Fatface", serif;
-}
-
-html {
-    @apply scroll-smooth;
+    --font-secondary: "Outfit", sans-serif;
 }
 
 body {
@@ -24,12 +20,14 @@ body {
 header {
     position: fixed;
     display: flex;
-    background-color: var(--secondary);
-    min-width: 90%;
-    height: 7.5rem;
-    padding-left: 1rem;
+    background-color: var(--background-accent);
+    box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    height: 5rem;
+    left: calc(15%);
+    right: 0;
     padding-right: 10%;
-    justify-content: space-between;
+    justify-content: end;
     align-items: center;
 }
 
@@ -42,16 +40,25 @@ main {
 
 aside {
     position: fixed;
-    border-right: var(--foreground) 0.15rem solid;
-    top: 7.5rem;
+    background-color: var(--foreground);
+    color: var(--background);
     left: 0;
     width: 15%;
     height: 100%;
+    overflow: hidden;
 }
 
 footer {
     bottom: 0;
     width: 100%;
+}
+
+section {
+    background-color: var(--background-accent);
+    box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.1);
+    padding: 1rem 0;
+    margin-left: 1rem;
+    margin-right: 1rem;
 }
 
 a {
@@ -71,13 +78,13 @@ aside nav {
 aside nav a {
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
-    width: 87%;
+    width: calc(84%);
     text-align: left;
     transition: background-color 0.3s ease;
 }
 
 aside nav a:hover {
-    background-color: var(--secondary);
+    background-color: var(--accent);
     color: var(--background);
 }
 
@@ -109,6 +116,45 @@ button.btn-outline:hover {
     transform: none;
 }
 
+/* Sección Responsive */
+
+@media only screen and (max-width: 1024px) {
+    aside {
+        width: 25%;
+    }
+
+    main {
+        margin-left: 25%;
+    }
+
+    header {
+        left: calc(25%);
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    aside {
+        width: 100%;
+        height: auto;
+        position: relative;
+        top: calc(5rem);
+    }
+
+    main {
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    header {
+        left: 0;
+        right: 0;
+        padding: 0 1rem;
+        justify-content: space-between;
+    }
+}
+
+/* Menú Dropdown de cuenta */
+
 .dropdown {
     position: relative;
 }
@@ -124,11 +170,11 @@ button.btn-outline:hover {
     position: absolute;
     top: 100%;
     left: 0;
+    box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.1);
     background-color: var(--background);
-    border: var(--foreground) 0.1rem solid;
-    border-top: none;
+    border: none;
     border-radius: 0 0 0.5rem 0.5rem;
-    padding: 0 0 0.5rem 0;
+    padding: 0.5rem 0;
     min-width: 130px;
     gap: 0.5rem;
     z-index: 1;
@@ -140,7 +186,7 @@ button.btn-outline:hover {
 }
 
 .dropdown button {
-    border: var(--foreground) 0.1rem solid;
+    border: none;
     transition: none;
     min-width: 130px;
     margin: 0;
@@ -153,6 +199,8 @@ button.btn-outline:hover {
     border-radius: 0.5rem 0.5rem 0 0;
     border-bottom: 0.1rem solid transparent;
 }
+
+/* Clases adicionales */
 
 .bold-title {
     font-family: var(--font-secondary);
