@@ -107,7 +107,7 @@ button:hover {
     transform: scale(1.05);
 }
 
-button::after {
+button:not(.btn-outline)::after {
     position: absolute;
     content: "";
     top: 0;
@@ -121,7 +121,7 @@ button::after {
     z-index: -1;
 }
 
-button:active::after {
+button:not(.btn-outline):active::after {
     clip-path: circle(100% at 50% 50%);
 }
 
@@ -136,6 +136,11 @@ button.btn-outline:hover {
     background-color: var(--foreground);
     color: var(--background);
     transform: none;
+}
+
+button.btn-outline:active {
+    transform: scale(0.95);
+    transition: 0.3s ease;
 }
 
 /* Sección Responsive */
@@ -188,6 +193,12 @@ button.btn-outline:hover {
         right: 0;
         padding: 0 1rem;
         justify-content: space-between;
+    }
+
+    footer {
+        position: relative;
+        top: 5rem;
+        padding-bottom: 0.5rem;
     }
 }
 
