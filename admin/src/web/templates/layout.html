@@ -19,11 +19,17 @@
     <body>
         <header>
             <div class="dropdown">
+                {% if logged_user %}
                 <button class="btn-outline">Cuenta</button>
                 <div class="dropdown-content">
                     <a>Ver perfil</a>
-                    <a>Cerrar sesión</a>
+                    <a href="/logout">Cerrar sesión</a>
                 </div>
+                {% else %}
+                    <form action="/login" method="get">
+                        <button class="btn-outline">Iniciar sesion</button> 
+                    </form>
+                {% endif %}
             </div>
         </header>
 
