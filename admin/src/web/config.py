@@ -2,26 +2,33 @@ from os import environ
 
 class Config:
     TESTING = False
-    SECRET_KEY = "GRUPO45"
+    SECRET_KEY = "your-secret-key"
     SESSION_TYPE = "filesystem"
 
 class ProductionConfig(Config):
     SQLALCHEMY_ENGINES = {
-        "default": environ.get("DATABASE_URL")
+        'default': environ.get('DATABASE_URL')
     }
 
 class DevelopmentConfig(Config):
-    DB_USER = "postgres"
-    DB_PASSWORD = "postgres"
-    DB_HOST = "localhost"
-    DB_PORT = "5432"
-    DB_NAME = "grupo45"
-    DB_SCHEME = "postgresql+psycopg2"
+    DEBUG = True 
+
+    DB_USER = environ["DB_USER"]
+    DB_PASSWORD = environ["DB_PASSWORD"]
+    DB_HOST = environ["DB_HOST"]
+    DB_PORT = environ["DB_PORT"]
+    DB_NAME = environ["DB_NAME"]
+    DB_SCHEME = environ["DB_SCHEME"]
     SQLALCHEMY_ENGINES = {
-        "default": f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        'default': f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     }
 
-config = {
-    "development": DevelopmentConfig,
-    "production": ProductionConfig
+
+class TestingConfig(Config):
+    TESTING = True
+
+config = { 
+    "development" : DevelopmentConfig,
+    "production" : ProductionConfig,
+    "testing" : TestingConfig,
 }
