@@ -1,24 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Mi App{% endblock %}</title>
-    {% block head_styles %}
-    	<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    {% endblock %}
-</head>
-<body>
-    <header>
-        <h1>Calculadora Web</h1>
-    </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{% block title %}Mi App{% endblock %}</title>
+        <link
+            rel="stylesheet"
+            href="{{ url_for('static', filename='css/styles.css') }}"
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Lexend:wght@100..900&display=swap"
+            rel="stylesheet"
+        />
+        {% block head_styles %} {% endblock %}
+    </head>
+    <body>
+        <header>
+            <div class="dropdown">
+                <button class="btn-outline">Cuenta</button>
+                <div class="dropdown-content">
+                    <a>Ver perfil</a>
+                    <a>Cerrar sesión</a>
+                </div>
+            </div>
+        </header>
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+        <aside>
+            <a
+                href="{{ url_for('home') }}"
+                style="
+                    width: 16rem;
+                    text-align: left;
+                    display: flex;
+                    align-items: center;
+                    flex-direction: row;
+                    gap: 1rem;
+                    padding-left: 0.5rem;
+                "
+            >
+                <img
+                    src="{{ url_for('static', filename='images/escudo_argentino.png') }}"
+                    alt="Registro de sitios históricos"
+                    style="width: 10%; height: auto"
+                />
+                <h3>
+                    Registro de sitios <br />
+                    históricos
+                </h3>
+            </a>
+            <nav>
+                <a>Gestion de sitios históricos</a>
+                <a>Validación de propuestas</a>
+                <a>Moderación de reseñas</a>
+                <a>Gestión de usuarios</a>
+            </nav>
+        </aside>
 
-    <footer>
-        <p>&copy; 2025 Grupo 45</p>
-    </footer>
-</body>
+        <main>{% block content %}{% endblock %}</main>
+
+        <footer>
+            <p>&copy; 2025 Grupo 45</p>
+        </footer>
+    </body>
 </html>
