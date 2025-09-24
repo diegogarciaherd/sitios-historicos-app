@@ -4,15 +4,23 @@ from src.web.handlers import error
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
 from flask_session import Session
+from src.core import database
+from src.web.config import config
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
+    app.config.from_object(config[env])
+    
+    database.init_db(app)
 
     app.config["SESSION_TYPE"] = "filesystem"
     Session(app)
 
     app.register_blueprint(login_bp)
     app.register_blueprint(logout_bp)
+
+    # resetea siempre para probar
+    database.reset_db()
 
     @app.route('/')
     def home():
