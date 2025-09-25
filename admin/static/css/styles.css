@@ -200,6 +200,10 @@ button.btn-outline:active {
         top: 5rem;
         padding-bottom: 0.5rem;
     }
+
+    .bold-title {
+        font-size: 2rem;
+    }
 }
 
 /* Menú Dropdown de cuenta */
