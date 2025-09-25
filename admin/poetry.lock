@@ -164,6 +164,22 @@ redis = ["redis (>=5.0.3)"]
 sqlalchemy = ["flask-sqlalchemy (>=3.0.5)"]
 
 [[package]]
+name = "flask-sqlalchemy"
+version = "3.1.1"
+description = "Add SQLAlchemy support to your Flask application."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "flask_sqlalchemy-3.1.1-py3-none-any.whl", hash = "sha256:4ba4be7f419dc72f4efd8802d69974803c37259dd42f3913b0dcf75c9447e0a0"},
+    {file = "flask_sqlalchemy-3.1.1.tar.gz", hash = "sha256:e4b68bb881802dda1a7d878b2fc84c06d1ee57fb40b874d3dc97dabfa36b8312"},
+]
+
+[package.dependencies]
+flask = ">=2.2.5"
+sqlalchemy = ">=2.0.16"
+
+[[package]]
 name = "flask-sqlalchemy-lite"
 version = "0.1.0"
 description = "Integrate SQLAlchemy with Flask."
@@ -742,4 +758,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "==3.12.3"
-content-hash = "b200d07bfd24c45b72b5f65ed4aa30473f656260aab47f117ff926a06c95b24b"
+content-hash = "f63155c94ce5525d76dbd05c3beceef89da45391ca09b94de8842eda98d874a7"

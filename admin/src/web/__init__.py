@@ -11,6 +11,10 @@ from src.web.config import config
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
     app.config.from_object(config[env])
+    Session(app)
+
+    app.register_blueprint(logout_bp)
+    app.register_blueprint(login_bp)
 
     # Initialize database
     database.init_app(app)
