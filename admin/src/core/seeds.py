@@ -1,18 +1,7 @@
 from src.core import models
 from src.core.database import db
-from src.core.models.sitios import Categoria
-
-def get_or_create_categoria(nombre: str) -> Categoria:
-    categoria = db.session.query(Categoria).filter_by(nombre=nombre).first()
-    if not categoria:
-        categoria = Categoria(nombre=nombre)
-        db.session.add(categoria)
-        db.session.commit()
-    return categoria
-
 
 def run(): 
-    categoria = get_or_create_categoria("Histórico")
 
     site1 = models.create_sites(
         nombre="Catedral de La Plata",
@@ -24,8 +13,8 @@ def run():
         longitud=-57.9544,
         estado=models.EstadoConservacion.BUENO,
         añoInauguracion=1932,
-        categoria=categoria,
-    )
+        categoria="Histórico",
+    )   
 
     site2 = models.create_sites(
         nombre="Teatro Colón",
@@ -37,7 +26,7 @@ def run():
         longitud=-58.3816,
         estado=models.EstadoConservacion.BUENO,
         añoInauguracion=1908,
-        categoria=categoria,
+        categoria="Histórico",
     )
 
     print(f"Created sites:\n {site1}\n {site2}")
