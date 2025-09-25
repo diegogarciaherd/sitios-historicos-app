@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block title %}Sitios Históricos{% endblock %}
+{% block content %}
+<h1>Sitios Históricos</h1>
+<a href="{{ url_for('sites.create_site') }}">Crear nuevo sitio</a>
+
+{% if sites %}
+<ul>
+  {% for site in sites %}
+    <li>
+      <strong>{{ site.nombre }}</strong>
+      — {{ site.ciudad }}, {{ site.provincia }}
+      {% if site.categoria %} — Categoría: {{ site.categoria.nombre }}{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No hay sitios cargados.</p>
+{% endif %}
+{% endblock %}

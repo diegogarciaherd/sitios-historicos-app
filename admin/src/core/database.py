@@ -9,8 +9,7 @@ def init_app(app):
     return db
 
 def reset_db():
-    from src.core.models.sitios import SitioHistorico
-    from src.core.models.sitios import Categoria   # Import all models to ensure they are registered
+    from src.core.models.sites import SitioHistorico
     print("Resetting database...")
     Base.metadata.drop_all(bind=db.engine)
     Base.metadata.create_all(bind=db.engine)
