@@ -3,6 +3,7 @@ from flask import render_template
 from src.core import database
 from src.web.handlers import error
 from src.web.config import config
+from src.web.controllers.sites import sites_bp
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -10,6 +11,9 @@ def create_app(env="development", static_folder="../../static"):
 
     # Initialize database
     database.init_app(app)
+
+     # Register blueprints
+    app.register_blueprint(sites_bp)
 
     @app.route('/')
     def home():
@@ -29,5 +33,4 @@ def create_app(env="development", static_folder="../../static"):
     def seed_db():
         database.seed_db()
         
-
     return app
