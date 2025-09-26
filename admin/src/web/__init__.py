@@ -1,28 +1,26 @@
-from flask import Flask, session
-from flask import render_template
-from src.core import database
-from src.web.handlers import error
+from flask import Flask
+from flask import render_template, session
+from core import database
+from web.handlers import error
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
 from flask_session import Session
-from src.core import database
-from src.web.config import config
-from src.web.controllers.sites import sites_bp
+from core import database
+from web.config import config
+from web.controllers.sites import sites_bp
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
     app.config.from_object(config[env])
     Session(app)
 
-    app.register_blueprint(logout_bp)
-    app.register_blueprint(login_bp)
-
     # Initialize database
     database.init_app(app)
 
-     # Register blueprints
+    # Register blueprints
     app.register_blueprint(sites_bp)
-
+    app.register_blueprint(logout_bp)
+    app.register_blueprint(login_bp)
     @app.route('/')
     def home():
         return render_template("home.html")

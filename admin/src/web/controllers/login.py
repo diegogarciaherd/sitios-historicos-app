@@ -10,7 +10,7 @@ def login():
     if request.method == "GET":
         return render_template("login.html")
     else:
-        user = authenticate(request.form("email"), request.form("password"))
+        user = authenticate(request.form["email"], request.form["password"])
         if user:
             return redirect(url_for("home", logged_user=user.email))
         else:
