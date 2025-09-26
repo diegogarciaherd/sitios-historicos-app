@@ -143,69 +143,6 @@ button.btn-outline:active {
     transition: 0.3s ease;
 }
 
-/* Sección Responsive */
-
-@media only screen and (max-width: 1400px) {
-    aside {
-        width: 20%;
-    }
-
-    main {
-        margin-left: 20%;
-    }
-
-    header {
-        left: calc(20%);
-    }
-}
-
-@media only screen and (max-width: 1024px) {
-    aside {
-        width: 25%;
-    }
-
-    main {
-        margin-left: 25%;
-    }
-
-    header {
-        left: calc(25%);
-    }
-}
-
-@media only screen and (max-width: 768px) {
-    aside {
-        width: 100%;
-        height: auto;
-        position: relative;
-        top: calc(5rem);
-    }
-
-    main {
-        position: relative;
-        top: 5rem;
-        margin-left: 0;
-        padding: 1rem;
-    }
-
-    header {
-        left: 0;
-        right: 0;
-        padding: 0 1rem;
-        justify-content: space-between;
-    }
-
-    footer {
-        position: relative;
-        top: 5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    .bold-title {
-        font-size: 2rem;
-    }
-}
-
 /* Menú Dropdown de cuenta */
 
 .dropdown {
@@ -269,7 +206,7 @@ button.btn-outline:active {
     border: 1px solid #dbdbdb;
     border-radius: 8px;
     background-color: #fff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     text-align: center;
     font-family: Arial, sans-serif;
 }
@@ -324,3 +261,66 @@ button.btn-outline:active {
 }
 
 /* Fin de tarjeta del login */
+
+/* Sección Responsive */
+
+@media only screen and (max-width: 1400px) {
+    aside {
+        width: 20%;
+    }
+
+    main {
+        margin-left: 20%;
+    }
+
+    header {
+        left: calc(20%);
+    }
+}
+
+@media only screen and (max-width: 1024px) {
+    aside {
+        width: 25%;
+    }
+
+    main {
+        margin-left: 25%;
+    }
+
+    header {
+        left: calc(25%);
+    }
+}
+
+@media only screen and (max-width: 768px) {
+    aside {
+        width: 100%;
+        height: auto;
+        position: relative;
+        top: calc(5rem);
+    }
+
+    main {
+        position: relative;
+        top: 5rem;
+        margin-left: 0;
+        padding: 1rem;
+    }
+
+    header {
+        left: 0;
+        right: 0;
+        padding: 0 1rem;
+        justify-content: space-between;
+    }
+
+    footer {
+        position: relative;
+        top: 5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .bold-title {
+        font-size: 2rem;
+    }
+}
