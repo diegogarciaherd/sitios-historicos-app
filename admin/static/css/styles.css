@@ -259,3 +259,68 @@ button.btn-outline:active {
     font-family: var(--font-secondary);
     font-size: 4rem;
 }
+
+/* Tarjeta del login */
+
+.login_form {
+    width: 350px;
+    margin: 80px auto;
+    padding: 40px 30px;
+    border: 1px solid #dbdbdb;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    text-align: center;
+    font-family: Arial, sans-serif;
+}
+
+.login_form h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #262626;
+}
+
+.login_form form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.login_form label {
+    text-align: left;
+    font-size: 14px;
+    color: #555;
+}
+
+.login_form input {
+    padding: 10px;
+    border: 1px solid #dbdbdb;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #fafafa;
+}
+
+.login_form input:focus {
+    outline: none;
+    border-color: #a8a8a8;
+    background-color: #fff;
+}
+
+.login_form button {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #0095f6;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.login_form button:hover {
+    background-color: #007acc;
+}
+
+/* Fin de tarjeta del login */
