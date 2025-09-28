@@ -21,9 +21,10 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(sites_bp)
     app.register_blueprint(logout_bp)
     app.register_blueprint(login_bp)
+
     @app.route('/')
     def home():
-        return render_template("home.html")
+        return render_template("home.html", logged_user=session['user_id'] if 'user_id' in session else None)
     
     app.register_error_handler(404, error.not_found)
     app.register_error_handler(401, error.unauthorized)

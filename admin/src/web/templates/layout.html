@@ -18,19 +18,20 @@
     </head>
     <body>
         <header>
+            {% if logged_user %}
             <div class="dropdown">
-                {% if logged_user %}
                 <button class="btn-outline">Cuenta</button>
                 <div class="dropdown-content">
+                    <p class="email">Cuenta: {{ logged_user }}</p>
                     <a>Ver perfil</a>
                     <a href="/logout">Cerrar sesión</a>
                 </div>
-                {% else %}
-                    <form action="/login" method="get">
-                        <button class="btn-outline">Iniciar sesion</button> 
-                    </form>
-                {% endif %}
             </div>
+            {% else %}
+            <form action="/login" method="get">
+                <button class="btn-outline">Iniciar sesion</button>
+            </form>
+            {% endif %}
         </header>
 
         <aside>
