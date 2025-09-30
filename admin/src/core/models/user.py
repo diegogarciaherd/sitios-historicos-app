@@ -2,6 +2,7 @@ from src.core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column
 from core.models.userrole import UserRole as Role
 from core.database import db
+from core.services.bcrypt import bcrypt
 
 class User(Base):
     __tablename__ = "users"
@@ -22,6 +23,7 @@ def create_user(**kwargs):
     if existente:
         return False
     else:
+        kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
         user = User(**kwargs)
         db.session.add(user)
         db.session.commit()

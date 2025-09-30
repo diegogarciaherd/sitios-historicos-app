@@ -8,6 +8,7 @@ from flask_session import Session
 from core import database
 from web.config import config
 from web.controllers.sites import sites_bp
+from core.services.bcrypt import bcrypt
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -16,6 +17,8 @@ def create_app(env="development", static_folder="../../static"):
 
     # Initialize database
     database.init_app(app)
+    # Initialize bcrypt
+    bcrypt.init_app(app)
 
     # Register blueprints
     app.register_blueprint(sites_bp)
