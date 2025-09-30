@@ -41,3 +41,20 @@ def create_sites(**kwargs):
 	db.session.add(site)
 	db.session.commit()
 	return site
+
+def update_site(id, **kwargs):
+	site = get_site(id)
+	for key, value in kwargs.items():
+		setattr(site, key, value)
+	db.session.commit()
+	return site 
+
+def get_site(id):
+	return db.session.query(SitioHistorico).filter(SitioHistorico.id == id).first() 
+
+def delete_site(id):
+	site = get_site(id)
+	db.session.delete(site)
+	db.session.commit()
+	return site
+

@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask import render_template
 from src.core.models.sites import SitioHistorico, EstadoConservacion
-from src.core.models import list_sites, create_sites
+from src.core.models.sites import list_sites, create_sites, update_site, get_site, delete_site, search_sites, filter_sites, order_sites, paginate_sites
 from src.core.database import db
 from flask import request, redirect, url_for
 
@@ -36,3 +36,23 @@ def create_site():
         return redirect(url_for('sites.list_all_sites'))
 
     return render_template('form.html')
+
+@sites_bp.route('/editar_sitio/<int:id>', methods=['GET', 'POST'])
+def edit_site(id):
+    site = get_site(id)
+    if request.method == 'POST':
+        update_site(id, request.form)
+        return redirect(url_for('sites.list_all_sites'))
+    return render_template('form.html', site=site)
+
+@sites_bp.route('/eliminar_sitio/<int:id>', methods=['POST'])
+def delete_site(id):
+    delete_site(id)
+    return redirect(url_for('sites.list_all_sites'))
+
+@sites_bp.route('/ver_sitio/<int:id>', methods=['GET'])
+def view_site(id):
+    site = get_site(id)
+    return render_template('view.html', site=site)
+
+
