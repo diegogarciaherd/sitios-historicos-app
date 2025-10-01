@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 from src.core.database import db
 
+
 class EstadoConservacion(enum.Enum):
     BUENO = "Bueno"
     REGULAR = "Regular"
@@ -33,8 +34,15 @@ class SitioHistorico(Base):
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 
-def list_sites():
-	return db.session.query(SitioHistorico).all()
+def list_sites(page=1):
+	query = db.select(SitioHistorico).order_by(SitioHistorico.nombre)
+	pagination = db.paginate(
+        query,
+		page=page, 
+		per_page=10,  # Fijo en 10 elementos por página
+		error_out=False
+	)
+	return pagination
 
 def create_sites(**kwargs):
 	site = SitioHistorico(**kwargs)

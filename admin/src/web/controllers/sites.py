@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask import render_template
 from src.core.models.sites import SitioHistorico, EstadoConservacion
-from src.core.models.sites import list_sites, create_sites, update_site, get_site, delete_site, search_sites, filter_sites, order_sites, paginate_sites
+from src.core.models.sites import list_sites, create_sites, update_site, get_site, delete_site
 from src.core.database import db
 from flask import request, redirect, url_for
 
@@ -9,8 +9,11 @@ sites_bp = Blueprint('sites', __name__, url_prefix='/sitios', template_folder='.
 
 @sites_bp.route('/')
 def list_all_sites():
-    sites = list_sites()
-    return render_template('sites.html', sites=sites)
+    page = request.args.get('page', 1, type=int)
+    pagination = list_sites(page=page)
+    return render_template('sites.html', pagination=pagination, sites=pagination.items)
+
+
 
 @sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
 def create_site():
