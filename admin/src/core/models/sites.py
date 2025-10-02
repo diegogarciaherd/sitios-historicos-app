@@ -5,7 +5,7 @@ from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 from src.core.database import db
-
+from geoalchemy2 import Geometry
 
 class EstadoConservacion(enum.Enum):
     BUENO = "Bueno"
@@ -32,17 +32,13 @@ class SitioHistorico(Base):
     categoria: Mapped[str] = mapped_column(Text, nullable=True)
     fechaRegistro: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    localizacion: Mapped[Geometry] = mapped_column(Geometry(geometry_type='POINT', srid=4326), nullable=False)
 
-
-def list_sites(page=1):
-	query = db.select(SitioHistorico).order_by(SitioHistorico.nombre)
-	pagination = db.paginate(
-        query,
-		page=page, 
-		per_page=10,  # Fijo en 10 elementos por página
-		error_out=False
-	)
-	return pagination
+def list_sites(page=1, per_page=10):
+    query = db.session.query(SitioHistorico)
+    total = query.count()
+    sites = query.offset((page - 1) * per_page).limit(per_page).all()
+    return sites, total
 
 def create_sites(**kwargs):
 	site = SitioHistorico(**kwargs)

@@ -1,31 +1,234 @@
 {% extends "layout.html" %}
 {% block title %}Sitios Históricos{% endblock %}
+{% block head_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sites.css') }}">
+{% endblock %}
 {% block content %}
-<h1>Sitios Históricos</h1>
-<a href="{{ url_for('sites.create_site') }}">Crear nuevo sitio</a>
+<div class="container">
+    <div class="header-section">
+        <h1>Sitios Históricos</h1>
+    </div>
 
-{% if sites %}
-<ul>
-  {% for site in sites %}
-    <li>
-      <strong>{{ site.nombre }}</strong>
-      — {{ site.ciudad }}, {{ site.provincia }}
-      {% if site.categoria %} — Categoría: {{ site.categoria.nombre }}{% endif %}
-    </li>
-  {% endfor %}
+    <!-- Barra de navegación con acciones -->
+    <nav class="sites-navbar">
+        <div class="navbar-left">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Buscar sitios..." class="search-input">
+                <button type="button" id="searchBtn" class="btn btn-info btn-sm">
+                    <span class="search-icon">🔍</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="navbar-right">
+            <div class="navbar-actions">
+                <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
+                    <span class="btn-icon">➕</span>
+                    Crear Sitio
+                </a>
+                
+                <button class="btn btn-secondary" type="button" id="exportCsvBtn">
+                    <span class="btn-icon">📄</span>
+                    Exportar CSV
+                </button>
+                
+                <div class="view-options">
+                    <button class="btn btn-outline btn-sm" id="gridViewBtn" title="Vista de cuadrícula">
+                        <span class="btn-icon">⊞</span>
+                    </button>
+                    <button class="btn btn-outline btn-sm active" id="listViewBtn" title="Vista de lista">
+                        <span class="btn-icon">☰</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-  <!-- Navegación de páginas -->
-{% if pagination.has_prev %}
-<a href="?page={{ pagination.prev_num }}">← Anterior</a>
-{% endif %}
+    {% if sites %}
+    <div class="sites-list">
+        {% for site in sites %}
+        <div class="site-card">
+            <h3>{{ site.nombre }}</h3>
+            <p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
+            {% if site.descripcionBreve %}
+            <p class="description">{{ site.descripcionBreve }}</p>
+            {% endif %}
+            <div class="site-meta">
+                <span class="category">{{ site.categoria or 'Sin categoría' }}</span>
+                <span class="estado estado-{{ site.estado.value.lower() }}">{{ site.estado.value }}</span>
+            </div>
+            <div class="site-actions">
+                <a href="{{ url_for('sites.view_site', id=site.id) }}" class="btn btn-sm btn-info">Ver</a>
+                <a href="{{ url_for('sites.edit_site', id=site.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                <form method="POST" action="{{ url_for('sites.delete_site', id=site.id) }}" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 
-Página {{ pagination.page }} de {{ pagination.pages }}
+    <!-- Paginación -->
+    {% if pagination.pages > 1 %}
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a {{ pagination.page * pagination.per_page if pagination.page * pagination.per_page < pagination.total else pagination.total }} de {{ pagination.total }} sitios
+        </div>
+        
+        <nav class="pagination">
+            <!-- Botón Primera página -->
+            {% if pagination.has_prev %}
+            <a href="?page=1" class="pagination-btn pagination-first">« Primera</a>
+            {% endif %}
 
-{% if pagination.has_next %}
-<a href="?page={{ pagination.next_num }}">Siguiente →</a>
-{% endif %}
-</ul>
-{% else %}
-<p>No hay sitios cargados.</p>
-{% endif %}
+            <!-- Botón Página anterior -->
+            {% if pagination.has_prev %}
+            <a href="?page={{ pagination.prev_num }}" class="pagination-btn pagination-prev">‹ Anterior</a>
+            {% endif %}
+
+            <!-- Números de página -->
+            {% set start_page = [1, pagination.page - 2] | max %}
+            {% set end_page = [pagination.pages, pagination.page + 2] | min %}
+            
+            {% if start_page > 1 %}
+            <span class="pagination-ellipsis">...</span>
+            {% endif %}
+
+            {% for page_num in range(start_page, end_page + 1) %}
+                {% if page_num == pagination.page %}
+                <span class="pagination-btn pagination-current">{{ page_num }}</span>
+                {% else %}
+                <a href="?page={{ page_num }}" class="pagination-btn pagination-number">{{ page_num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if end_page < pagination.pages %}
+            <span class="pagination-ellipsis">...</span>
+            {% endif %}
+
+            <!-- Botón Página siguiente -->
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}" class="pagination-btn pagination-next">Siguiente ›</a>
+            {% endif %}
+
+            <!-- Botón Última página -->
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.pages }}" class="pagination-btn pagination-last">Última »</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <p>No hay sitios cargados.</p>
+        <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">Crear el primer sitio</a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Funcionalidad de la barra de navegación
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const gridViewBtn = document.getElementById('gridViewBtn');
+    const listViewBtn = document.getElementById('listViewBtn');
+    const sitesList = document.querySelector('.sites-list');
+    const siteCards = document.querySelectorAll('.site-card');
+    
+ 
+    // Función para filtrar sitios
+    function filterSites(searchTerm) {
+        siteCards.forEach(card => {
+            const siteName = card.querySelector('h3').textContent.toLowerCase();
+            const location = card.querySelector('.location').textContent.toLowerCase();
+            const description = card.querySelector('.description')?.textContent.toLowerCase() || '';
+            const category = card.querySelector('.category').textContent.toLowerCase();
+            
+            const matches = siteName.includes(searchTerm) || 
+                          location.includes(searchTerm) || 
+                          description.includes(searchTerm) ||
+                          category.includes(searchTerm);
+            
+            card.style.display = matches ? 'block' : 'none';
+        });
+        
+        // Mostrar mensaje si no hay resultados
+        const visibleCards = Array.from(siteCards).filter(card => card.style.display !== 'none');
+        showNoResultsMessage(visibleCards.length === 0 && searchTerm !== '');
+    }
+    
+    
+    // Cambio de vista
+    gridViewBtn.addEventListener('click', function() {
+        sitesList.className = 'sites-list grid-view';
+        gridViewBtn.classList.add('active');
+        listViewBtn.classList.remove('active');
+        localStorage.setItem('sitesView', 'grid');
+    });
+    
+    listViewBtn.addEventListener('click', function() {
+        sitesList.className = 'sites-list list-view';
+        listViewBtn.classList.add('active');
+        gridViewBtn.classList.remove('active');
+        localStorage.setItem('sitesView', 'list');
+    });
+    
+    // Cargar vista guardada
+    const savedView = localStorage.getItem('sitesView') || 'grid';
+    if (savedView === 'list') {
+        listViewBtn.click();
+    } else {
+        gridViewBtn.click();
+    }
+});
+</script>
+
+<style>
+/* Estilos adicionales para JavaScript */
+
+/* Vista de lista */
+.sites-list.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.sites-list.list-view .site-card {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    gap: 1rem;
+}
+
+.sites-list.list-view .site-card h3 {
+    margin: 0;
+    flex: 1;
+}
+
+.sites-list.list-view .site-card .location {
+    margin: 0;
+    flex: 1;
+}
+
+.sites-list.list-view .site-card .site-meta {
+    margin: 0;
+    flex: 1;
+}
+
+.sites-list.list-view .site-card .site-actions {
+    margin: 0;
+}
+
+/* Responsive para vista de lista */
+@media (max-width: 768px) {
+    .sites-list.list-view .site-card {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+}
+</style>
+
 {% endblock %}
