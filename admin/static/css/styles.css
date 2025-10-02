@@ -205,6 +205,25 @@ button.btn-outline:active {
     font-size: 4rem;
 }
 
+.maintenance-container {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+}
+
+.maintenance-container h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.maintenance-container p {
+    font-size: 1.5rem;
+    color: #555;
+    margin: 0 1rem;
+}
+
 /* Tarjeta del login */
 
 .login_form {
