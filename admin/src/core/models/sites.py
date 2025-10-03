@@ -34,9 +34,9 @@ class SitioHistorico(Base):
         DateTime, default=datetime.utcnow, nullable=False
     )
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    # localizacion: Mapped[Geometry] = mapped_column(
-    #    Geometry(geometry_type="POINT", srid=4326), nullable=False
-    # )
+    localizacion: Mapped[Geometry] = mapped_column(
+        Geometry(geometry_type="POINT", srid=4326), nullable=False
+    )
 
 
 def list_sites(page=1, per_page=10):
