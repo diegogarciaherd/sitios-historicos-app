@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -58,10 +58,17 @@
                 </h3>
             </a>
             <nav>
-                <a href="{{ url_for('sites.list_all_sites') }}">Gestion de sitios históricos</a>
+                <a href="{{ url_for('sites.list_all_sites') }}"
+                    >Gestion de sitios históricos</a
+                >
                 <a>Validación de propuestas</a>
                 <a>Moderación de reseñas</a>
                 <a>Gestión de usuarios</a>
+                {% if logged_user and logged_user.sys_admin %}
+                <a href="{{ url_for('feature_flags') }}"
+                    >Gestión de funcionalidades</a
+                >
+                {% endif %}
             </nav>
         </aside>
 
