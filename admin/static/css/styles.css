@@ -126,7 +126,7 @@ button:not(.btn-outline):active::after {
 }
 
 button.btn-outline {
-    background-color: var(--background);
+    background-color: transparent;
     color: var(--foreground);
     border: 2px solid var(--foreground);
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -164,7 +164,7 @@ button.btn-outline:active {
     background-color: var(--background);
     border: none;
     border-radius: 0 0 0.5rem 0.5rem;
-    padding: 0.5rem 0;
+    padding: 0 0 0.5rem 0;
     min-width: 130px;
     gap: 0.5rem;
     z-index: 1;
@@ -176,6 +176,7 @@ button.btn-outline:active {
 }
 
 .dropdown button {
+    background-color: var(--background);
     border: none;
     transition: none;
     min-width: 130px;
