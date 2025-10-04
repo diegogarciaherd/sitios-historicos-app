@@ -1,0 +1,182 @@
+{% extends "layout.html" %}
+{% block title %}{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}{% endblock %}
+{% block head_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sites.css') }}">
+{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}</h1>
+    
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post">
+        <div class="form-group">
+            <label for="nombre">Nombre *</label>
+            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}" required>
+            <div class="error-message" id="nombre-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="descripcionBreve">Descripción breve *</label>
+            <textarea id="descripcionBreve" name="descripcionBreve" required>{{ site.descripcionBreve if site else '' }}</textarea>
+            <div class="error-message" id="descripcionBreve-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="descripcionCompleta">Descripción completa</label>
+            <textarea id="descripcionCompleta" name="descripcionCompleta">{{ site.descripcionCompleta if site else '' }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="ciudad">Ciudad *</label>
+                <input type="text" id="ciudad" name="ciudad" value="{{ site.ciudad if site else '' }}" required>
+                <div class="error-message" id="ciudad-error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="provincia">Provincia *</label>
+                <input type="text" id="provincia" name="provincia" value="{{ site.provincia if site else '' }}" required>
+                <div class="error-message" id="provincia-error"></div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="latitud">Latitud *</label>
+                <input type="number" id="latitud" name="latitud" step="any" min="-90" max="90" value="{{ site.latitud if site else '' }}" required>
+                <div class="error-message" id="latitud-error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="longitud">Longitud *</label>
+                <input type="number" id="longitud" name="longitud" step="any" min="-180" max="180" value="{{ site.longitud if site else '' }}" required>
+                <div class="error-message" id="longitud-error"></div>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="estado">Estado de conservación *</label>
+                <select id="estado" name="estado" required>
+                    <option value="">Seleccionar estado</option>
+                    <option value="BUENO" {% if site and site.estado.value == 'Bueno' %}selected{% endif %}>Bueno</option>
+                    <option value="REGULAR" {% if site and site.estado.value == 'Regular' %}selected{% endif %}>Regular</option>
+                    <option value="MALO" {% if site and site.estado.value == 'Malo' %}selected{% endif %}>Malo</option>
+                </select>
+                <div class="error-message" id="estado-error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="añoInauguracion">Año de inauguración</label>
+                <input type="number" id="añoInauguracion" name="añoInauguracion" min="1000" max="2024" value="{{ site.añoInauguracion if site and site.añoInauguracion else '' }}">
+                <div class="error-message" id="añoInauguracion-error"></div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="categoria_nombre">Categoría *</label>
+            <input type="text" id="categoria_nombre" name="categoria_nombre" value="{{ site.categoria if site else '' }}" required>
+            <div class="error-message" id="categoria_nombre-error"></div>
+        </div>
+        
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="visible" {% if site and site.visible %}checked{% endif %}>
+                <span class="checkmark"></span>
+                Visible
+            </label>
+        </div>
+        
+        <div class="form-actions">
+            <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+                {% if site %}Actualizar{% else %}Crear{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Validación del lado del cliente
+document.getElementById('siteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Limpiar errores anteriores
+    clearErrors();
+    
+    // Validar campos
+    let isValid = true;
+    
+    // Validar campos obligatorios
+    const requiredFields = ['nombre', 'descripcionBreve', 'ciudad', 'provincia', 'latitud', 'longitud', 'estado', 'categoria_nombre'];
+    requiredFields.forEach(field => {
+        const input = document.getElementById(field);
+        if (!input.value.trim()) {
+            showError(field, 'Este campo es obligatorio');
+            isValid = false;
+        }
+    });
+    
+    // Validar coordenadas
+    const latitud = parseFloat(document.getElementById('latitud').value);
+    const longitud = parseFloat(document.getElementById('longitud').value);
+    
+    if (isNaN(latitud) || latitud < -90 || latitud > 90) {
+        showError('latitud', 'La latitud debe estar entre -90 y 90');
+        isValid = false;
+    }
+    
+    if (isNaN(longitud) || longitud < -180 || longitud > 180) {
+        showError('longitud', 'La longitud debe estar entre -180 y 180');
+        isValid = false;
+    }
+    
+    // Validar año de inauguración
+    const año = document.getElementById('añoInauguracion').value;
+    if (año) {
+        const añoNum = parseInt(año);
+        if (isNaN(añoNum) || añoNum < 1000 || añoNum > 2024) {
+            showError('añoInauguracion', 'El año debe estar entre 1000 y 2024');
+            isValid = false;
+        }
+    }
+    
+    if (isValid) {
+        this.submit();
+    }
+});
+
+function showError(fieldId, message) {
+    const errorElement = document.getElementById(fieldId + '-error');
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    
+    const input = document.getElementById(fieldId);
+    input.classList.add('error');
+}
+
+function clearErrors() {
+    const errorElements = document.querySelectorAll('.error-message');
+    errorElements.forEach(element => {
+        element.textContent = '';
+        element.style.display = 'none';
+    });
+    
+    const inputs = document.querySelectorAll('.form-group input, .form-group textarea, .form-group select');
+    inputs.forEach(input => {
+        input.classList.remove('error');
+    });
+}
+</script>
+{% endblock %}
+
