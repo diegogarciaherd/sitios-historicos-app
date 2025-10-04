@@ -38,6 +38,25 @@ main {
     min-height: calc(100vh - 14rem);
 }
 
+section.home-page {
+    overflow: hidden;
+}
+
+section.home-page > div {
+    animation: fade-in 1.5s ease-out;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateX(60%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 aside {
     position: fixed;
     background-color: var(--foreground);
