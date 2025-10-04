@@ -44,12 +44,12 @@ def create_app(env="development", static_folder="../../static"):
     def mantenimiento():
         return render_template("mantenimiento.html")
     
-    @app.before_request
-    def before_request():
-        if check_flags(None) and request.endpoint != 'mantenimiento':
-            return redirect('/mantenimiento')
-        if not check_flags(None) and request.endpoint == 'mantenimiento':
-            return redirect(url_for('home'))
+    # @app.before_request
+    # def before_request():
+    #     if check_flags(None) and request.endpoint != 'mantenimiento':
+    #         return redirect('/mantenimiento')
+    #     if not check_flags(None) and request.endpoint == 'mantenimiento':
+    #         return redirect(url_for('home'))
         
 
     return app
