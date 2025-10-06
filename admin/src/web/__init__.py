@@ -1,5 +1,5 @@
-from flask import Flask
-from flask import render_template, session
+from flask import Flask, request
+from flask import render_template, session, redirect, url_for
 from core import database
 from web.handlers import error
 from web.controllers.login import login_bp
@@ -9,6 +9,7 @@ from core import database
 from web.config import config
 from web.controllers.sites import sites_bp
 from core.services.bcrypt import bcrypt
+from core.services.auth_service import check_flags
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -41,5 +42,17 @@ def create_app(env="development", static_folder="../../static"):
     @app.cli.command("seed-db")
     def seed_db():
         database.seed_db()
+
+    @app.route('/mantenimiento')
+    def mantenimiento():
+        return render_template("mantenimiento.html")
+    
+    # @app.before_request
+    # def before_request():
+    #     if check_flags(None) and request.endpoint != 'mantenimiento':
+    #         return redirect('/mantenimiento')
+    #     if not check_flags(None) and request.endpoint == 'mantenimiento':
+    #         return redirect(url_for('home'))
         
+
     return app
