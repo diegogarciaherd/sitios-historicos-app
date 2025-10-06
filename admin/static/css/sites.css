@@ -128,6 +128,12 @@
 	font-size: 1rem;
 }
 
+#statusButtons button.active {
+	background: var(--accent);
+	color: white;
+	border-color: var(--accent);
+}
+
 .filter-date {
 	display: flex;
 	flex-direction: column;
@@ -151,6 +157,16 @@
 	&:focus {
 		outline: none;
 	}
+}
+
+#categoryButtons {
+	gap: 0.5rem;
+}
+
+#categoryButtons button.active {
+	background: var(--accent);
+	color: white;
+	border-color: var(--accent);
 }
 
 .site-card:hover {

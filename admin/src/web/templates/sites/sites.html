@@ -24,6 +24,10 @@ block head_styles %}
 			</div>
 
 			<div class="view-options">
+				<button class="btn btn-outline btn-sm" id="clearFiltersBtn">
+					Limpiar filtros
+				</button>
+
 				<button
 					class="btn btn-outline btn-sm"
 					id="gridViewBtn"
@@ -57,9 +61,12 @@ block head_styles %}
 	<div class="filter-container">
 		<div class="filter-row">
 			<div class="filter-selector">
-				<label for="cityFilter">Filtrar por ciudad:</label>
+				<label for="cityFilter">Ciudad:</label>
 				<select id="cityFilter">
-					<option value="">Todas las ciudades</option>
+					<option value="ciudades-todas">Todas las ciudades</option>
+					<option value="ciudades-1">Ciudad 1</option>
+					<option value="ciudades-2">Ciudad 2</option>
+					<option value="ciudades-3">Ciudad 3</option>
 					{% for city in cities %}
 					<option value="{{ city }}">{{ city }}</option>
 					{% endfor %}
@@ -67,9 +74,12 @@ block head_styles %}
 			</div>
 
 			<div class="filter-selector">
-				<label for="provinceFilter">Filtrar por provincia:</label>
+				<label for="provinceFilter">Provincia:</label>
 				<select id="provinceFilter">
-					<option value="">Todas las provincias</option>
+					<option value="provincias-todas">Todas las provincias</option>
+					<option value="provincias-1">Provincia 1</option>
+					<option value="provincias-2">Provincia 2</option>
+					<option value="provincias-3">Provincia 3</option>
 					{% for province in provinces %}
 					<option value="{{ province }}">{{ province }}</option>
 					{% endfor %}
@@ -78,8 +88,8 @@ block head_styles %}
 
 			<div class="filter-status">
 				<label>Estado de conservacion:</label>
-				<div class="status-buttons">
-					<button>Todos</button>
+				<div class="status-buttons" id="statusButtons">
+					<button class="active">Todos</button>
 					<button>Bueno</button>
 					<button>Regular</button>
 					<button>Malo</button>
@@ -99,8 +109,12 @@ block head_styles %}
 		<div class="filter-row">
 			<div class="filter-status">
 				<label>Categorías</label>
-				<div class="status-buttons">
-					<button>Todas</button>
+				<div class="status-buttons" id="categoryButtons">
+					<button class="active">Todas</button>
+					<button>Sin categoría</button>
+					<button>Monumento</button>
+					<button>Edificio</button>
+					<button>Parque</button>
 					{% for category in categories %}
 					<button>{{ category }}</button>
 					{% endfor %}
@@ -224,6 +238,77 @@ block head_styles %}
 
 <script>
 	// ### Funcionalidad para los filtros ###
+
+	// Funcion para limpiar los filtros (se ponen en sus valores por defecto) haciendo click en el boton "Limpiar filtros"
+	document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+		// Limpiar filtro de ciudad
+		document.getElementById('cityFilter').value = 'ciudades-todas'
+
+		// Limpiar filtro de provincia
+		document.getElementById('provinceFilter').value = 'provincias-todas'
+
+		// Limpiar filtro de estado de conservacion
+		const statusButtons = document.getElementById('statusButtons')
+		statusButtons.querySelectorAll('button').forEach(btn => {
+			btn.classList.remove('active')
+		})
+		statusButtons.querySelector('button').classList.add('active')
+
+		// Limpiar filtro de fecha
+		document.getElementById('startDate').value = ''
+		document.getElementById('endDate').value = ''
+
+		// Limpiar filtro de Tags (Categorias)
+		const categoryButtons = document.getElementById('categoryButtons')
+		categoryButtons.querySelectorAll('button').forEach(btn => {
+			btn.classList.remove('active')
+		})
+		categoryButtons.querySelector('button').classList.add('active')
+
+		// Limpiar filtro de visibilidad
+		document.getElementById('visibilidad').checked = true
+	})
+
+	// Funcionalidad para los botones de estado (Todos, Bueno, Regular, Malo)
+	document
+		.getElementById('statusButtons')
+		.querySelectorAll('button')
+		.forEach(button => {
+			button.addEventListener('click', () => {
+				statusButtons.querySelectorAll('button').forEach(btn => {
+					btn.classList.remove('active')
+				})
+				button.classList.add('active')
+			})
+		})
+
+	// Funcionalidad para los filtros de categoria
+	// Estos son multiples, si "Todas" esta activo, los demas no pueden estarlo
+	// Si alguno de los demas esta activo, "Todas" no puede estarlo
+	document
+		.getElementById('categoryButtons')
+		.querySelectorAll('button')
+		.forEach(button => {
+			button.addEventListener('click', () => {
+				const categoryButtons = document.getElementById('categoryButtons')
+				if (button.textContent === 'Todas') {
+					categoryButtons.querySelectorAll('button').forEach(btn => {
+						btn.classList.remove('active')
+					})
+					button.classList.add('active')
+				} else {
+					button.classList.toggle('active')
+					const allButton = categoryButtons.querySelector('button')
+					allButton.classList.remove('active')
+					const anyActive = Array.from(
+						categoryButtons.querySelectorAll('button')
+					).some(btn => btn !== allButton && btn.classList.contains('active'))
+					if (!anyActive) {
+						allButton.classList.add('active')
+					}
+				}
+			})
+		})
 
 	// Funcionalidad de la barra de navegación
 	document.addEventListener('DOMContentLoaded', function () {
