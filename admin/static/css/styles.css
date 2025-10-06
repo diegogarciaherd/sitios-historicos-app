@@ -38,6 +38,25 @@ main {
     min-height: calc(100vh - 14rem);
 }
 
+section.home-page {
+    overflow: hidden;
+}
+
+section.home-page > div {
+    animation: fade-in 1.5s ease-out;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateX(60%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 aside {
     position: fixed;
     background-color: var(--foreground);
@@ -126,7 +145,7 @@ button:not(.btn-outline):active::after {
 }
 
 button.btn-outline {
-    background-color: var(--background);
+    background-color: transparent;
     color: var(--foreground);
     border: 2px solid var(--foreground);
     transition: background-color 0.3s ease, color 0.3s ease;
@@ -141,6 +160,59 @@ button.btn-outline:hover {
 button.btn-outline:active {
     transform: scale(0.95);
     transition: 0.3s ease;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 2rem;
+    height: 1rem;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: 0.4s;
+    transition: 0.4s;
+    border-radius: 1.4rem;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 0.8rem;
+    width: 0.8rem;
+    left: 0.1rem;
+    bottom: 0.1rem;
+    background-color: white;
+    -webkit-transition: 0.4s;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--accent);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent);
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(1rem);
+    -ms-transform: translateX(1rem);
+    transform: translateX(1rem);
 }
 
 /* Menú Dropdown de cuenta */
@@ -164,7 +236,7 @@ button.btn-outline:active {
     background-color: var(--background);
     border: none;
     border-radius: 0 0 0.5rem 0.5rem;
-    padding: 0.5rem 0;
+    padding: 0 0 0.5rem 0;
     min-width: 130px;
     gap: 0.5rem;
     z-index: 1;
@@ -176,6 +248,7 @@ button.btn-outline:active {
 }
 
 .dropdown button {
+    background-color: var(--background);
     border: none;
     transition: none;
     min-width: 130px;

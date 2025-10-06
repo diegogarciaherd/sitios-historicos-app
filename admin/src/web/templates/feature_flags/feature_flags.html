@@ -1,13 +1,8 @@
-{% extends "layout.html" %} {% block title %}Sitios Históricos{% endblock %} {%
-block head_styles %}
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/sites.css') }}"
-/>
-{% endblock %} {% block content %}
+{% extends "layout.html" %} {% block title %}Flags de Funcionalidad{% endblock
+%} {% block content %}
 <div class="container">
     <div class="header-section">
-        <h1>Sitios Históricos</h1>
+        <h1>Flags de Funcionalidad</h1>
     </div>
 
     <!-- Barra de navegación con acciones -->
@@ -70,45 +65,26 @@ block head_styles %}
         </div>
     </nav>
 
-    {% if sites %}
+    {% if feature_flags %}
     <div class="sites-list">
-        {% for site in sites %}
+        {% for feature in feature_flags %}
         <div class="site-card">
-            <h3>{{ site.nombre }}</h3>
-            <p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
-            {% if site.descripcionBreve %}
-            <p class="description">{{ site.descripcionBreve }}</p>
+            <h3>{{ feature.name }}</h3>
+            {% if feature.description %}
+            <p class="description">{{ feature.description }}</p>
             {% endif %}
-            <div class="site-meta">
-                <span class="category"
-                    >{{ site.categoria or 'Sin categoría' }}</span
-                >
-                <span class="estado estado-{{ site.estado.value.lower() }}"
-                    >{{ site.estado.value }}</span
-                >
-            </div>
-            <div class="site-actions">
-                <a
-                    href="{{ url_for('sites.view_site', id=site.id) }}"
-                    class="btn btn-sm btn-info"
-                    >Ver</a
-                >
-                <a
-                    href="{{ url_for('sites.edit_site', id=site.id) }}"
-                    class="btn btn-sm btn-warning"
-                    >Editar</a
-                >
-                <form
-                    method="POST"
-                    action="{{ url_for('sites.delete_site', id=site.id) }}"
-                    style="display: inline"
-                    onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
-                >
-                    <button type="submit" class="btn btn-sm btn-danger">
-                        Eliminar
-                    </button>
-                </form>
-            </div>
+            <label class="switch">
+                <input
+                    type="checkbox"
+                    {%
+                    if
+                    feature.enabled
+                    %}checked{%
+                    endif
+                    %}
+                />
+                <span class="slider round"></span>
+            </label>
         </div>
         {% endfor %}
     </div>

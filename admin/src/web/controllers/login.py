@@ -12,7 +12,7 @@ def login():
     else:
         user = authenticate(request.form["email"], request.form["password"])
         if user:
-            session["user_id"] = user.email
+            session["user_id"] = user
             return redirect(url_for("home"))
         else:
             return render_template("login.html", error="Usuario o clave incorrectos.")
