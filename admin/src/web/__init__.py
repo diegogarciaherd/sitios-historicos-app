@@ -27,7 +27,7 @@ def create_app(env="development", static_folder="../../static"):
 
     @app.route('/')
     def home():
-        return render_template("home.html", logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("home.html", logged_user=session['user_email'] if 'user_email' in session else None)
     
     app.register_error_handler(404, error.not_found)
     app.register_error_handler(401, error.unauthorized)

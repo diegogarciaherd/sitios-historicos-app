@@ -5,5 +5,6 @@ logout_bp = Blueprint("logout", __name__)
 
 @logout_bp.route("/logout", methods=["GET"])
 def login():
-    session.clear()
+    if session:
+        session.clear()
     return redirect(url_for("home"))
