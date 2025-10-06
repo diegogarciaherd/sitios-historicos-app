@@ -83,9 +83,11 @@ block head_styles %}
                 <span class="category"
                     >{{ site.categoria or 'Sin categoría' }}</span
                 >
-                <span class="estado estado-{{ site.estado.value.lower() }}"
-                    >{{ site.estado.value }}</span
-                >
+                <span class="estado estado-{{ site.estado
+                 }}">
+                    {{ site.estado }}
+                </span>
+
             </div>
             <div class="site-actions">
                 <a
@@ -257,6 +259,41 @@ block head_styles %}
             gridViewBtn.click();
         }
     });
+
+    // Mapa
+    var map = L.map('map').setView([-34.9333, -57.95], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+        minZoom: 3,
+    }).addTo(map);
+      // Escuchar clics en el mapa
+    map.on('click', function (e) {
+        var lat = e.latlng.lat.toFixed(6);
+        var lng = e.latlng.lng.toFixed(6);
+
+        // Si ya existe un marcador, moverlo; si no, crearlo
+        if (marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng, {draggable: true}).addTo(map);
+        }
+
+        // Guardar coordenadas en los inputs
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
+      // Popup opcional para feedback
+        marker.bindPopup("Lat: " + lat + "<br>Lng: " + lng).openPopup();
+
+        // Si el marcador se arrastra, actualizar coordenadas
+        marker.on('dragend', function (e) {
+            var pos = e.target.getLatLng();
+            document.getElementById('lat').value = pos.lat.toFixed(6);
+            document.getElementById('lng').value = pos.lng.toFixed(6);
+            marker.setPopupContent("Lat: " + pos.lat.toFixed(6) + "<br>Lng: " + pos.lng.toFixed(6)).openPopup();
+        });
+    });
+
 </script>
 
 <style>

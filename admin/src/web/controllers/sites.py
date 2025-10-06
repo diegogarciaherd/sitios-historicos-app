@@ -89,12 +89,16 @@ def list_all_sites():
 def create_site():
     if request.method == 'POST':
         try:
-            data = validate_site_data(request.form)
+            data = request.form.to_dict()
+            
+    
+            data['visible'] = 'visible' in request.form  
+
+            
             create_sites(**data)
             flash('Sitio histórico creado correctamente', 'success')
             return redirect(url_for('sites.list_all_sites'))
-        except ValueError as e:
-            flash(f'Error de validación: {str(e)}', 'error')
+            
         except Exception as e:
             flash(f'Error al crear el sitio: {str(e)}', 'error')
 
