@@ -89,7 +89,7 @@ def create_sites(**kwargs):
 
     db.session.add(site)
     db.session.commit()
-    return site  
+    return site
 
 def update_site(id, **kwargs):
     site = get_site(id)

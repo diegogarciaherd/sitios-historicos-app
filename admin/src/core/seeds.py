@@ -4,6 +4,10 @@ from geoalchemy2.elements import WKTElement
 
 def run(): 
 
+    def make_point(lat, lon):
+        """Devuelve un WKTElement con el orden correcto (lon, lat)."""
+        return WKTElement(f'POINT({lon} {lat})', srid=4326)
+    
     site1 = sites.create_sites(
         nombre="Catedral de La Plata",
         descripcionBreve="Imponente catedral neogótica en La Plata.",
@@ -13,7 +17,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1932,
         categoria="Histórico",
-        localizacion=WKTElement('POINT(-34.9214 -57.9544)', srid=4326)
+        localizacion=make_point(-34.9214, -57.9544)
     )   
 
     site2 = sites.create_sites(
@@ -25,7 +29,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1908,
         categoria="Histórico",
-        localizacion=WKTElement('POINT(-34.6015 -58.3816)', srid=4326)
+        localizacion=make_point(-34.6014, -58.3836)
     )
 
     site3 = sites.create_sites(
@@ -37,7 +41,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1898,
         categoria="Gobierno",
-        localizacion=WKTElement('POINT(-34.6083 -58.3712)', srid=4326)
+        localizacion=make_point(-34.6083, -58.3700)
     )
 
     site4 = sites.create_sites(
@@ -49,7 +53,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1816,
         categoria="Independencia",
-        localizacion=WKTElement('POINT(-26.8083 -65.2175)', srid=4326)
+        localizacion=make_point(-26.8083, -65.2175)
     )
 
     site5 = sites.create_sites(
@@ -61,7 +65,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1858,
         categoria="Cultural",
-        localizacion=WKTElement('POINT(-34.6083 -58.3750)', srid=4326)
+        localizacion=make_point(-34.6083, -58.3700)
     )
 
     site6 = sites.create_sites(
@@ -73,7 +77,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1889,
         categoria="Museo",
-        localizacion=WKTElement('POINT(-34.6083 -58.3750)', srid=4326)
+        localizacion=make_point(-34.6083, -58.3700)
     )
 
     site7 = sites.create_sites(
@@ -85,7 +89,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1935,
         categoria="Religioso",
-        localizacion=WKTElement('POINT(-34.5667 -59.1167)',srid=4326)
+        localizacion=make_point(-34.5714, -59.1056)
     )
 
     site8 = sites.create_sites(
@@ -97,7 +101,7 @@ def run():
         estado=sites.EstadoConservacion.REGULAR,
         añoInauguracion=1857,
         categoria="Histórico",
-        localizacion=WKTElement('POINT(-32.4833 -58.2333)', srid=4326)
+        localizacion=make_point(-32.4833, -58.2333)
     )
 
     site9 = sites.create_sites(
@@ -109,7 +113,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1811,
         categoria="Histórico",
-        localizacion=WKTElement('POINT(-31.5375 -68.5364)', srid=4326)
+        localizacion=make_point(-31.5375, -68.5364)
     )
 
     site10 = sites.create_sites(
@@ -121,7 +125,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1643,
         categoria="Patrimonio UNESCO",
-        localizacion=WKTElement('POINT(-31.6667 -64.4333)', srid=4326)
+        localizacion=make_point(-31.6375, -64.4167)
     )
 
     site11 = sites.create_sites(
@@ -133,7 +137,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1890,
         categoria="Gobierno",
-        localizacion=WKTElement('POINT(-31.4201 -64.1888)', srid=4326)
+        localizacion=make_point(-31.4201, -64.1888)
     )
 
     site12 = sites.create_sites(
@@ -145,7 +149,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1957,
         categoria="Monumento",
-        localizacion=WKTElement('POINT(-32.9442 -60.6505)', srid=4326)
+        localizacion=make_point(-32.9442, -60.6505)
     )
 
     site13 = sites.create_sites(
@@ -157,7 +161,7 @@ def run():
         estado=sites.EstadoConservacion.REGULAR,
         añoInauguracion=1941,
         categoria="Museo",
-        localizacion=WKTElement('POINT(-26.8083 -65.2175)', srid=4326)
+        localizacion=make_point(-26.8083, -65.2175)
     )
 
     site14 = sites.create_sites(
@@ -169,7 +173,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1914,
         categoria="Religioso",
-        localizacion=WKTElement('POINT(-31.4201 -64.1888)', srid=4326)
+        localizacion=make_point(-31.4201, -64.1888)
     )
 
     site15 = sites.create_sites(
@@ -181,7 +185,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1990,
         categoria="Renovación Urbana",
-        localizacion=WKTElement('POINT(-34.6103 -58.3636)', srid=4326)
+        localizacion=make_point(-34.6083, -58.3636)
     )
 
     site16 = sites.create_sites(
@@ -193,7 +197,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=2010,
         categoria="Memoria",
-        localizacion=WKTElement('POINT(-32.9442 -60.6505)', srid=4326)
+        localizacion=make_point(-32.9442, -60.6505)
     )
 
     site17 = sites.create_sites(
@@ -205,7 +209,7 @@ def run():
         estado=sites.EstadoConservacion.REGULAR,
         añoInauguracion=1920,
         categoria="Cultural",
-        localizacion=WKTElement('POINT(-34.9214 -57.9544)', srid=4326)
+        localizacion=make_point(-34.9214, -57.9544)
     )
 
     site18 = sites.create_sites(
@@ -217,7 +221,7 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=1580,
         categoria="Plaza Histórica",
-        localizacion=WKTElement('POINT(-34.6083 -58.3712)', srid=4326)
+        localizacion=make_point(-34.6083, -58.3712)
     )
 
     site19 = sites.create_sites(
@@ -229,7 +233,7 @@ def run():
         estado=sites.EstadoConservacion.MALO,
         añoInauguracion=1850,
         categoria="Cultural",
-        localizacion=WKTElement('POINT(-24.7821 -65.4232)', srid=4326)
+        localizacion=make_point(-24.7821, -65.4232)
     )
 
     site20 = sites.create_sites(
@@ -241,12 +245,13 @@ def run():
         estado=sites.EstadoConservacion.BUENO,
         añoInauguracion=2002,
         categoria="Museo",
-        localizacion=WKTElement('POINT(-34.6083 -58.3750)', srid=4326)
+        localizacion=make_point(-34.6037, -58.3816)
         )
 
     sites_created = [site1, site2, site3, site4, site5, site6, site7, site8, site9, site10, 
                     site11, site12, site13, site14, site15, site16, site17, site18, site19, site20]
     
+
     print(f"Created {len(sites_created)} sites:")
     for i, site in enumerate(sites_created, 1):
         print(f"{i}. {site.nombre} - {site.ciudad}, {site.provincia}")
