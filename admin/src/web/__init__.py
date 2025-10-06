@@ -4,10 +4,11 @@ from core import database
 from web.handlers import error
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
+from web.controllers.sites import sites_bp
+from web.controllers.feature_flags import feature_flags_bp
 from flask_session import Session
 from core import database
 from web.config import config
-from web.controllers.sites import sites_bp
 from core.services.auth_service import check_flags
 
 def create_app(env="development", static_folder="../../static"):
@@ -22,6 +23,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(sites_bp)
     app.register_blueprint(logout_bp)
     app.register_blueprint(login_bp)
+    app.register_blueprint(feature_flags_bp)
 
     @app.route('/')
     def home():

@@ -1,7 +1,6 @@
 from flask import Blueprint
 from flask import render_template, flash, abort
-from src.core.models.feature_flags import FeatureFlag
-from src.core.models.feature_flags import list_feature_flags, create_feature_flag, update_feature_flag, get_feature_flag, delete_feature_flag
+from core.models.feature_flags import list_feature_flags, create_feature_flag, update_feature_flag, get_feature_flag, delete_feature_flag
 from src.core.database import db
 from flask import request, redirect, url_for
 
@@ -54,21 +53,6 @@ def list_all_feature_flags():
     }
     return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags)
 
-@feature_flags_bp.route('/crear_flag', methods=['GET', 'POST'])
-def create_feature_flag():
-    if request.method == 'POST':
-        try:
-            data = validate_feature_flag_data(request.form)
-            create_feature_flag(**data)
-            flash('Flag de funcionalidad creado correctamente', 'success')
-            return redirect(url_for('feature_flags.list_all_feature_flags'))
-        except ValueError as e:
-            flash(f'Error de validación: {str(e)}', 'error')
-        except Exception as e:
-            flash(f'Error al crear el flag de funcionalidad: {str(e)}', 'error')
-
-    return render_template('form.html')
-
 @feature_flags_bp.route('/editar_flag/<int:id>', methods=['GET', 'POST'])
 # Mejorada con validación y manejo de errores
 def edit_feature_flag(id):
@@ -88,13 +72,3 @@ def edit_feature_flag(id):
             flash(str(e), 'error')
 
     return render_template('form.html', feature_flag=feature_flag)
-
-@feature_flags_bp.route('/eliminar_flag/<int:id>', methods=['POST'])
-def delete_feature_flag(id):
-    delete_feature_flag(id)
-    return redirect(url_for('feature_flags.list_all_feature_flags'))
-
-@feature_flags_bp.route('/ver_flag/<int:id>', methods=['GET'])
-def view_feature_flag(id):
-    feature_flag = get_feature_flag(id)
-    return render_template('view.html', feature_flag=feature_flag)

@@ -1,6 +1,6 @@
 from src.core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column
-from core.models.userrole import UserRole as Role
+from src.core.models.userrole import UserRole as Role
 
 class User(Base):
     __tablename__ = "users"
