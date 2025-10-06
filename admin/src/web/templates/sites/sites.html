@@ -55,42 +55,62 @@ block head_styles %}
 	</div>
 
 	<div class="filter-container">
-		<div class="filter-selector">
-			<label for="cityFilter">Filtrar por ciudad:</label>
-			<select id="cityFilter">
-				<option value="">Todas las ciudades</option>
-				{% for city in cities %}
-				<option value="{{ city }}">{{ city }}</option>
-				{% endfor %}
-			</select>
-		</div>
+		<div class="filter-row">
+			<div class="filter-selector">
+				<label for="cityFilter">Filtrar por ciudad:</label>
+				<select id="cityFilter">
+					<option value="">Todas las ciudades</option>
+					{% for city in cities %}
+					<option value="{{ city }}">{{ city }}</option>
+					{% endfor %}
+				</select>
+			</div>
 
-		<div class="filter-selector">
-			<label for="provinceFilter">Filtrar por provincia:</label>
-			<select id="provinceFilter">
-				<option value="">Todas las provincias</option>
-				{% for province in provinces %}
-				<option value="{{ province }}">{{ province }}</option>
-				{% endfor %}
-			</select>
-		</div>
+			<div class="filter-selector">
+				<label for="provinceFilter">Filtrar por provincia:</label>
+				<select id="provinceFilter">
+					<option value="">Todas las provincias</option>
+					{% for province in provinces %}
+					<option value="{{ province }}">{{ province }}</option>
+					{% endfor %}
+				</select>
+			</div>
 
-		<div class="filter-status">
-			<label>Estado de conservacion:</label>
-			<div class="status-buttons">
-				<button>Bueno</button>
-				<button>Regular</button>
-				<button>Malo</button>
+			<div class="filter-status">
+				<label>Estado de conservacion:</label>
+				<div class="status-buttons">
+					<button>Todos</button>
+					<button>Bueno</button>
+					<button>Regular</button>
+					<button>Malo</button>
+				</div>
+			</div>
+
+			<div class="filter-date">
+				<label>Fecha de registro: <span>(Desde - Hasta)</span></label>
+				<div>
+					<input type="date" id="startDate" />
+					<span> - </span>
+					<input type="date" id="endDate" />
+				</div>
 			</div>
 		</div>
 
-		<div class="filter-date">
-			<label>Fecha de registro: <span>(Desde - Hasta)</span></label>
-			<div>
-				<input type="date" id="startDate" />
-				<span> - </span>
-				<input type="date" id="endDate" />
+		<div class="filter-row">
+			<div class="filter-status">
+				<label>Categorías</label>
+				<div class="status-buttons">
+					<button>Todas</button>
+					{% for category in categories %}
+					<button>{{ category }}</button>
+					{% endfor %}
+				</div>
 			</div>
+
+			<label>
+				<input type="checkbox" id="visibilidad" name="visibilidad" checked />
+				Visibles
+			</label>
 		</div>
 	</div>
 
