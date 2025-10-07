@@ -234,7 +234,17 @@ def apply_filters(query, filters):
 def export_to_csv(file_path: str, filters: dict = None):
     """Exporta los sitios históricos a un archivo CSV aplicando filtros opcionales usando POSTGRE COPY."""
 
-    query = db.session.query(SitioHistorico)
+    query = db.session.query(
+        SitioHistorico.id,
+        SitioHistorico.nombre,
+        SitioHistorico.descripcionBreve,
+        SitioHistorico.ciudad,
+        SitioHistorico.provincia,
+        SitioHistorico.estado,
+        SitioHistorico.fechaRegistro,
+        SitioHistorico.localizacion,
+        # proximamente incluir tags
+    )
     query = apply_filters(query, filters)
 
     # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
