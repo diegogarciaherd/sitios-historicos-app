@@ -57,8 +57,6 @@ def list_users() -> str:
     }
     return render_template("adminpanel.html", pagination=pagination, users=users)
 
-
-
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 def create_user() -> str:
     if request.method == "POST":
