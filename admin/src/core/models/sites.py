@@ -257,6 +257,10 @@ def export_to_csv(file_path: str, filters: dict = None):
         SitioHistorico.ciudad.asc(),
     )
 
+    # verificar si hay resultados
+    if query.count() == 0:
+        raise ValueError("No hay datos para exportar con los filtros proporcionados.")
+
     query_compiled = query.statement.compile(
         dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
     )

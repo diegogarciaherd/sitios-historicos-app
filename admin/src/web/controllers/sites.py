@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, send_file
+from flask import Blueprint, send_file, jsonify
 from flask import render_template, flash, abort, session
 from src.core.models.sites import (
     list_sites,
@@ -153,21 +153,26 @@ def view_site(id):
 def export_csv():
     """Función para exportar los sitios a un archivo CSV."""
 
-    query_params = request.args.to_dict()
+    try:
+        query_params = request.args.to_dict()
 
-    with tempfile.NamedTemporaryFile(
-        mode="w+", delete=False, suffix=".csv"
-    ) as temp_csv:
-        export_to_csv(temp_csv.name, filters=query_params)
-        temp_csv.flush()
+        with tempfile.NamedTemporaryFile(
+            mode="w+", delete=False, suffix=".csv"
+        ) as temp_csv:
+            export_to_csv(temp_csv.name, filters=query_params)
+            temp_csv.flush()
 
-    # Nombre del archivo: sitios_<YYYYMMDD_HHMM>.csv
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-    download_name = f"sitios_{timestamp}.csv"
+        # Nombre del archivo: sitios_<YYYYMMDD_HHMM>.csv
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+        download_name = f"sitios_{timestamp}.csv"
 
-    return send_file(
-        temp_csv.name,
-        as_attachment=True,
-        download_name=download_name,
-        mimetype="text/csv",
-    )
+        return send_file(
+            temp_csv.name,
+            as_attachment=True,
+            download_name=download_name,
+            mimetype="text/csv",
+        )
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Error al exportar CSV: {str(e)}"}), 500

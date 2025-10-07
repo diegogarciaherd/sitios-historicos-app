@@ -29,10 +29,20 @@ block head_styles %}
 					Crear Sitio
 				</a>
 
-				<a id="exportCsvBtn" href="#">
+				{% if sites %}
+				<a id="exportCsvBtn" href="#" class="exportCsvBtn">
 					<span class="btn-icon">📄</span>
 					Exportar CSV
 				</a>
+				{% else %}
+				<button
+					onclick="alert('No hay datos para exportar')"
+					class="exportCsvBtn"
+				>
+					<span class="btn-icon">📄</span>
+					Exportar CSV
+				</button>
+				{% endif %}
 			</div>
 		</nav>
 	</div>
