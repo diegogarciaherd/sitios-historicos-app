@@ -4,6 +4,7 @@ from core.models.user import create_user, read_user_by_email, read_users_by_acti
 from core.models.user import read_users_by_role, update_user, delete_user, get_user_by_id, list_all_users
 from web.decorators.loginrequired import login_required
 from web.decorators.permissionrequired import role_required
+from flask import session
 
 adminpanel_bp = Blueprint("panel-de-admin", "panel-de-admin", url_prefix="/panel-de-admin", template_folder="../templates")
 
@@ -11,7 +12,7 @@ adminpanel_bp = Blueprint("panel-de-admin", "panel-de-admin", url_prefix="/panel
 @login_required
 @role_required(UserRole.ADMIN)
 def admin_panel():
-    return render_template("adminpanel.html")
+    return render_template("adminpanel.html", logged_user=session['user_email'] if 'user_email' in session else None)
 
 def validate_user_data(form_data: dict, is_update=False) -> dict:
     errors = []
@@ -78,7 +79,7 @@ def create_user() -> str:
         except Exception as e:
             flash(f"Error al crear el sitio: {str(e)}", "error")
 
-    return render_template("form.html")
+    return render_template("createuserform.html")
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @login_required
