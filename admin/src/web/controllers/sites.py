@@ -77,7 +77,7 @@ def list_all_sites():
     print("Query parameters:", query_params)
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = 25
     sites, total = list_sites(page=page, per_page=per_page)
 
     # Calcular información de paginación

@@ -23,27 +23,6 @@ block head_styles %}
 				</button>
 			</div>
 
-			<div class="view-options">
-				<button class="btn btn-outline btn-sm" id="clearFiltersBtn">
-					Limpiar filtros
-				</button>
-
-				<button
-					class="btn btn-outline btn-sm"
-					id="gridViewBtn"
-					title="Vista de cuadrícula"
-				>
-					<span class="btn-icon">⊞</span>
-				</button>
-				<button
-					class="btn btn-outline btn-sm active"
-					id="listViewBtn"
-					title="Vista de lista"
-				>
-					<span class="btn-icon">☰</span>
-				</button>
-			</div>
-
 			<div class="actions-group">
 				<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
 					<span class="btn-icon">➕</span>
@@ -136,6 +115,29 @@ block head_styles %}
 				Visibles
 			</label>
 		</div>
+	</div>
+
+	<div class="view-options">
+		<p>Resultados: <span id="resultsCount">{{ sites|length }}</span></p>
+
+		<button class="btn btn-outline btn-sm" id="clearFiltersBtn">
+			Limpiar filtros
+		</button>
+
+		<button
+			class="btn btn-outline btn-sm"
+			id="gridViewBtn"
+			title="Vista de cuadrícula"
+		>
+			<span class="btn-icon">⊞</span>
+		</button>
+		<button
+			class="btn btn-outline btn-sm active"
+			id="listViewBtn"
+			title="Vista de lista"
+		>
+			<span class="btn-icon">☰</span>
+		</button>
 	</div>
 
 	{% if sites %}

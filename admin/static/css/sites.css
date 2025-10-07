@@ -9,6 +9,9 @@
 	width: 90%;
 	margin: 0 auto;
 	padding: 1rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
 }
 
 .header-section {
@@ -17,14 +20,12 @@
 	justify-content: space-between;
 	align-items: center;
 	gap: 1rem;
-	margin-bottom: 1.5rem;
 }
 
 .sites-list {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
 	gap: 1.5rem;
-	margin-bottom: 2rem;
 }
 
 .site-card {
@@ -65,7 +66,15 @@
 
 .view-options {
 	display: flex;
+	justify-content: end;
 	gap: 0.5rem;
+}
+
+.view-options p {
+	margin: 0;
+	font-size: 1rem;
+	color: #666;
+	align-self: center;
 }
 
 .actions-group {
@@ -79,7 +88,6 @@
 	display: flex;
 	flex-direction: column;
 	gap: 1rem;
-	margin-bottom: 1.5rem;
 }
 
 .filter-row {
@@ -292,7 +300,6 @@
 
 /* Estilos para paginación */
 .pagination-container {
-	margin-top: 2rem;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
