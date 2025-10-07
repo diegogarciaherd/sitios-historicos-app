@@ -79,6 +79,20 @@ def list_sites_with_filters(filters, page=1, per_page=10):
         visibility = filters["visibility"].lower() == "true"
         query = query.filter(SitioHistorico.visible == visibility)
 
+    if "startDate" in filters and filters["startDate"]:
+        try:
+            start_date = datetime.strptime(filters["startDate"], "%Y-%m-%d")
+            query = query.filter(SitioHistorico.fechaRegistro >= start_date)
+        except ValueError:
+            pass  # Si la fecha no es válida, no aplicar el filtro
+
+    if "endDate" in filters and filters["endDate"]:
+        try:
+            end_date = datetime.strptime(filters["endDate"], "%Y-%m-%d")
+            query = query.filter(SitioHistorico.fechaRegistro <= end_date)
+        except ValueError:
+            pass  # Si la fecha no es válida, no aplicar el filtro
+
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
