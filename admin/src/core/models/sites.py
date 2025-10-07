@@ -79,13 +79,21 @@ def list_sites(page=1, per_page=10):
 
 
 def create_sites(**kwargs):
+    # Extraer y convertir coordenadas
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
-
+    
+    # Convertir año si existe
+    año_inauguracion = kwargs.get("añoInauguracion")
+    if año_inauguracion:
+        kwargs["añoInauguracion"] = int(año_inauguracion)
+    
+    # Crear el sitio
     site = SitioHistorico(**kwargs)
 
+    # Asignar geometría si hay coordenadas
     if lat is not None and lng is not None:
-        site.localizacion = WKTElement(f'POINT({lng} {lat})', srid=4326)
+        site.localizacion = WKTElement(f'POINT({float(lng)} {float(lat)})', srid=4326)
 
     db.session.add(site)
     db.session.commit()
@@ -93,20 +101,49 @@ def create_sites(**kwargs):
 
 def update_site(id, **kwargs):
     site = get_site(id)
+    if not site:
+        raise ValueError(f"Sitio con id {id} no encontrado")
+    
+    # Extraer coordenadas si vienen en kwargs
+    lat = kwargs.pop("lat", None)
+    lng = kwargs.pop("lng", None)
+    
+    # Convertir año si existe
+    año_inauguracion = kwargs.get("añoInauguracion")
+    if año_inauguracion is not None:
+        if año_inauguracion == '':
+            kwargs["añoInauguracion"] = None
+        else:
+            try:
+                kwargs["añoInauguracion"] = int(año_inauguracion)
+            except (ValueError, TypeError):
+                raise ValueError("El año de inauguración debe ser un número válido")
+    
+    # Actualizar atributos
     for key, value in kwargs.items():
-        setattr(site, key, value)
-    lat = site.lat
-    lng = site.lng
-    site.localizacion = WKTElement(f'POINT({lng} {lat})', srid=4326)
+        if hasattr(site, key):
+            setattr(site, key, value)
+    
+    # Actualizar geometría si hay nuevas coordenadas
+    if lat is not None and lng is not None:
+        try:
+            site.localizacion = WKTElement(f'POINT({float(lng)} {float(lat)})', srid=4326)
+            # También actualizar latitud y longitud por separado si existen en tu modelo
+            if hasattr(site, 'latitud'):
+                site.latitud = float(lat)
+            if hasattr(site, 'longitud'):
+                site.longitud = float(lng)
+        except (ValueError, TypeError):
+            raise ValueError("Las coordenadas deben ser números válidos")
+    
     db.session.commit()
     return site
-
 
 def get_site(id):
     return db.session.query(SitioHistorico).filter(SitioHistorico.id == id).first()
 
 
-def delete_site(id):
+def delete_site_by_id(id):
     site = get_site(id)
     db.session.delete(site)
     db.session.commit()

@@ -33,8 +33,7 @@
     <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post">
         <div class="form-group">
             <label for="nombre">Nombre *</label>
-            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}" required>
-            <div class="error-message" id="nombre-error"></div>
+            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}" >
         </div>
         
         <div class="form-group">
@@ -128,6 +127,14 @@
 
     var marker;
 
+     // Si estamos editando, colocar marcador inicial
+    {% if site and site.latitud and site.longitud %}
+        var initialLat = {{ site.latitud }};
+        var initialLng = {{ site.longitud }};
+        map.setView([initialLat, initialLng], 15);
+        marker = L.marker([initialLat, initialLng]).addTo(map);
+    {% endif %} 
+
     // Manejo del click en el mapa
     map.on('click', function(e) { 
         var lat = e.latlng.lat.toFixed(6);
@@ -144,22 +151,20 @@
         marker = L.marker(e.latlng).addTo(map);
     }
     });
-  
-    
-    
-/*
-// Validación del lado del cliente
-document.getElementById('siteForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Limpiar errores anteriores
-    clearErrors();
+
+    // Validación del lado del cliente
+    document.getElementById('siteForm').addEventListener('submit', function(e) {
+      
+        
+        // Limpiar errores anteriores
+        clearErrors();
     
     // Validar campos
-    let isValid = true;
+        let isValid = true;
     
+
     // Validar campos obligatorios
-    const requiredFields = ['nombre', 'descripcionBreve', 'ciudad', 'provincia', 'estado', 'categoria_nombre'];
+    const requiredFields = ['nombre', 'ciudad', 'provincia', 'estado', 'categoria'];
     requiredFields.forEach(field => {
         const input = document.getElementById(field);
         if (!input.value.trim()) {
@@ -182,15 +187,6 @@ document.getElementById('siteForm').addEventListener('submit', function(e) {
         isValid = false;
     }
     
-    // Validar año de inauguración
-    const año = document.getElementById('añoInauguracion').value;
-    if (año) {
-        const añoNum = parseInt(año);
-        if (isNaN(añoNum) || añoNum < 1000 || añoNum > 2024) {
-            showError('añoInauguracion', 'El año debe estar entre 1000 y 2024');
-            isValid = false;
-        }
-    }
     
     if (isValid) {
         this.submit();
@@ -218,8 +214,6 @@ function clearErrors() {
         input.classList.remove('error');
     });
 }
-
-*/
 
 </script>
 {% endblock %}
