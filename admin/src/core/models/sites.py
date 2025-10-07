@@ -46,6 +46,22 @@ def list_sites(page=1, per_page=10):
     return sites, total
 
 
+def list_sites_with_filters(filters, page=1, per_page=10):
+    query = db.session.query(SitioHistorico)
+
+    if "search" in filters and filters["search"]:
+        # Búsqueda por texto: El texto debe estar contenido en el nombre del sitio o la descripción breve
+        search_term = f"%{filters['search']}%"
+        query = query.filter(
+            (SitioHistorico.nombre.ilike(search_term))
+            | (SitioHistorico.descripcionBreve.ilike(search_term))
+        )
+
+    total = query.count()
+    sites = query.offset((page - 1) * per_page).limit(per_page).all()
+    return sites, total
+
+
 def create_sites(**kwargs):
     site = SitioHistorico(**kwargs)
     db.session.add(site)

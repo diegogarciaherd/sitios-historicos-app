@@ -3,6 +3,7 @@ from flask import render_template, flash, abort
 from src.core.models.sites import SitioHistorico, EstadoConservacion
 from src.core.models.sites import (
     list_sites,
+    list_sites_with_filters,
     create_sites,
     update_site,
     get_site,
@@ -78,7 +79,8 @@ def list_all_sites():
 
     page = request.args.get("page", 1, type=int)
     per_page = 25
-    sites, total = list_sites(page=page, per_page=per_page)
+    # sites, total = list_sites(page=page, per_page=per_page)
+    sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
     # Calcular información de paginación
     total_pages = (total + per_page - 1) // per_page
