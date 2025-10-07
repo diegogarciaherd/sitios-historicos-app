@@ -1,178 +1,124 @@
-from datetime import datetime
-from flask import Blueprint, send_file, jsonify
-from flask import render_template, flash, abort, session
+# admin/src/web/controllers/sites.py
+from flask import Blueprint, render_template, flash, abort, request, redirect, url_for
 from core.models.sites import (
-    list_sites,
-    list_sites_with_filters,
-    create_sites,
-    update_site,
-    get_site,
-    delete_site_by_id,
-    get_all_cities,
-    get_all_provinces,
-    SitioHistorico,
-    EstadoConservacion,
-    export_to_csv,
+    SitioHistorico, EstadoConservacion,
+    list_sites, create_sites, update_site, get_site,
+    delete_site as delete_site_model,
 )
-from core.database import db
-from flask import request, redirect, url_for
-from .validators.site_validator import validate_site_data
-import tempfile
+from core.services.auth_roles import require_permission
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
-)  # Define el blueprint para las rutas de sitios
+)
+
+def validate_site_data(form_data):
+    errors = []
+    data = {}
+
+    required = ["nombre", "ciudad", "provincia", "latitud", "longitud", "estado"]
+    for f in required:
+        if not form_data.get(f):
+            errors.append(f"El campo {f} es obligatorio")
+    if errors:
+        raise ValueError("; ".join(errors))
+
+    try:
+        data["nombre"] = form_data["nombre"].strip()
+        data["ciudad"] = form_data["ciudad"].strip()
+        data["provincia"] = form_data["provincia"].strip()
+        data["latitud"] = float(form_data["latitud"])
+        data["longitud"] = float(form_data["longitud"])
+        data["estado"] = EstadoConservacion[form_data["estado"]]
+    except (ValueError, KeyError) as e:
+        raise ValueError(f"Error en el formato de los datos: {str(e)}")
+
+    if not (-90 <= data["latitud"] <= 90):
+        raise ValueError("La latitud debe estar entre -90 y 90")
+    if not (-180 <= data["longitud"] <= 180):
+        raise ValueError("La longitud debe estar entre -180 y 180")
+
+    data["descripcionBreve"] = form_data.get("descripcionBreve", "").strip() or None
+    data["descripcionCompleta"] = form_data.get("descripcionCompleta", "").strip() or None
+    data["categoria"] = form_data.get("categoria_nombre", "").strip() or None
+    data["visible"] = "visible" in form_data
+
+    if form_data.get("añoInauguracion"):
+        try:
+            año = int(form_data["añoInauguracion"])
+            if año < 1000 or año > 2024:
+                raise ValueError("El año de inauguración debe estar entre 1000 y 2024")
+            data["añoInauguracion"] = año
+        except ValueError:
+            raise ValueError("El año de inauguración debe ser un número válido")
+    else:
+        data["añoInauguracion"] = None
+
+    # mapeo para create/update
+    required = ["nombre", "ciudad", "provincia", "lat", "lng", "estado"]
+    data["lat"] = float(form_data["lat"])
+    data["lng"] = float(form_data["lng"])
 
 
 @sites_bp.route("/")
+@require_permission("sites.view")
 def list_all_sites():
-    query_params = request.args.to_dict()
-
     page = request.args.get("page", 1, type=int)
-    per_page = 25
-    # sites, total = list_sites(page=page, per_page=per_page)
-    sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
+    per_page = 10
+    sites, total = list_sites(page=page, per_page=per_page)
 
-    # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
-    # Primero por fecha de registro descendente (los más recientes primero)
-    # En caso de empate, por nombre ascendente (A-Z)
-    # En caso de nuevo empate, por ciudad ascendente (A-Z)
-    sites.sort(
-        key=lambda s: (s.fechaRegistro, s.nombre.lower(), s.ciudad.lower()),
-        reverse=True,
-    )
-
-    # Calcular información de paginación
     total_pages = (total + per_page - 1) // per_page
-    has_prev = page > 1
-    has_next = page < total_pages
-    prev_num = page - 1 if has_prev else None
-    next_num = page + 1 if has_next else None
-
     pagination = {
         "page": page,
         "per_page": per_page,
         "total": total,
         "pages": total_pages,
-        "has_prev": has_prev,
-        "has_next": has_next,
-        "prev_num": prev_num,
-        "next_num": next_num,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_num": page - 1 if page > 1 else None,
+        "next_num": page + 1 if page < total_pages else None,
     }
-
-    cities = [c[0] for c in get_all_cities()]
-    provinces = [p[0] for p in get_all_provinces()]
-
-    return render_template(
-        "sites.html",
-        pagination=pagination,
-        sites=sites,
-        cities=cities,
-        provinces=provinces,
-    )
-
+    return render_template("sites.html", pagination=pagination, sites=sites)
 
 @sites_bp.route("/crear_sitio", methods=["GET", "POST"])
+@require_permission("sites.create")
 def create_site():
     if request.method == "POST":
         try:
-            # Convertir a diccionario normal
-            data = request.form.to_dict()
-
-            # Procesar checkbox
-            data["visible"] = "visible" in request.form
-
-            # 1. Validar datos primero
-            errors = validate_site_data(data)
-            if errors:
-                for field, error_message in errors.items():
-                    flash(f"{field}: {error_message}", "error")
-                return render_template("form.html")
-
+            data = validate_site_data(request.form)
             create_sites(**data)
-            session["success_message"] = "Sitio histórico creado correctamente"
+            flash("Sitio histórico creado correctamente", "success")
             return redirect(url_for("sites.list_all_sites"))
-
+        except ValueError as e:
+            flash(f"Error de validación: {str(e)}", "error")
         except Exception as e:
             flash(f"Error al crear el sitio: {str(e)}", "error")
-
     return render_template("form.html")
 
-
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
-# Mejorada con validación y manejo de errores
+@require_permission("sites.edit")
 def edit_site(id):
     site = get_site(id)
     if not site:
         abort(404)
-
     if request.method == "POST":
         try:
-            # Validar datos
-            data = request.form.to_dict()
-            data["visible"] = "visible" in request.form
-
-            errors = validate_site_data(data)
-            if errors:
-                for field, error_message in errors.items():
-                    flash(f"{field}: {error_message}", "error")
-                return render_template("form.html", site=site)
-
-            # Actualizar
+            data = validate_site_data(request.form)
             update_site(id, **data)
-            session["success_message"] = "Sitio histórico actualizado correctamente"
+            flash("Sitio actualizado correctamente", "success")
             return redirect(url_for("sites.list_all_sites"))
-        except Exception as e:
-            flash(f"Error al crear el sitio: {str(e)}", "error")
-
+        except ValueError as e:
+            flash(str(e), "error")
     return render_template("form.html", site=site)
 
-
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
+@require_permission("sites.delete")
 def delete_site(id):
-    try:
-        # Llama a la función existente
-        delete_site_by_id(id)
-        site = get_site(id)  # Verifica si el sitio aún existe
-        if not site:
-            flash("Sitio eliminado correctamente", "success")
-        else:
-            flash("Sitio no encontrado", "error")
-    except Exception as e:
-        flash(f"Error al eliminar el sitio: {str(e)}", "error")
+    delete_site_model(id)
+    flash("Sitio eliminado correctamente", "success")
     return redirect(url_for("sites.list_all_sites"))
 
-
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
+@require_permission("sites.view")
 def view_site(id):
     site = get_site(id)
-    return render_template("show_site.html", site=site)
-
-
-@sites_bp.route("/exportar_csv", methods=["GET"])
-def export_csv():
-    """Función para exportar los sitios a un archivo CSV."""
-
-    try:
-        query_params = request.args.to_dict()
-
-        with tempfile.NamedTemporaryFile(
-            mode="w+", delete=False, suffix=".csv"
-        ) as temp_csv:
-            export_to_csv(temp_csv.name, filters=query_params)
-            temp_csv.flush()
-
-        # Nombre del archivo: sitios_<YYYYMMDD_HHMM>.csv
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-        download_name = f"sitios_{timestamp}.csv"
-
-        return send_file(
-            temp_csv.name,
-            as_attachment=True,
-            download_name=download_name,
-            mimetype="text/csv",
-        )
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        return jsonify({"error": f"Error al exportar CSV: {str(e)}"}), 500
+    return render_template("view.html", site=site)
