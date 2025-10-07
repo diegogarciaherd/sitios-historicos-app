@@ -1,5 +1,5 @@
-from src.core.models import sites
-from src.core.database import db
+from core.models import sites
+
 from geoalchemy2.elements import WKTElement
 
 def run(): 
