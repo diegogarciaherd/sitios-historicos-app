@@ -2,6 +2,18 @@
 {% block title %}{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}{% endblock %}
 {% block head_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/sites.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style> 
+  #map 
+        {
+        height: 300px; width: 100%; 
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        margin-top: 1em;
+    }
+    
+</style>
 {% endblock %}
 {% block content %}
 <div class="form-container">
@@ -21,8 +33,7 @@
     <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post">
         <div class="form-group">
             <label for="nombre">Nombre *</label>
-            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}" required>
-            <div class="error-message" id="nombre-error"></div>
+            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}" >
         </div>
         
         <div class="form-group">
@@ -50,20 +61,15 @@
             </div>
         </div>
         
-        <div class="form-row">
-            <div class="form-group">
-                <label for="latitud">Latitud *</label>
-                <input type="number" id="latitud" name="latitud" step="any" min="-90" max="90" value="{{ site.latitud if site else '' }}" required>
-                <div class="error-message" id="latitud-error"></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="longitud">Longitud *</label>
-                <input type="number" id="longitud" name="longitud" step="any" min="-180" max="180" value="{{ site.longitud if site else '' }}" required>
-                <div class="error-message" id="longitud-error"></div>
-            </div>
+        <div class="form-group">
+            <label for="localizacion">Localización *</label>
+            <div id="map"></div>
+            <input type="hidden" id="lat" name="lat" value="{{ site.latitud if site else '' }}">
+            <input type="hidden" id="lng" name="lng" value="{{ site.longitud if site else '' }}">
+    
+            <div class="error-message" id="localizacion-error"></div>
         </div>
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label for="estado">Estado de conservación *</label>
@@ -84,8 +90,8 @@
         </div>
         
         <div class="form-group">
-            <label for="categoria_nombre">Categoría *</label>
-            <input type="text" id="categoria_nombre" name="categoria_nombre" value="{{ site.categoria if site else '' }}" required>
+            <label for="categoria">Categoría *</label>
+            <input type="text" id="categoria" name="categoria" value="{{ site.categoria if site else '' }}" required>
             <div class="error-message" id="categoria_nombre-error"></div>
         </div>
         
@@ -107,18 +113,58 @@
 </div>
 
 <script>
-// Validación del lado del cliente
-document.getElementById('siteForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+    // Crear mapa
+    var map = L.map('map').setView([-34.9333, -57.95], 12);
+
+    // Capa base
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 18,
+        minZoom: 3,
+        tileSize: 512,
+        zoomOffset: -1
+    }).addTo(map);
+
+    var marker;
+
+     // Si estamos editando, colocar marcador inicial
+    {% if site and site.latitud and site.longitud %}
+        var initialLat = {{ site.latitud }};
+        var initialLng = {{ site.longitud }};
+        map.setView([initialLat, initialLng], 15);
+        marker = L.marker([initialLat, initialLng]).addTo(map);
+    {% endif %} 
+
+    // Manejo del click en el mapa
+    map.on('click', function(e) { 
+        var lat = e.latlng.lat.toFixed(6);
+        var lng = e.latlng.lng.toFixed(6);
     
-    // Limpiar errores anteriores
-    clearErrors();
+    // Actualizar inputs
+    document.getElementById('lat').value = lat;
+    document.getElementById('lng').value = lng;
+    
+    // Crear o mover marcador
+    if(marker) {
+        marker.setLatLng(e.latlng);
+    } else {
+        marker = L.marker(e.latlng).addTo(map);
+    }
+    });
+
+    // Validación del lado del cliente
+    document.getElementById('siteForm').addEventListener('submit', function(e) {
+      
+        
+        // Limpiar errores anteriores
+        clearErrors();
     
     // Validar campos
-    let isValid = true;
+        let isValid = true;
     
+
     // Validar campos obligatorios
-    const requiredFields = ['nombre', 'descripcionBreve', 'ciudad', 'provincia', 'latitud', 'longitud', 'estado', 'categoria_nombre'];
+    const requiredFields = ['nombre', 'ciudad', 'provincia', 'estado', 'categoria'];
     requiredFields.forEach(field => {
         const input = document.getElementById(field);
         if (!input.value.trim()) {
@@ -128,28 +174,19 @@ document.getElementById('siteForm').addEventListener('submit', function(e) {
     });
     
     // Validar coordenadas
-    const latitud = parseFloat(document.getElementById('latitud').value);
-    const longitud = parseFloat(document.getElementById('longitud').value);
+    const latitud = parseFloat(document.getElementById('localizacion').value);
+    const longitud = parseFloat(document.getElementById('localizacion').value);
     
     if (isNaN(latitud) || latitud < -90 || latitud > 90) {
-        showError('latitud', 'La latitud debe estar entre -90 y 90');
+        showError('localizacion', 'La latitud debe estar entre -90 y 90');
         isValid = false;
     }
     
     if (isNaN(longitud) || longitud < -180 || longitud > 180) {
-        showError('longitud', 'La longitud debe estar entre -180 y 180');
+        showError('localizacion', 'La longitud debe estar entre -180 y 180');
         isValid = false;
     }
     
-    // Validar año de inauguración
-    const año = document.getElementById('añoInauguracion').value;
-    if (año) {
-        const añoNum = parseInt(año);
-        if (isNaN(añoNum) || añoNum < 1000 || añoNum > 2024) {
-            showError('añoInauguracion', 'El año debe estar entre 1000 y 2024');
-            isValid = false;
-        }
-    }
     
     if (isValid) {
         this.submit();
@@ -177,6 +214,7 @@ function clearErrors() {
         input.classList.remove('error');
     });
 }
+
 </script>
 {% endblock %}
 
