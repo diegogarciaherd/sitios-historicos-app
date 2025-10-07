@@ -1,5 +1,6 @@
 from flask_sqlalchemy_lite import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import text 
 
 db = SQLAlchemy()
 
@@ -27,3 +28,12 @@ def seed_db():
 class Base(DeclarativeBase):
     pass
     
+
+def ping_db() -> bool:
+    """Devuelve True si la conexión a la BD responde."""
+    try:
+        db.session.execute(text("SELECT 1"))  # usa la conexión ya inicializada
+        return True
+    except Exception as e:
+        print(f"[DB] Ping fallido: {e}")
+        return False

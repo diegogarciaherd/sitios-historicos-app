@@ -10,6 +10,9 @@ from web.config import config
 from web.controllers.sites import sites_bp
 from web.controllers.tags import tags_bp
 from core.services.auth_service import check_flags
+from core.database import ping_db
+from flask import Flask, request, render_template, session, redirect, url_for, jsonify
+
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -46,6 +49,12 @@ def create_app(env="development", static_folder="../../static"):
     def mantenimiento():
         return render_template("mantenimiento.html")
     
+    @app.route("/health/db")
+    def health_db():
+        ok = database.ping_db()
+        return jsonify(status="ok" if ok else "down"), (200 if ok else 500)
+
+    
     # @app.before_request
     # def before_request():
     #     if check_flags(None) and request.endpoint != 'mantenimiento':
@@ -53,5 +62,14 @@ def create_app(env="development", static_folder="../../static"):
     #     if not check_flags(None) and request.endpoint == 'mantenimiento':
     #         return redirect(url_for('home'))
         
+    @app.route("/health/db")
+    def health_db():
+        ok = ping_db()
+        if ok:
+            return {"status": "ok"}
+        else:
+            return {"status": "error"}, 500
 
     return app
+
+
