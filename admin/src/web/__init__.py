@@ -10,6 +10,7 @@ from web.config import config
 from web.controllers.sites import sites_bp
 from core.services.bcrypt import bcrypt
 from core.services.auth_service import check_flags
+from core.models.user import create_user
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -53,6 +54,5 @@ def create_app(env="development", static_folder="../../static"):
     #         return redirect('/mantenimiento')
     #     if not check_flags(None) and request.endpoint == 'mantenimiento':
     #         return redirect(url_for('home'))
-        
 
     return app

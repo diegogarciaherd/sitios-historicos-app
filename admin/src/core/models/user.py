@@ -28,6 +28,9 @@ def create_user(**kwargs):
         db.session.add(user)
         db.session.commit()
         return True
+    
+def get_user_by_id(id):
+    return db.session.query(User).filter_by(id=id).first()
 
 def read_user_by_email(email):
     return db.session.query(User).filter_by(email=email).first()
@@ -38,10 +41,16 @@ def read_users_by_activeness(active):
 def read_users_by_role(role):
     return db.session.query(User).filter_by(role=role)
 
-def update_value(id, values):
+def update_user(id, values):
     db.session.query(User).filter_by(id=id).update(values)
     db.session.commit()
 
 def delete_user(id):
     db.session.query(User).filter_by(id=id).delete()
     db.session.commit()
+
+def list_all_users(page=1, per_page=10):
+    query = db.session.query(User)
+    total = query.count()
+    users = query.offset((page - 1) * per_page).limit(per_page).all()
+    return users, total
