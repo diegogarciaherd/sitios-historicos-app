@@ -1,62 +1,12 @@
 from flask import Blueprint
-from flask import render_template, flash, abort
+from flask import render_template, flash, abort, session
 from src.core.models.sites import SitioHistorico, EstadoConservacion
-from src.core.models.sites import list_sites, create_sites, update_site, get_site, delete_site
+from src.core.models.sites import list_sites, create_sites, update_site, get_site, delete_site_by_id
 from src.core.database import db
 from flask import request, redirect, url_for
+from .validators.site_validator import validate_site_data
 
 sites_bp = Blueprint('sites', __name__, url_prefix='/sitios', template_folder='../templates/sites') # Define el blueprint para las rutas de sitios
-
-def validate_site_data(form_data, is_update=False):
-    """Valida los datos del formulario de sitios"""
-    errors = []
-    data = {}
-    
-    # Validar campos obligatorios
-    required_fields = ['nombre', 'ciudad', 'provincia', 'latitud', 'longitud', 'estado']
-    for field in required_fields:
-        if not form_data.get(field):
-            errors.append(f"El campo {field} es obligatorio")
-    
-    if errors:
-        raise ValueError("; ".join(errors))
-    
-    # Validar y convertir datos
-    try:
-        data['nombre'] = form_data['nombre'].strip()
-        data['ciudad'] = form_data['ciudad'].strip()
-        data['provincia'] = form_data['provincia'].strip()
-        data['latitud'] = float(form_data['latitud'])
-        data['longitud'] = float(form_data['longitud'])
-        data['estado'] = EstadoConservacion[form_data['estado']]
-    except (ValueError, KeyError) as e:
-        raise ValueError(f"Error en el formato de los datos: {str(e)}")
-    
-    # Validar coordenadas
-    if not (-90 <= data['latitud'] <= 90):
-        raise ValueError("La latitud debe estar entre -90 y 90")
-    if not (-180 <= data['longitud'] <= 180):
-        raise ValueError("La longitud debe estar entre -180 y 180")
-    
-    # Campos opcionales
-    data['descripcionBreve'] = form_data.get('descripcionBreve', '').strip() or None
-    data['descripcionCompleta'] = form_data.get('descripcionCompleta', '').strip() or None
-    data['categoria'] = form_data.get('categoria_nombre', '').strip() or None
-    data['visible'] = 'visible' in form_data
-    
-    # Validar año de inauguración si se proporciona
-    if form_data.get('añoInauguracion'):
-        try:
-            año = int(form_data['añoInauguracion'])
-            if año < 1000 or año > 2024:
-                raise ValueError("El año de inauguración debe estar entre 1000 y 2024")
-            data['añoInauguracion'] = año
-        except ValueError:
-            raise ValueError("El año de inauguración debe ser un número válido")
-    else:
-        data['añoInauguracion'] = None
-    
-    return data
 
 @sites_bp.route('/')
 def list_all_sites():
@@ -83,18 +33,27 @@ def list_all_sites():
     }
     return render_template('sites.html', pagination=pagination, sites=sites)
 
-
-
 @sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
 def create_site():
     if request.method == 'POST':
         try:
-            data = validate_site_data(request.form)
+            # Convertir a diccionario normal
+            data = request.form.to_dict()
+            
+            # Procesar checkbox
+            data['visible'] = 'visible' in request.form
+            
+            # 1. Validar datos primero
+            errors = validate_site_data(data)
+            if errors:
+                for field, error_message in errors.items():
+                    flash(f'{field}: {error_message}', 'error')
+                return render_template('form.html')
+            
             create_sites(**data)
-            flash('Sitio histórico creado correctamente', 'success')
+            session['success_message'] = 'Sitio histórico creado correctamente'
             return redirect(url_for('sites.list_all_sites'))
-        except ValueError as e:
-            flash(f'Error de validación: {str(e)}', 'error')
+            
         except Exception as e:
             flash(f'Error al crear el sitio: {str(e)}', 'error')
 
@@ -110,24 +69,41 @@ def edit_site(id):
     if request.method == 'POST':
         try:
             # Validar datos
-            data = validate_site_data(request.form)
+            data = request.form.to_dict()
+            data['visible'] = 'visible' in request.form
+
+            errors = validate_site_data(data)
+            if errors:
+                for field, error_message in errors.items():
+                    flash(f'{field}: {error_message}', 'error')
+                return render_template('form.html', site=site)
+            
             # Actualizar
-            updated_site = update_site(id, **data)
-            flash('Sitio actualizado correctamente', 'success')
+            update_site(id, **data)
+            session['success_message'] = 'Sitio histórico actualizado correctamente'
             return redirect(url_for('sites.list_all_sites'))
-        except ValidationError as e:
-            flash(str(e), 'error')
+        except Exception as e:
+            flash(f'Error al crear el sitio: {str(e)}', 'error')
     
     return render_template('form.html', site=site)
 
 @sites_bp.route('/eliminar_sitio/<int:id>', methods=['POST'])
 def delete_site(id):
-    delete_site(id)
+    try:
+        # Llama a la función existente
+        delete_site_by_id(id)
+        site = get_site(id) # Verifica si el sitio aún existe
+        if not site:
+            flash('Sitio eliminado correctamente', 'success')
+        else:
+            flash('Sitio no encontrado', 'error')
+    except Exception as e:
+        flash(f'Error al eliminar el sitio: {str(e)}', 'error')
     return redirect(url_for('sites.list_all_sites'))
 
 @sites_bp.route('/ver_sitio/<int:id>', methods=['GET'])
 def view_site(id):
     site = get_site(id)
-    return render_template('view.html', site=site)
+    return render_template('show_site.html', site=site)
 
 
