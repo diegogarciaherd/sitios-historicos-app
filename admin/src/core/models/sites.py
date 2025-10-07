@@ -57,6 +57,22 @@ def list_sites_with_filters(filters, page=1, per_page=10):
             | (SitioHistorico.descripcionBreve.ilike(search_term))
         )
 
+    if "city" in filters and filters["city"]:
+        # El valor de ciudad debe coincidir exactamente (case-insensitive)
+        query = query.filter(SitioHistorico.ciudad.ilike(filters["city"]))
+
+    if "province" in filters and filters["province"]:
+        # El valor de provincia debe coincidir exactamente (case-insensitive)
+        query = query.filter(SitioHistorico.provincia.ilike(filters["province"]))
+
+    if "status" in filters and filters["status"]:
+        # Filtrar por estado de conservación
+        try:
+            estado_enum = EstadoConservacion[filters["status"].upper()]
+            query = query.filter(SitioHistorico.estado == estado_enum)
+        except KeyError:
+            pass  # Si el estado no es válido, no aplicar el filtro
+
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
