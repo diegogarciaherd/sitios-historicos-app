@@ -82,6 +82,15 @@ def list_all_sites():
     # sites, total = list_sites(page=page, per_page=per_page)
     sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
+    # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
+    # Primero por fecha de registro descendente (los más recientes primero)
+    # En caso de empate, por nombre ascendente (A-Z)
+    # En caso de nuevo empate, por ciudad ascendente (A-Z)
+    sites.sort(
+        key=lambda s: (s.fechaRegistro, s.nombre.lower(), s.ciudad.lower()),
+        reverse=True,
+    )
+
     # Calcular información de paginación
     total_pages = (total + per_page - 1) // per_page
     has_prev = page > 1
