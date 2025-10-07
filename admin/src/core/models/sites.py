@@ -73,6 +73,12 @@ def list_sites_with_filters(filters, page=1, per_page=10):
         except KeyError:
             pass  # Si el estado no es válido, no aplicar el filtro
 
+    if "visibility" in filters:
+        # Filtrar por visibilidad
+        # Si visibility esta en los filtros, solo va a estar en false. Si no esta, se asume true.
+        visibility = filters["visibility"].lower() == "true"
+        query = query.filter(SitioHistorico.visible == visibility)
+
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
