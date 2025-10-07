@@ -7,12 +7,15 @@ from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
+from core.models.tags import Tag
 
-class Sites_tags(Base):
-    __tablename__ = "sites_tags"
-    site_id = Column(Integer, ForeignKey("sitios_historicos.id"), primary_key=True)
-    tag_id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
-
+# Tabla de asociación
+sites_tags = Table(
+    'sites_tags',
+    Base.metadata,
+    Column('site_id', Integer, ForeignKey('sitios_historicos.id'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+)
 
 class EstadoConservacion(enum.Enum):
     BUENO = "Bueno"
@@ -38,7 +41,12 @@ class SitioHistorico(Base):
         DateTime, default=datetime.utcnow, nullable=False
     )
 
-    tags = relationship("Tag",secondary='sites_tags', back_populates="sites")
+    tags: Mapped[list["Tag"]] = relationship(
+        "Tag",
+        secondary=sites_tags,
+        backref="sitios_historicos",  # backref en lugar de back_populates
+        lazy="select"
+    )
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     localizacion: Mapped[Geometry] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326), nullable=True

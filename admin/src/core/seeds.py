@@ -1,8 +1,19 @@
 from core.models import sites
-
+from core.models import tags
+from core.models.tags import Tag
+from core.database import db
 from geoalchemy2.elements import WKTElement
 
 def run(): 
+    
+    tags_list = [
+        "Histórico", "Cultural", "Religioso", "Gobierno", "Museo", "Independencia",
+        "Monumento", "Memoria"]
+    
+    # Crear y agregar etiquetas a la base de datos 
+    for tag_name in tags_list: 
+        tags.create_tag(tag_name)
+
 
     def make_point(lat, lon):
         """Devuelve un WKTElement con el orden correcto (lon, lat)."""
@@ -247,6 +258,36 @@ def run():
         categoria="Museo",
         localizacion=make_point(-34.6037, -58.3816)
         )
+
+        # Asociar etiquetas a los sitios creados
+    tags_dict = {tag.name : tag for tag in tags.list_tags()}
+    tags_mapping = {
+        site1: ["Histórico", "Religioso"],
+        site2: ["Cultural", "Histórico"],
+        site3: ["Gobierno", "Histórico"],
+        site4: ["Independencia", "Histórico"],
+        site5: ["Cultural", "Histórico"],
+        site6: ["Museo", "Histórico"],
+        site7: ["Religioso", "Histórico"],
+        site8: ["Histórico"],
+        site9: ["Histórico", "Museo"],
+        site10: ["Patrimonio UNESCO", "Histórico"],
+        site11: ["Gobierno", "Histórico"],
+        site12: ["Monumento", "Histórico"],
+        site13: ["Museo", "Histórico"],
+        site14: ["Religioso", "Histórico"],
+        site15: ["Renovación Urbana", "Cultural"],
+        site16: ["Memoria", "Cultural"],
+        site17: ["Cultural"],
+        site18: ["Plaza Histórica", "Histórico"],
+        site19: ["Cultural"],
+        site20: ["Museo", "Cultural"]
+    }
+    for site, tag_names in tags_mapping.items():
+        associated_tags = [tags_dict[name] for name in tag_names if name in tags_dict]
+        tags.assign_tags(site, associated_tags)
+        # List of all created sites for logging
+    
 
     sites_created = [site1, site2, site3, site4, site5, site6, site7, site8, site9, site10, 
                     site11, site12, site13, site14, site15, site16, site17, site18, site19, site20]

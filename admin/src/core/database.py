@@ -18,7 +18,7 @@ def reset_db():
     print("Database reset complete.")
 
 def seed_db():
-    from src.core import seeds
+    from core import seeds
     print("Seeding database...")
     seeds.run()
     print("Database seeding complete.")
