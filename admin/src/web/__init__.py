@@ -8,6 +8,7 @@ from flask_session import Session
 from core import database
 from web.config import config
 from web.controllers.sites import sites_bp
+from web.controllers.tags import tags_bp
 from core.services.auth_service import check_flags
 
 def create_app(env="development", static_folder="../../static"):
@@ -22,6 +23,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(sites_bp)
     app.register_blueprint(logout_bp)
     app.register_blueprint(login_bp)
+    app.register_blueprint(tags_bp)
 
     @app.route('/')
     def home():
