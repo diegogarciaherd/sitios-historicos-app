@@ -78,6 +78,70 @@ def list_sites(page=1, per_page=10):
     return sites , total
 
 
+def list_sites_with_filters(filters, page=1, per_page=10):
+    """Lista sitios históricos aplicando filtros opcionales."""
+
+    query = db.session.query(SitioHistorico)
+
+    if "search" in filters and filters["search"]:
+        # Búsqueda por texto: El texto debe estar contenido en el nombre del sitio o la descripción breve
+        search_term = f"%{filters['search']}%"
+        query = query.filter(
+            (SitioHistorico.nombre.ilike(search_term))
+            | (SitioHistorico.descripcionBreve.ilike(search_term))
+        )
+
+    if "city" in filters and filters["city"]:
+        # El valor de ciudad debe coincidir exactamente (case-insensitive)
+        query = query.filter(SitioHistorico.ciudad.ilike(filters["city"]))
+
+    if "province" in filters and filters["province"]:
+        # El valor de provincia debe coincidir exactamente (case-insensitive)
+        query = query.filter(SitioHistorico.provincia.ilike(filters["province"]))
+
+    if "status" in filters and filters["status"]:
+        # Filtrar por estado de conservación
+        try:
+            estado_enum = EstadoConservacion[filters["status"].upper()]
+            query = query.filter(SitioHistorico.estado == estado_enum)
+        except KeyError:
+            pass  # Si el estado no es válido, no aplicar el filtro
+
+    if "visibility" in filters:
+        # Filtrar por visibilidad
+        # Si visibility esta en los filtros, solo va a estar en false. Si no esta, se asume true.
+        visibility = filters["visibility"].lower() == "true"
+        query = query.filter(SitioHistorico.visible == visibility)
+
+    if "startDate" in filters and filters["startDate"]:
+        try:
+            start_date = datetime.strptime(filters["startDate"], "%Y-%m-%d")
+            query = query.filter(SitioHistorico.fechaRegistro >= start_date)
+        except ValueError:
+            pass  # Si la fecha no es válida, no aplicar el filtro
+
+    if "endDate" in filters and filters["endDate"]:
+        try:
+            end_date = datetime.strptime(filters["endDate"], "%Y-%m-%d")
+            query = query.filter(SitioHistorico.fechaRegistro <= end_date)
+        except ValueError:
+            pass  # Si la fecha no es válida, no aplicar el filtro
+
+    total = query.count()
+    sites = query.offset((page - 1) * per_page).limit(per_page).all()
+    return sites, total
+
+
+def get_all_provinces():
+    """Devuelve una lista de todas las provincias únicas en la base de datos."""
+    return db.session.query(SitioHistorico.provincia).distinct().all()
+
+
+def get_all_cities():
+    """Devuelve una lista de todas las ciudades únicas en la base de datos."""
+    return db.session.query(SitioHistorico.ciudad).distinct().all()
+
+
 def create_sites(**kwargs):
     # Extraer y convertir coordenadas
     lat = kwargs.pop("lat", None)

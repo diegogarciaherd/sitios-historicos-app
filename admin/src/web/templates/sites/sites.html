@@ -1,264 +1,533 @@
 {% extends "layout.html" %} {% block title %}Sitios Históricos{% endblock %} {%
 block head_styles %}
 <link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/sites.css') }}"
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/sites.css') }}"
 />
 {% endblock %} {% block content %}
 <div class="container">
-    <div class="header-section">
-        <h1>Sitios Históricos</h1>
-    </div>
+	<div class="header-section">
+		<h1>Sitios Históricos</h1>
 
-    <!-- Barra de navegación con acciones -->
-    <nav class="sites-navbar">
-        <div class="navbar-left">
-            <div class="search-container">
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Buscar sitios..."
-                    class="search-input"
-                />
-                <button
-                    type="button"
-                    id="searchBtn"
-                    class="btn btn-info btn-sm"
-                >
-                    <span class="search-icon">🔍</span>
-                </button>
-            </div>
-        </div>
+		<!-- Barra de navegación con acciones -->
+		<nav class="sites-navbar">
+			<div class="search-container">
+				<input
+					type="text"
+					id="searchInput"
+					placeholder="Buscar sitio por nombre, descripcion..."
+					class="search-input"
+				/>
+				<button type="button" id="searchBtn" class="btn btn-info btn-sm">
+					<span class="search-icon">🔍</span>
+				</button>
+			</div>
 
-        <div class="navbar-right">
-            <div class="navbar-actions">
-                <div class="actions-group">
-                    <a
-                        href="{{ url_for('sites.create_site') }}"
-                        class="btn btn-primary"
-                    >
-                        <span class="btn-icon">➕</span>
-                        Crear Sitio
-                    </a>
+			<div class="actions-group">
+				<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
+					<span class="btn-icon">➕</span>
+					Crear Sitio
+				</a>
 
-                    <button
-                        class="btn btn-secondary"
-                        type="button"
-                        id="exportCsvBtn"
-                    >
-                        <span class="btn-icon">📄</span>
-                        Exportar CSV
-                    </button>
-                </div>
-                <div class="view-options">
-                    <button
-                        class="btn btn-outline btn-sm"
-                        id="gridViewBtn"
-                        title="Vista de cuadrícula"
-                    >
-                        <span class="btn-icon">⊞</span>
-                    </button>
-                    <button
-                        class="btn btn-outline btn-sm active"
-                        id="listViewBtn"
-                        title="Vista de lista"
-                    >
-                        <span class="btn-icon">☰</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+				<button class="btn btn-secondary" type="button" id="exportCsvBtn">
+					<span class="btn-icon">📄</span>
+					Exportar CSV
+				</button>
+			</div>
+		</nav>
+	</div>
 
-    {% if sites %}
-    <div class="sites-list">
-        {% for site in sites %}
-        <div class="site-card">
-            <h3>{{ site.nombre }}</h3>
-            <p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
-            {% if site.descripcionBreve %}
-            <p class="description">{{ site.descripcionBreve }}</p>
-            {% endif %}
-            <div class="site-meta">
-                <span class="category"
-                    >{{ site.categoria or 'Sin categoría' }}</span
-                >
-                <span class="estado estado-{{ site.estado
-                 }}">
-                    {{ site.estado }}
-                </span>
+	<div class="filter-container">
+		<div class="filter-row">
+			<div class="filter-selector">
+				<label for="cityFilter">Ciudad:</label>
+				<select id="cityFilter">
+					<option value="all-cities">Todas las ciudades</option>
+					{% for city in cities %}
+					<option value="{{ city }}">{{ city }}</option>
+					{% endfor %}
+				</select>
+			</div>
 
-            </div>
-            <div class="site-actions">
-                <a
-                    href="{{ url_for('sites.view_site', id=site.id) }}"
-                    class="btn btn-sm btn-info"
-                    >Ver</a
-                >
-                <a
-                    href="{{ url_for('sites.edit_site', id=site.id) }}"
-                    class="btn btn-sm btn-warning"
-                    >Editar</a
-                >
-                <form
-                    method="POST"
-                    action="{{ url_for('sites.delete_site', id=site.id) }}"
-                    style="display: inline"
-                    onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
-                >
-                    <button type="submit" class="btn btn-sm btn-danger">
-                        Eliminar
-                    </button>
-                </form>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+			<div class="filter-selector">
+				<label for="provinceFilter">Provincia:</label>
+				<select id="provinceFilter">
+					<option value="all-states">Todas las provincias</option>
+					{% for province in provinces %}
+					<option value="{{ province }}">{{ province }}</option>
+					{% endfor %}
+				</select>
+			</div>
 
-    <!-- Paginación -->
-    {% if pagination.pages > 1 %}
-    <div class="pagination-container">
-        <div class="pagination-info">
-            Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a
-            {{ pagination.page * pagination.per_page if pagination.page *
-            pagination.per_page < pagination.total else pagination.total }} de
-            {{ pagination.total }} sitios
-        </div>
+			<div class="filter-status">
+				<label>Estado de conservacion:</label>
+				<div class="status-buttons" id="statusButtons">
+					<button>Todos</button>
+					<button>Bueno</button>
+					<button>Regular</button>
+					<button>Malo</button>
+				</div>
+			</div>
 
-        <nav class="pagination">
-            <!-- Botón Primera página -->
-            {% if pagination.has_prev %}
-            <a href="?page=1" class="pagination-btn pagination-first"
-                >« Primera</a
-            >
-            {% endif %}
+			<div class="filter-date">
+				<label>Fecha de registro: <span>(Desde - Hasta)</span></label>
+				<div>
+					<input type="date" id="startDate" />
+					<span> - </span>
+					<input type="date" id="endDate" />
+				</div>
+			</div>
+		</div>
 
-            <!-- Botón Página anterior -->
-            {% if pagination.has_prev %}
-            <a
-                href="?page={{ pagination.prev_num }}"
-                class="pagination-btn pagination-prev"
-                >‹ Anterior</a
-            >
-            {% endif %}
+		<div class="filter-row">
+			<div class="filter-status">
+				<label>Tags</label>
+				<div class="status-buttons" id="tagsButtons">
+					<button>Sin tags</button>
+					{% for tag in tags %}
+					<button>{{ tag }}</button>
+					{% endfor %}
+				</div>
+			</div>
 
-            <!-- Números de página -->
-            {% set start_page = [1, pagination.page - 2] | max %} {% set
-            end_page = [pagination.pages, pagination.page + 2] | min %} {% if
-            start_page > 1 %}
-            <span class="pagination-ellipsis">...</span>
-            {% endif %} {% for page_num in range(start_page, end_page + 1) %} {%
-            if page_num == pagination.page %}
-            <span class="pagination-btn pagination-current"
-                >{{ page_num }}</span
-            >
-            {% else %}
-            <a
-                href="?page={{ page_num }}"
-                class="pagination-btn pagination-number"
-                >{{ page_num }}</a
-            >
-            {% endif %} {% endfor %} {% if end_page < pagination.pages %}
-            <span class="pagination-ellipsis">...</span>
-            {% endif %}
+			<label>
+				<input type="checkbox" id="visibilidad" name="visibilidad" />
+				Visibles
+			</label>
+		</div>
+	</div>
 
-            <!-- Botón Página siguiente -->
-            {% if pagination.has_next %}
-            <a
-                href="?page={{ pagination.next_num }}"
-                class="pagination-btn pagination-next"
-                >Siguiente ›</a
-            >
-            {% endif %}
+	<div class="view-options">
+		<p>Resultados: <span id="resultsCount">{{ sites|length }}</span></p>
 
-            <!-- Botón Última página -->
-            {% if pagination.has_next %}
-            <a
-                href="?page={{ pagination.pages }}"
-                class="pagination-btn pagination-last"
-                >Última »</a
-            >
-            {% endif %}
-        </nav>
-    </div>
-    {% endif %} {% else %}
-    <div class="empty-state">
-        <p>No hay sitios cargados.</p>
-        <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
-            >Crear el primer sitio</a
-        >
-    </div>
-    {% endif %}
+		<button class="btn btn-outline btn-sm" id="clearFiltersBtn">
+			Limpiar filtros
+		</button>
+
+		<button
+			class="btn btn-outline btn-sm"
+			id="gridViewBtn"
+			title="Vista de cuadrícula"
+		>
+			<span class="btn-icon">⊞</span>
+		</button>
+		<button
+			class="btn btn-outline btn-sm active"
+			id="listViewBtn"
+			title="Vista de lista"
+		>
+			<span class="btn-icon">☰</span>
+		</button>
+	</div>
+
+	{% if sites %}
+	<div class="sites-list">
+		{% for site in sites %}
+		<div class="site-card">
+			<h3>{{ site.nombre }}</h3>
+			<p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
+			{% if site.descripcionBreve %}
+			<p class="description">{{ site.descripcionBreve }}</p>
+			{% endif %}
+			<div class="site-meta">
+				<span class="category">{{ site.categoria or 'Sin categoría' }}</span>
+				<span class="estado estado-{{ site.estado.value.lower() }}"
+					>{{ site.estado.value }}</span
+				>
+				<span class="category"
+					>Visible: {% if site.visible %}Sí{% else %}No{% endif %}</span
+				>
+			</div>
+			<div class="site-actions">
+				<a
+					href="{{ url_for('sites.view_site', id=site.id) }}"
+					class="btn btn-sm btn-info"
+					>Ver</a
+				>
+				<a
+					href="{{ url_for('sites.edit_site', id=site.id) }}"
+					class="btn btn-sm btn-warning"
+					>Editar</a
+				>
+				<form
+					method="POST"
+					action="{{ url_for('sites.delete_site', id=site.id) }}"
+					style="display: inline"
+					onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
+				>
+					<button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+				</form>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+
+	<!-- Paginación -->
+	{% if pagination.pages > 1 %}
+	<div class="pagination-container">
+		<div class="pagination-info">
+			Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a {{
+			pagination.page * pagination.per_page if pagination.page *
+			pagination.per_page < pagination.total else pagination.total }} de {{
+			pagination.total }} sitios
+		</div>
+
+		<nav class="pagination">
+			<!-- Botón Primera página -->
+			{% if pagination.has_prev %}
+			<a href="?page=1" class="pagination-btn pagination-first">« Primera</a>
+			{% endif %}
+
+			<!-- Botón Página anterior -->
+			{% if pagination.has_prev %}
+			<a
+				href="?page={{ pagination.prev_num }}"
+				class="pagination-btn pagination-prev"
+				>‹ Anterior</a
+			>
+			{% endif %}
+
+			<!-- Números de página -->
+			{% set start_page = [1, pagination.page - 2] | max %} {% set end_page =
+			[pagination.pages, pagination.page + 2] | min %} {% if start_page > 1 %}
+			<span class="pagination-ellipsis">...</span>
+			{% endif %} {% for page_num in range(start_page, end_page + 1) %} {% if
+			page_num == pagination.page %}
+			<span class="pagination-btn pagination-current">{{ page_num }}</span>
+			{% else %}
+			<a href="?page={{ page_num }}" class="pagination-btn pagination-number"
+				>{{ page_num }}</a
+			>
+			{% endif %} {% endfor %} {% if end_page < pagination.pages %}
+			<span class="pagination-ellipsis">...</span>
+			{% endif %}
+
+			<!-- Botón Página siguiente -->
+			{% if pagination.has_next %}
+			<a
+				href="?page={{ pagination.next_num }}"
+				class="pagination-btn pagination-next"
+				>Siguiente ›</a
+			>
+			{% endif %}
+
+			<!-- Botón Última página -->
+			{% if pagination.has_next %}
+			<a
+				href="?page={{ pagination.pages }}"
+				class="pagination-btn pagination-last"
+				>Última »</a
+			>
+			{% endif %}
+		</nav>
+	</div>
+	{% endif %} {% else %}
+	<div class="empty-state">
+		<p>Sin resultados.</p>
+		<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
+			>Crear un sitio</a
+		>
+	</div>
+	{% endif %}
 </div>
 
 <script>
-    // Funcionalidad de la barra de navegación
-    document.addEventListener("DOMContentLoaded", function () {
-        const searchInput = document.getElementById("searchInput");
-        const searchBtn = document.getElementById("searchBtn");
-        const gridViewBtn = document.getElementById("gridViewBtn");
-        const listViewBtn = document.getElementById("listViewBtn");
-        const sitesList = document.querySelector(".sites-list");
-        const siteCards = document.querySelectorAll(".site-card");
+	// ### Funcionalidad para los filtros ###
 
-        // Función para filtrar sitios
-        function filterSites(searchTerm) {
-            siteCards.forEach((card) => {
-                const siteName = card
-                    .querySelector("h3")
-                    .textContent.toLowerCase();
-                const location = card
-                    .querySelector(".location")
-                    .textContent.toLowerCase();
-                const description =
-                    card
-                        .querySelector(".description")
-                        ?.textContent.toLowerCase() || "";
-                const category = card
-                    .querySelector(".category")
-                    .textContent.toLowerCase();
+	// Al cargar la página, establecer los valores de los filtros según los parámetros en la URL
+	window.addEventListener('load', () => {
+		const urlParams = new URLSearchParams(window.location.search)
+		const startDateInput = document.getElementById('startDate')
+		const endDateInput = document.getElementById('endDate')
+		const startDate = urlParams.get('startDate') || ''
+		const endDate = urlParams.get('endDate') || ''
 
-                const matches =
-                    siteName.includes(searchTerm) ||
-                    location.includes(searchTerm) ||
-                    description.includes(searchTerm) ||
-                    category.includes(searchTerm);
+		startDateInput.value = startDate
+		endDateInput.value = endDate
 
-                card.style.display = matches ? "block" : "none";
-            });
+		// Limitar fechas según los parámetros
+		if (startDate && !endDate) {
+			endDateInput.min = startDate
+			endDateInput.max = ''
+		} else if (!startDate && endDate) {
+			startDateInput.max = endDate
+			startDateInput.min = ''
+		} else if (startDate && endDate) {
+			endDateInput.min = startDate
+			startDateInput.max = endDate
+		} else {
+			startDateInput.min = ''
+			startDateInput.max = ''
+			endDateInput.min = ''
+			endDateInput.max = ''
+		}
 
-            // Mostrar mensaje si no hay resultados
-            const visibleCards = Array.from(siteCards).filter(
-                (card) => card.style.display !== "none"
-            );
-            showNoResultsMessage(
-                visibleCards.length === 0 && searchTerm !== ""
-            );
-        }
+		document.getElementById('cityFilter').value =
+			urlParams.get('city') || 'all-cities'
+		document.getElementById('provinceFilter').value =
+			urlParams.get('province') || 'all-states'
+		document.getElementById('searchInput').value = urlParams.get('search') || ''
+		const visibility = urlParams.get('visibility')
+		document.getElementById('visibilidad').checked = visibility !== 'false'
+		const status = urlParams.get('status') || 'Todos'
+		const statusButtons = document.getElementById('statusButtons')
+		statusButtons.querySelectorAll('button').forEach(btn => {
+			if (btn.textContent === status) {
+				btn.classList.add('active')
+			} else {
+				btn.classList.remove('active')
+			}
+		})
+		const tags = urlParams.get('tags') ? urlParams.get('tags').split(',') : []
+		const tagsButtons = document.getElementById('tagsButtons')
+		if (tags.length === 0) {
+			tagsButtons.querySelectorAll('button').forEach(btn => {
+				btn.classList.remove('active')
+			})
+			tagsButtons.querySelector('button').classList.add('active')
+		} else {
+			tagsButtons.querySelectorAll('button').forEach(btn => {
+				if (tags.includes(btn.textContent)) {
+					btn.classList.add('active')
+				} else {
+					btn.classList.remove('active')
+				}
+			})
+		}
+	})
 
-        // Cambio de vista
-        gridViewBtn.addEventListener("click", function () {
-            sitesList.className = "sites-list grid-view";
-            gridViewBtn.classList.add("active");
-            listViewBtn.classList.remove("active");
-            localStorage.setItem("sitesView", "grid");
-        });
+	// Funcion para limpiar los filtros (se ponen en sus valores por defecto) haciendo click en el boton "Limpiar filtros"
+	document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+		// Limpiar filtro de ciudad
+		document.getElementById('cityFilter').value = 'all-cities'
 
-        listViewBtn.addEventListener("click", function () {
-            sitesList.className = "sites-list list-view";
-            listViewBtn.classList.add("active");
-            gridViewBtn.classList.remove("active");
-            localStorage.setItem("sitesView", "list");
-        });
+		// Limpiar filtro de provincia
+		document.getElementById('provinceFilter').value = 'all-states'
 
-        // Cargar vista guardada
-        const savedView = localStorage.getItem("sitesView") || "grid";
-        if (savedView === "list") {
-            listViewBtn.click();
-        } else {
-            gridViewBtn.click();
-        }
-    });
+		// Limpiar filtro de estado de conservacion
+		const statusButtons = document.getElementById('statusButtons')
+		statusButtons.querySelectorAll('button').forEach(btn => {
+			btn.classList.remove('active')
+		})
+		statusButtons.querySelector('button').classList.add('active')
+
+		// Limpiar filtro de fecha
+		document.getElementById('startDate').value = ''
+		document.getElementById('endDate').value = ''
+
+		// Limpiar filtro de Tags
+		const tagsButtons = document.getElementById('tagsButtons')
+		tagsButtons.querySelectorAll('button').forEach(btn => {
+			btn.classList.remove('active')
+		})
+		tagsButtons.querySelector('button').classList.add('active')
+
+		// Limpiar filtro de visibilidad
+		document.getElementById('visibilidad').checked = true
+
+		// Limpiar filtro de busqueda
+		document.getElementById('searchInput').value = ''
+
+		// Recargar la página sin parámetros de filtro en la URL
+		const url = new URL(window.location)
+		url.searchParams.delete('city')
+		url.searchParams.delete('province')
+		url.searchParams.delete('status')
+		url.searchParams.delete('startDate')
+		url.searchParams.delete('endDate')
+		url.searchParams.delete('tags')
+		url.searchParams.delete('visibility')
+		url.searchParams.delete('search')
+		url.searchParams.delete('page') // Reiniciar a la primera página
+		window.location = url.href
+	})
+
+	// Filtro de busqueda
+	document.getElementById('searchBtn').addEventListener('click', () => {
+		const searchTerm = document.getElementById('searchInput').value.trim()
+		// Agregar el filtro a los parámetros de búsqueda en la URL
+		const url = new URL(window.location)
+		if (searchTerm) {
+			url.searchParams.set('search', searchTerm)
+		} else {
+			url.searchParams.delete('search')
+		}
+		url.searchParams.delete('page') // Reiniciar a la primera página
+		window.location = url.href
+	})
+
+	// Filtro de ciudades
+	document.getElementById('cityFilter').addEventListener('change', event => {
+		const selectedCity = event.target.value
+		// Agregar el filtro a los parámetros de búsqueda en la URL
+		const url = new URL(window.location)
+		if (selectedCity === 'all-cities') {
+			url.searchParams.delete('city')
+		} else {
+			url.searchParams.set('city', selectedCity)
+		}
+		url.searchParams.delete('page') // Reiniciar a la primera página
+		window.location = url.href
+	})
+
+	// Filtro de provincias
+	document
+		.getElementById('provinceFilter')
+		.addEventListener('change', event => {
+			const selectedProvince = event.target.value
+			const url = new URL(window.location)
+			if (selectedProvince === 'all-states') {
+				url.searchParams.delete('province')
+			} else {
+				url.searchParams.set('province', selectedProvince)
+			}
+			url.searchParams.delete('page')
+			window.location = url.href
+		})
+
+	// Filtro de estado de conservacion
+	// Solo puede estar activo un boton a la vez
+	document
+		.getElementById('statusButtons')
+		.querySelectorAll('button')
+		.forEach(button => {
+			button.addEventListener('click', () => {
+				const status = button.textContent
+				const url = new URL(window.location)
+				if (status === 'Todos') {
+					url.searchParams.delete('status')
+				} else {
+					url.searchParams.set('status', status)
+				}
+				url.searchParams.delete('page')
+				window.location = url.href
+			})
+		})
+
+	// Filtro de fechas
+	// Al cambiar cualquiera de los dos campos de fecha, se actualizan los parámetros en la URL
+	// Si alguno de los dos campos está vacío, se elimina el parámetro correspondiente
+	// Al cambiar cualquiera de las dos fechas, se debe limitar la otra fecha para que no pueda ser menor/menor a la seleccionada
+	document.getElementById('startDate').addEventListener('change', event => {
+		const startDate = event.target.value
+		const endDateInput = document.getElementById('endDate')
+		if (startDate) {
+			endDateInput.min = startDate
+		} else {
+			endDateInput.min = ''
+		}
+		const url = new URL(window.location)
+		if (startDate) {
+			url.searchParams.set('startDate', startDate)
+		} else {
+			url.searchParams.delete('startDate')
+		}
+		url.searchParams.delete('page') // Reiniciar a la primera página
+		window.location = url.href
+	})
+	document.getElementById('endDate').addEventListener('change', event => {
+		const endDate = event.target.value
+		const startDateInput = document.getElementById('startDate')
+		if (endDate) {
+			startDateInput.max = endDate
+		} else {
+			startDateInput.max = ''
+		}
+		const url = new URL(window.location)
+		if (endDate) {
+			url.searchParams.set('endDate', endDate)
+		} else {
+			url.searchParams.delete('endDate')
+		}
+		url.searchParams.delete('page') // Reiniciar a la primera página
+		window.location = url.href
+	})
+
+	// Filtros de tags
+	// Estos son múltiples, si "Sin tags" está activo, los demás no pueden estarlo
+	// Si alguno de los demás está activo, "Sin tags" no puede estarlo
+	document
+		.getElementById('tagsButtons')
+		.querySelectorAll('button')
+		.forEach(button => {
+			button.addEventListener('click', () => {
+				const tagsButtons = document.getElementById('tagsButtons')
+				const allButton = tagsButtons.querySelector('button')
+				if (button.textContent === 'Sin tags') {
+					tagsButtons.querySelectorAll('button').forEach(btn => {
+						btn.classList.remove('active')
+					})
+					button.classList.add('active')
+				} else {
+					button.classList.toggle('active')
+					allButton.classList.remove('active')
+					const anyActive = Array.from(
+						tagsButtons.querySelectorAll('button')
+					).some(btn => btn !== allButton && btn.classList.contains('active'))
+					if (!anyActive) {
+						allButton.classList.add('active')
+					}
+				}
+
+				// Actualizar los parámetros de la URL
+				const url = new URL(window.location)
+				const activeTags = Array.from(tagsButtons.querySelectorAll('button'))
+					.filter(btn => btn.classList.contains('active') && btn !== allButton)
+					.map(btn => btn.textContent)
+				if (activeTags.length === 0) {
+					url.searchParams.delete('tags')
+				} else {
+					url.searchParams.set('tags', activeTags.join(','))
+				}
+				url.searchParams.delete('page') // Reiniciar a la primera página
+				window.location = url.href
+			})
+		})
+
+	// Filtro de visisibilidad
+	// Si esta en true, no se debe mandar el parametro, si esta en false, se manda visibility=false
+	document.getElementById('visibilidad').addEventListener('change', event => {
+		const isVisible = event.target.checked
+		const url = new URL(window.location)
+		if (isVisible) {
+			url.searchParams.delete('visibility')
+		} else {
+			url.searchParams.set('visibility', 'false')
+		}
+		url.searchParams.delete('page') // Reiniciar a la primera página
+		window.location = url.href
+	})
+
+	// Funcionalidad de la barra de navegación
+	document.addEventListener('DOMContentLoaded', function () {
+		const gridViewBtn = document.getElementById('gridViewBtn')
+		const listViewBtn = document.getElementById('listViewBtn')
+		const sitesList = document.querySelector('.sites-list')
+
+		// Cambio de vista
+		gridViewBtn.addEventListener('click', function () {
+			sitesList.className = 'sites-list grid-view'
+			gridViewBtn.classList.add('active')
+			listViewBtn.classList.remove('active')
+			localStorage.setItem('sitesView', 'grid')
+		})
+
+		listViewBtn.addEventListener('click', function () {
+			sitesList.className = 'sites-list list-view'
+			listViewBtn.classList.add('active')
+			gridViewBtn.classList.remove('active')
+			localStorage.setItem('sitesView', 'list')
+		})
+
+		// Cargar vista guardada
+		const savedView = localStorage.getItem('sitesView') || 'grid'
+		if (savedView === 'list') {
+			listViewBtn.click()
+		} else {
+			gridViewBtn.click()
+		}
+	})
+
     /*
     // Mapa
     var map = L.map('map').setView([-34.9333, -57.95], 12);
@@ -297,49 +566,49 @@ block head_styles %}
 </script>
 
 <style>
-    /* Estilos adicionales para JavaScript */
+	/* Estilos adicionales para JavaScript */
 
-    /* Vista de lista */
-    .sites-list.list-view {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
+	/* Vista de lista */
+	.sites-list.list-view {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
 
-    .sites-list.list-view .site-card {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        gap: 1rem;
-    }
+	.sites-list.list-view .site-card {
+		display: flex;
+		align-items: center;
+		padding: 1rem;
+		gap: 1rem;
+	}
 
-    .sites-list.list-view .site-card h3 {
-        margin: 0;
-        flex: 1;
-    }
+	.sites-list.list-view .site-card h3 {
+		margin: 0;
+		flex: 1;
+	}
 
-    .sites-list.list-view .site-card .location {
-        margin: 0;
-        flex: 1;
-    }
+	.sites-list.list-view .site-card .location {
+		margin: 0;
+		flex: 1;
+	}
 
-    .sites-list.list-view .site-card .site-meta {
-        margin: 0;
-        flex: 1;
-    }
+	.sites-list.list-view .site-card .site-meta {
+		margin: 0;
+		flex: 1;
+	}
 
-    .sites-list.list-view .site-card .site-actions {
-        margin: 0;
-    }
+	.sites-list.list-view .site-card .site-actions {
+		margin: 0;
+	}
 
-    /* Responsive para vista de lista */
-    @media (max-width: 768px) {
-        .sites-list.list-view .site-card {
-            flex-direction: column;
-            align-items: stretch;
-            text-align: center;
-        }
-    }
+	/* Responsive para vista de lista */
+	@media (max-width: 768px) {
+		.sites-list.list-view .site-card {
+			flex-direction: column;
+			align-items: stretch;
+			text-align: center;
+		}
+	}
 </style>
 
 {% endblock %}
