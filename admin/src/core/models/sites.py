@@ -47,6 +47,8 @@ def list_sites(page=1, per_page=10):
 
 
 def list_sites_with_filters(filters, page=1, per_page=10):
+    """Lista sitios históricos aplicando filtros opcionales."""
+
     query = db.session.query(SitioHistorico)
 
     if "search" in filters and filters["search"]:
@@ -96,6 +98,16 @@ def list_sites_with_filters(filters, page=1, per_page=10):
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
+
+
+def get_all_provinces():
+    """Devuelve una lista de todas las provincias únicas en la base de datos."""
+    return db.session.query(SitioHistorico.provincia).distinct().all()
+
+
+def get_all_cities():
+    """Devuelve una lista de todas las ciudades únicas en la base de datos."""
+    return db.session.query(SitioHistorico.ciudad).distinct().all()
 
 
 def create_sites(**kwargs):

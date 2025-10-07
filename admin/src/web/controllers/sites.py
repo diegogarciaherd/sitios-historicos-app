@@ -8,6 +8,8 @@ from src.core.models.sites import (
     update_site,
     get_site,
     delete_site,
+    get_all_cities,
+    get_all_provinces,
 )
 from src.core.database import db
 from flask import request, redirect, url_for
@@ -74,8 +76,6 @@ def validate_site_data(form_data, is_update=False):
 @sites_bp.route("/")
 def list_all_sites():
     query_params = request.args.to_dict()
-    print("--------------------------------")
-    print("Query parameters:", query_params)
 
     page = request.args.get("page", 1, type=int)
     per_page = 25
@@ -99,7 +99,17 @@ def list_all_sites():
         "prev_num": prev_num,
         "next_num": next_num,
     }
-    return render_template("sites.html", pagination=pagination, sites=sites)
+
+    cities = [c[0] for c in get_all_cities()]
+    provinces = [p[0] for p in get_all_provinces()]
+
+    return render_template(
+        "sites.html",
+        pagination=pagination,
+        sites=sites,
+        cities=cities,
+        provinces=provinces,
+    )
 
 
 @sites_bp.route("/crear_sitio", methods=["GET", "POST"])
