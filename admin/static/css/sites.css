@@ -159,11 +159,18 @@
 	}
 }
 
-#categoryButtons {
+#tagsButtons {
 	gap: 0.5rem;
+	max-width: 95%;
+	flex-wrap: wrap;
+	margin-right: 1rem;
 }
 
-#categoryButtons button.active {
+#tagsButtons button {
+	font-size: 0.875rem;
+}
+
+#tagsButtons button.active {
 	background: var(--accent);
 	color: white;
 	border-color: var(--accent);
