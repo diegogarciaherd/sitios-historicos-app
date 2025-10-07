@@ -4,6 +4,7 @@ from core import database
 from web.handlers import error
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
+from web.controllers.adminpanel import adminpanel_bp
 from flask_session import Session
 from core import database
 from web.config import config
@@ -11,6 +12,7 @@ from web.controllers.sites import sites_bp
 from core.services.bcrypt import bcrypt
 from core.services.auth_service import check_flags
 from core.models.user import create_user
+from core.models.userrole import UserRole
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -26,6 +28,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(sites_bp)
     app.register_blueprint(logout_bp)
     app.register_blueprint(login_bp)
+    app.register_blueprint(adminpanel_bp)
 
     @app.route('/')
     def home():
@@ -54,5 +57,34 @@ def create_app(env="development", static_folder="../../static"):
     #         return redirect('/mantenimiento')
     #     if not check_flags(None) and request.endpoint == 'mantenimiento':
     #         return redirect(url_for('home'))
+
+    with app.app_context():
+        pUser = {
+            "email": "public@hotmail.com",
+            "name": "Public",
+            "last_name": "User",
+            "password": "asd123",
+            "active": True,
+            "role": UserRole.PUBLIC
+        }
+        eUser = {
+            "email": "editor@hotmail.com",
+            "name": "Editor",
+            "last_name": "User",
+            "password": "asd123",
+            "active": True,
+            "role": UserRole.EDITOR
+        }
+        admin = {
+            "email": "admin@hotmail.com",
+            "name": "Admin",
+            "last_name": "User",
+            "password": "asd123",
+            "active": True,
+            "role": UserRole.ADMIN
+        }
+        create_user(**pUser)
+        create_user(**eUser)
+        create_user(**admin)
 
     return app

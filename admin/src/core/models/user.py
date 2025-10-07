@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from core.models.userrole import UserRole as Role
 from core.database import db
 from core.services.bcrypt import bcrypt
+from core.database import Base
 
 class User(Base):
     __tablename__ = "users"

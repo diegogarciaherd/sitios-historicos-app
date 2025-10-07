@@ -2,12 +2,16 @@ from flask import Blueprint, request, render_template, flash, redirect, url_for,
 from core.models.userrole import UserRole
 from core.models.user import create_user, read_user_by_email, read_users_by_activeness
 from core.models.user import read_users_by_role, update_user, delete_user, get_user_by_id, list_all_users
+from web.decorators.loginrequired import login_required
+from web.decorators.permissionrequired import role_required
 
-adminpanel_bp = Blueprint("panel-de-admin", "panel-de-admin")
+adminpanel_bp = Blueprint("panel-de-admin", "panel-de-admin", url_prefix="/panel-de-admin", template_folder="../templates")
 
 @adminpanel_bp.route("/", methods=["GET"])
+@login_required
+@role_required(UserRole.ADMIN)
 def admin_panel():
-    pass
+    return render_template("adminpanel.html")
 
 def validate_user_data(form_data: dict, is_update=False) -> dict:
     errors = []
@@ -34,6 +38,8 @@ def validate_user_data(form_data: dict, is_update=False) -> dict:
     return data
 
 @adminpanel_bp.route("/listar-usuarios")
+@login_required
+@role_required(UserRole.ADMIN)
 def list_users() -> str:
     page = request.args.get("page", 1, type=int)
     per_page = 25
@@ -58,6 +64,8 @@ def list_users() -> str:
     return render_template("adminpanel.html", pagination=pagination, users=users)
 
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
+@login_required
+@role_required(UserRole.ADMIN)
 def create_user() -> str:
     if request.method == "POST":
         try:
@@ -73,6 +81,8 @@ def create_user() -> str:
     return render_template("form.html")
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
+@login_required
+@role_required(UserRole.ADMIN)
 def edit_user(id: int) -> str:
     user = get_user_by_id(id)
     if not user:
@@ -90,11 +100,15 @@ def edit_user(id: int) -> str:
     return render_template("form.html", user=user)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
+@login_required
+@role_required(UserRole.ADMIN)
 def del_user(id: int):
     delete_user(id)
     return redirect(url_for("panel-de-admin"))
 
 @adminpanel_bp.route("/ver-usuario/<int:id>", methods=["GET"])
+@login_required
+@role_required(UserRole.ADMIN)
 def view_user(id: int) -> str:
     user = get_user_by_id(id)
     return render_template("viewuser.html", user=user)
