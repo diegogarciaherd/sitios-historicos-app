@@ -134,6 +134,9 @@ block head_styles %}
 				<span class="estado estado-{{ site.estado.value.lower() }}"
 					>{{ site.estado.value }}</span
 				>
+				<span class="category"
+					>Visible: {% if site.visible %}Sí{% else %}No{% endif %}</span
+				>
 			</div>
 			<div class="site-actions">
 				<a
