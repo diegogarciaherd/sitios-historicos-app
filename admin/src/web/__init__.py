@@ -8,7 +8,9 @@ from flask_session import Session
 from core import database
 from web.config import config
 from web.controllers.sites import sites_bp
+from core.services.bcrypt import bcrypt
 from core.services.auth_service import check_flags
+from core.models.user import create_user
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -17,6 +19,8 @@ def create_app(env="development", static_folder="../../static"):
 
     # Initialize database
     database.init_app(app)
+    # Initialize bcrypt
+    bcrypt.init_app(app)
 
     # Register blueprints
     app.register_blueprint(sites_bp)
@@ -25,7 +29,7 @@ def create_app(env="development", static_folder="../../static"):
 
     @app.route('/')
     def home():
-        return render_template("home.html", logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("home.html", logged_user=session['user_email'] if 'user_email' in session else None)
     
     app.register_error_handler(404, error.not_found)
     app.register_error_handler(401, error.unauthorized)
@@ -50,6 +54,5 @@ def create_app(env="development", static_folder="../../static"):
     #         return redirect('/mantenimiento')
     #     if not check_flags(None) and request.endpoint == 'mantenimiento':
     #         return redirect(url_for('home'))
-        
 
     return app

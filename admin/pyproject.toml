@@ -3,7 +3,8 @@ name = "web"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Diego Garcia Herd",email = "diegogarciaherd@hotmail.com.ar"}
+    {name = "Diego Garcia Herd",email = "diegogarciaherd@hotmail.com.ar"},
+    {name = "Valentin Paolini", email = "valenpaolini@hotmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
