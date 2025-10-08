@@ -15,6 +15,8 @@ from core.models.sites import (
 from core.database import db
 from flask import request, redirect, url_for
 from .validators.site_validator import validate_site_data
+from core.models import tags
+from core.models.tags import Tag
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -69,58 +71,56 @@ def list_all_sites():
 
 @sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
 def create_site():
+    all_tags = db.session.query(Tag).all()
+    selected_tag_ids = []
+
     if request.method == "POST":
-        try:
-            # Convertir a diccionario normal
-            data = request.form.to_dict()
-            
-            # Procesar checkbox
-            data['visible'] = 'visible' in request.form
-            
-            # 1. Validar datos primero
-            errors = validate_site_data(data)
-            if errors:
-                for field, error_message in errors.items():
-                    flash(f'{field}: {error_message}', 'error')
-                return render_template('form.html')
-            
-            create_sites(**data)
-            session['success_message'] = 'Sitio histórico creado correctamente'
-            return redirect(url_for('sites.list_all_sites'))
-            
-        except Exception as e:
-            flash(f"Error al crear el sitio: {str(e)}", "error")
+        data = request.form.to_dict()
+        # Manejar checkbox visible
+        data['visible'] = 'visible' in request.form
 
-    return render_template("form.html")
+        tag_ids = request.form.getlist('tags[]')  # Lista de ids seleccionados
+        data.pop('tags[]', None)
+
+        site = create_sites(**data)
+
+        if tag_ids:
+            selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+            tags.assign_tags(site, selected_tags)
+
+        flash("Sitio creado correctamente", "success")
+        return redirect(url_for('sites.list_all_sites'))
+
+    return render_template('form.html', site=None, tags=all_tags, selected_tag_ids=selected_tag_ids)
 
 
-@sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
-# Mejorada con validación y manejo de errores
+@sites_bp.route('/editar_sitio/<int:id>', methods=['GET', 'POST'])
 def edit_site(id):
     site = get_site(id)
     if not site:
         abort(404)
 
+    all_tags = db.session.query(Tag).all()
+    selected_tag_ids = [str(tag.id) for tag in site.tags]
+
     if request.method == "POST":
-        try:
-            # Validar datos
-            data = request.form.to_dict()
-            data['visible'] = 'visible' in request.form
+        data = request.form.to_dict()
+        data['visible'] = 'visible' in request.form
 
-            errors = validate_site_data(data)
-            if errors:
-                for field, error_message in errors.items():
-                    flash(f'{field}: {error_message}', 'error')
-                return render_template('form.html', site=site)
-            
-            # Actualizar
-            update_site(id, **data)
-            session['success_message'] = 'Sitio histórico actualizado correctamente'
-            return redirect(url_for('sites.list_all_sites'))
-        except Exception as e:
-            flash(f'Error al crear el sitio: {str(e)}', 'error')
+        tag_ids = request.form.getlist('tags[]')
+        data.pop('tags[]', None)
 
-    return render_template("form.html", site=site)
+        update_site(id, **data)
+
+        # Actualizar tags
+        selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+        tags.assign_tags(site, selected_tags)
+
+        flash("Sitio actualizado correctamente", "success")
+        return redirect(url_for('sites.list_all_sites'))
+
+    return render_template('form.html', site=site, tags=all_tags, selected_tag_ids=selected_tag_ids)
+
 
 
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])

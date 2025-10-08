@@ -49,10 +49,18 @@ def create_tag(name):
     db.session.commit()
     return tag
 
-def assign_tags(site, tags):
-    site.tags.extend(tags)
+def assign_tags(site, tag_list):
+    """
+    Asigna una lista de objetos Tag a un sitio histórico.
+    """
+    if not site:
+        raise ValueError("El sitio no existe")
+    if not isinstance(tag_list, list):
+        raise ValueError("tag_list debe ser una lista de objetos Tag")
+
+    site.tags.clear()          # Limpiar tags existentes
+    site.tags.extend(tag_list) # Asignar nuevos tags
     db.session.commit()
-    return site 
 
 def list_tags(search=None, page=1, per_page=25):
     """Devuelve los tags, con soporte opcional para búsqueda y paginación."""
@@ -136,3 +144,6 @@ def get_tags(search="", order_by="name_asc", page=1, per_page=10):
     total_pages = (total + per_page - 1) // per_page
 
     return tags, total, total_pages
+
+def get_all_tags():
+    return db.session.query(Tag).order_by(Tag.name.asc()).all()
