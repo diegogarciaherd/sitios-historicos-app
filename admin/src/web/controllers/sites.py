@@ -29,6 +29,20 @@ sites_bp = Blueprint(
 def list_all_sites():
     query_params = request.args.to_dict()
 
+    # Si en los query params estan los filtros de startDate y endDate (ambos), verificar que
+    # startDate <= endDate. Si no, devolver error 400.
+    if "startDate" in query_params and "endDate" in query_params:
+        try:
+            start_date = datetime.strptime(query_params["startDate"], "%Y-%m-%d")
+            end_date = datetime.strptime(query_params["endDate"], "%Y-%m-%d")
+            if start_date > end_date:
+                return (
+                    "La fecha de inicio no puede ser mayor a la fecha de fin.",
+                    400,
+                )
+        except ValueError:
+            return "Formato de fecha inválido. Use YYYY-MM-DD.", 400
+
     page = request.args.get("page", 1, type=int)
     per_page = 25
     # sites, total = list_sites(page=page, per_page=per_page)
