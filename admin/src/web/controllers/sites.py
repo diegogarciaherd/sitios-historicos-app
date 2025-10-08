@@ -18,6 +18,7 @@ from core.database import db
 from flask import request, redirect, url_for
 from .validators.site_validator import validate_site_data
 import tempfile
+from core.models.tags import get_all_tags
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -27,6 +28,20 @@ sites_bp = Blueprint(
 @sites_bp.route("/")
 def list_all_sites():
     query_params = request.args.to_dict()
+
+    # Si en los query params estan los filtros de startDate y endDate (ambos), verificar que
+    # startDate <= endDate. Si no, devolver error 400.
+    if "startDate" in query_params and "endDate" in query_params:
+        try:
+            start_date = datetime.strptime(query_params["startDate"], "%Y-%m-%d")
+            end_date = datetime.strptime(query_params["endDate"], "%Y-%m-%d")
+            if start_date > end_date:
+                return (
+                    "La fecha de inicio no puede ser mayor a la fecha de fin.",
+                    400,
+                )
+        except ValueError:
+            return "Formato de fecha inválido. Use YYYY-MM-DD.", 400
 
     page = request.args.get("page", 1, type=int)
     per_page = 25
@@ -62,6 +77,7 @@ def list_all_sites():
 
     cities = [c[0] for c in get_all_cities()]
     provinces = [p[0] for p in get_all_provinces()]
+    tags = [t.name for t in get_all_tags()]
 
     return render_template(
         "sites.html",
@@ -69,6 +85,7 @@ def list_all_sites():
         sites=sites,
         cities=cities,
         provinces=provinces,
+        tags=tags,
     )
 
 
