@@ -13,9 +13,9 @@ class User(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    active: Mapped[bool] = mapped_column(nullable=False, default=True)
-    role: Mapped[Role] = mapped_column(nullable=False, default=Role.PUBLIC)
-    sys_admin: Mapped[bool] = mapped_column(nullable=False, default=False)    
+    active: Mapped[bool] = mapped_column(nullable=True, default=True)
+    role: Mapped[Role] = mapped_column(nullable=True, default=Role.PUBLIC)
+    sys_admin: Mapped[bool] = mapped_column(nullable=True, default=False)    
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="user",

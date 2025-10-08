@@ -10,6 +10,7 @@ from flask_session import Session
 from core import database
 from web.config import config
 from core.services.auth_service import check_flags
+from core.models.feature_flags import FeatureFlag
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -48,7 +49,7 @@ def create_app(env="development", static_folder="../../static"):
 
     @app.route('/mantenimiento')
     def mantenimiento():
-        return render_template("mantenimiento.html", logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("mantenimiento.html", logged_user=session['user_id'] if 'user_id' in session else None, message=database.db.session.query(FeatureFlag).filter(FeatureFlag.name=="Sistema administrativo").first().message)
     
     @app.before_request
     def before_request():

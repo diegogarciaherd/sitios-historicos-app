@@ -1,22 +1,68 @@
 {% extends "layout.html" %} {% block title %}Flags de Funcionalidad{% endblock
 %} {% block content %}
-<div class="container">
+<div>
     <div class="header-section">
         <h1>Flags de Funcionalidad</h1>
     </div>
 
     {% if feature_flags %}
-    <section class="sites-list">
+    <section class="feature-flags-container">
         {% for feature in feature_flags %}
-        <div class="site-card">
-            <h3>{{ feature.name }}</h3>
-            {% if feature.description %}
-            <p class="description">{{ feature.description }}</p>
-            {% endif %}
-            <p>
-                Última modificación: {{ feature.history.user.email }} {{
-                feature.history.time if feature.history else 'N/A' }}
-            </p>
+        <div class="feature-flag-card">
+            <div class="feature-flag-info">
+                <h3>{{ feature.name }}</h3>
+                {% if feature.description %}
+                <p class="description">{{ feature.description }}</p>
+                {% endif %}
+                <p class="last-modified">
+                    Última modificación: {{ feature.history.user.email }} {{
+                    feature.history.time if feature.history else 'N/A' }}
+                </p>
+            </div>
+            <div class="feature-flag-message">
+                <div
+                    style="
+                        width: 100%;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    "
+                >
+                    <label for="flag-message-{{ feature.id }}">Mensaje:</label>
+                    <p
+                        style="
+                            margin: 0.5rem 0;
+                            display: none;
+                            font-size: 0.7rem;
+                            color: red;
+                        "
+                        id="error-message-{{ feature.id }}"
+                    >
+                        El mensaje no puede estar vacío para activar el flag.
+                    </p>
+                </div>
+                <input
+                    id="flag-message-{{ feature.id }}"
+                    value="{{ feature.message if feature.message else '' }}"
+                    class="message-input"
+                    style="width: 100%"
+                />
+                <div
+                    style="
+                        display: flex;
+                        width: 100%;
+                        justify-content: flex-end;
+                    "
+                >
+                    <button
+                        type="submit"
+                        form="message-feature-form"
+                        id="save-message-{{ feature.id }}"
+                    >
+                        Guardar
+                    </button>
+                </div>
+            </div>
             <label class="switch">
                 <input
                     type="checkbox"
@@ -32,6 +78,7 @@
                 <span class="slider round"></span>
             </label>
         </div>
+        <hr />
         {% endfor %}
         <dialog id="featureFlagModal">
             <form method="dialog">
@@ -40,19 +87,22 @@
                     ¿Estás seguro de que deseas activar este flag?
                     <strong id="feature-flag-name"> </strong>
                 </p>
-                <button class="btn-warning">Cancelar</button>
-                <button
-                    class="btn btn-outline btn-danger"
-                    id="confirm-activate"
-                    form="toggle-feature-form"
-                    type="submit"
-                    onclick="toggleFlag(event)"
-                >
-                    Confirmar
-                </button>
+                <div style="display: flex; gap: 1rem; justify-content: center">
+                    <button class="btn-danger">Cancelar</button>
+                    <button
+                        class="btn btn-outline btn-warning"
+                        id="confirm-activate"
+                        form="toggle-feature-form"
+                        type="submit"
+                        onclick="toggleFlag(event)"
+                    >
+                        Confirmar
+                    </button>
+                </div>
             </form>
         </dialog>
         <form id="toggle-feature-form" method="get"></form>
+        <form id="message-feature-form" method="post"></form>
     </section>
 
     <!-- Paginación -->
@@ -131,23 +181,46 @@
 
 <script>
     function toggleFlag(event) {
+        // Esta función es la que se ejecuta cuando se confirma la activación del flag
         event.preventDefault();
         document.getElementById("toggle-feature-form").submit();
         document.getElementById("featureFlagModal").close();
     }
 
+    // Manejo del modal y validaciones
     document
         .querySelectorAll("[id^='flag-switch-']")
         .forEach(function (element) {
             element.addEventListener("change", function () {
-                const isChecked = this.checked;
                 const flagId = this.getAttribute("data-flag-id").split("-")[0];
+                const isChecked = this.checked;
+
+                // Validación: Si se está activando el flag, el mensaje no puede estar vacío
+                if (
+                    isChecked &&
+                    document
+                        .getElementById("flag-message-" + flagId)
+                        .value.trim() === ""
+                ) {
+                    document.getElementById(
+                        "error-message-" + flagId
+                    ).style.display = "block";
+                    this.checked = !this.checked; // Revertir el cambio
+                    return;
+                }
+
+                // Si pasa la validación, ocultar el mensaje de error
                 const flagName =
                     this.getAttribute("data-flag-id").split("-")[1];
+                document.getElementById(
+                    "error-message-" + flagId
+                ).style.display = "none";
 
+                // Mostrar el modal de confirmación
                 const modal = document.getElementById("featureFlagModal");
                 const form = document.getElementById("toggle-feature-form");
                 form.innerHTML = "";
+                // Con esto le agrego al form invisible del modal la url con el id del flag seleccionado
                 form.setAttribute("action", "toggle_feature_flag/" + flagId);
 
                 const featureFlagName =
@@ -156,52 +229,52 @@
                 modal.showModal();
             });
         });
+
+    // Manejo del guardado del mensaje
+    document
+        .querySelectorAll("[id^='save-message-']")
+        .forEach(function (element) {
+            element.addEventListener("click", function (e) {
+                e.preventDefault();
+
+                // Obtengo el id del flag a partir del id del botón
+                const flagId = this.id.split("-")[2];
+                const message = document.getElementById(
+                    "flag-message-" + flagId
+                ).value;
+
+                // Validación: Si el flag está activado, el mensaje no puede estar vacío
+                if (document.getElementById("flag-switch-" + flagId).checked) {
+                    if (message.trim() === "") {
+                        document.getElementById(
+                            "error-message-" + flagId
+                        ).style.display = "block";
+                        return;
+                    } else {
+                        document.getElementById(
+                            "error-message-" + flagId
+                        ).style.display = "none";
+                    }
+                }
+
+                // Si pasa la validación, ocultar el mensaje de error y enviar el formulario
+                const form = document.getElementById("message-feature-form");
+                form.innerHTML = "";
+                form.setAttribute("action", "editar_flag/" + flagId);
+                // Agrego el input hidden con el mensaje para mandar la información del input. ACLARACIÓN: es rarísimo esto pero como me funcionó lo dejé así
+                const input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "message";
+                input.value = message;
+                form.appendChild(input);
+                form.submit();
+            });
+        });
 </script>
 
-<style>
-    /* Estilos adicionales para JavaScript */
-
-    /* Vista de lista */
-    .sites-list.list-view {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .sites-list.list-view .site-card {
-        display: flex;
-        align-items: center;
-        padding: 1rem;
-        gap: 1rem;
-    }
-
-    .sites-list.list-view .site-card h3 {
-        margin: 0;
-        flex: 1;
-    }
-
-    .sites-list.list-view .site-card .location {
-        margin: 0;
-        flex: 1;
-    }
-
-    .sites-list.list-view .site-card .site-meta {
-        margin: 0;
-        flex: 1;
-    }
-
-    .sites-list.list-view .site-card .site-actions {
-        margin: 0;
-    }
-
-    /* Responsive para vista de lista */
-    @media (max-width: 768px) {
-        .sites-list.list-view .site-card {
-            flex-direction: column;
-            align-items: stretch;
-            text-align: center;
-        }
-    }
-</style>
-
-{% endblock %}
+{% block head_styles %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/feature_flags.css') }}"
+/>
+{% endblock %} {% endblock %}

@@ -22,7 +22,10 @@
             <div class="dropdown">
                 <button class="btn-outline">Cuenta</button>
                 <div class="dropdown-content">
-                    <p class="email">Cuenta: {{ logged_user }}</p>
+                    <p class="email">
+                        Cuenta: {{ logged_user.name }} {{ logged_user.last_name
+                        }} ({{ logged_user.email }})
+                    </p>
                     <a>Ver perfil</a>
                     <a href="/logout">Cerrar sesión</a>
                 </div>

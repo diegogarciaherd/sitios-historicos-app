@@ -1,32 +1,11 @@
-from flask import Blueprint
+from flask import Blueprint, session
 from flask import render_template, flash, abort
+from msgspec import ValidationError
 from core.models.feature_flags import list_feature_flags, create_feature_flag, update_feature_flag, get_feature_flag, delete_feature_flag
 from src.core.database import db
 from flask import request, redirect, url_for
 
 feature_flags_bp = Blueprint('feature_flags', __name__, url_prefix='/feature_flags', template_folder='../templates/feature_flags') # Define el blueprint para las rutas de sitios
-
-def validate_feature_flag_data(form_data, is_update=False):
-    errors = []
-    data = {}
-    
-    # Validar campos obligatorios
-    required_fields = ['name', 'activated']
-    for field in required_fields:
-        if not form_data.get(field):
-            errors.append(f"El campo {field} es obligatorio")
-    
-    if errors:
-        raise ValueError("; ".join(errors))
-    
-    # Validar y convertir datos
-    try:
-        data['name'] = form_data['name'].strip()
-        data['activated'] = form_data['activated'] == 'true'
-    except (ValueError, KeyError) as e:
-        raise ValueError(f"Error en el formato de los datos: {str(e)}")
-    
-    return data
 
 @feature_flags_bp.route('/')
 def list_all_feature_flags():
@@ -51,7 +30,7 @@ def list_all_feature_flags():
         'prev_num': prev_num,
         'next_num': next_num
     }
-    return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags)
+    return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags, logged_user=session.get('user_id'))
 
 @feature_flags_bp.route('/editar_flag/<int:id>', methods=['GET', 'POST'])
 # Mejorada con validación y manejo de errores
@@ -63,7 +42,7 @@ def edit_feature_flag(id):
     if request.method == 'POST':
         try:
             # Validar datos
-            data = validate_feature_flag_data(request.form)
+            data = request.form.to_dict()
             # Actualizar
             updated_feature_flag = update_feature_flag(id, **data)
             flash('Flag de funcionalidad actualizado correctamente', 'success')

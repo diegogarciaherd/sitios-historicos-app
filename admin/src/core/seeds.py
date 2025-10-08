@@ -1,4 +1,4 @@
-from src.core.models import sites
+from src.core.models import sites, feature_flags
 from src.core.database import db
 from geoalchemy2.elements import WKTElement
 def run(): 
@@ -289,3 +289,30 @@ def run():
     print(f"Created {len(sites_created)} sites:")
     for i, site in enumerate(sites_created, 1):
         print(f"{i}. {site.nombre} - {site.ciudad}, {site.provincia}")
+    
+    feature_flag1 = feature_flags.create_feature_flag(
+        name="Sistema administrativo",
+        activated=False,
+        description="Deshabilita el sistema administrativo",
+        user_id=1
+    )
+
+    feature_flag2 = feature_flags.create_feature_flag(
+        name="Sitio público",
+        activated=False,
+        description="Deshabilita el sitio público",
+        user_id=1
+    )
+
+    feature_flag3 = feature_flags.create_feature_flag(
+        name="Reseñas de usuarios",
+        activated=False,
+        description="Deshabilita las reseñas de usuarios",
+        user_id=1
+    )
+
+    feature_flags_created = [feature_flag1, feature_flag2, feature_flag3]
+
+    print(f"Created {len(feature_flags_created)} feature flags:")
+    for i, feature_flag in enumerate(feature_flags_created, 1):
+        print(f"{i}. {feature_flag.name} - {feature_flag.activated}")

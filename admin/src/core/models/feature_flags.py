@@ -1,17 +1,22 @@
 from core.database import Base, db
 from sqlalchemy import ForeignKeyConstraint, Integer, Column, String, Boolean
 from sqlalchemy.orm import Mapped, relationship
-from typing import List
+from flask import session
 
-from core.models.feature_flags_history import FeatureFlagHistory
+from core.models.feature_flags_history import FeatureFlagHistory, create_feature_flag_history, update_feature_flag_history
 
 class FeatureFlag(Base):
     __tablename__ = "feature_flags"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
-    activated = Column(Boolean, nullable=False, default=False)
+    activated = Column(Boolean, nullable=True, default=False)
     description = Column(String, nullable=True)
+    message = Column(String, nullable=True)
+
+    # Se debe guardar el historial del último cambio de la feature flag
     ForeignKeyConstraint(['id'], ['feature_flags_history.id'])
+    
+    # Este relationship permite acceder al historial de cambios de la feature flag directamente desde la instancia de FeatureFlag
     history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="feature_flag",
@@ -33,6 +38,11 @@ def create_feature_flag(**kwargs):
     flag = FeatureFlag(**kwargs)
     db.session.add(flag)
     db.session.commit()
+
+    user_id = kwargs.get('user_id', None) or session.get('user_id').id
+
+    # Creo el historial a la vez que creo el feature flag
+    create_feature_flag_history(flag.id, user_id=user_id)
     return flag
 
 
@@ -41,12 +51,14 @@ def update_feature_flag(id, **kwargs):
     for key, value in kwargs.items():
         setattr(flag, key, value)
     db.session.commit()
+
+    # Actualizo el historial cada vez que actualizo el feature flag
+    update_feature_flag_history(flag.id, session.get('user_id').id)
     return flag
 
 def toggle_feature_flag(id):
     flag = get_feature_flag(id)
-    flag.activated = not flag.activated
-    db.session.commit()
+    update_feature_flag(id, activated=not flag.activated)
     return flag
 
 
