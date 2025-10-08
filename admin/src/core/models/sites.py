@@ -3,18 +3,24 @@ import enum
 from datetime import datetime
 from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
-from sqlalchemy.dialects import postgresql
+from core.models.tags import Tag
 
+# Tabla de asociación
+sites_tags = Table(
+    'sites_tags',
+    Base.metadata,
+    Column('site_id', Integer, ForeignKey('sitios_historicos.id'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+)
 
 class EstadoConservacion(enum.Enum):
     BUENO = "Bueno"
     REGULAR = "Regular"
     MALO = "Malo"
-
 
 class SitioHistorico(Base):
     __tablename__ = "sitios_historicos"
@@ -33,6 +39,13 @@ class SitioHistorico(Base):
     categoria: Mapped[str] = mapped_column(Text, nullable=True)
     fechaRegistro: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
+    )
+
+    tags: Mapped[list["Tag"]] = relationship(
+        "Tag",
+        secondary=sites_tags,
+        backref="sitios_historicos",  # backref en lugar de back_populates
+        lazy="select"
     )
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     localizacion: Mapped[Geometry] = mapped_column(

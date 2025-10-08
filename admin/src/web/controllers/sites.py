@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask import Blueprint, send_file, jsonify
 from flask import render_template, flash, abort, session
-from src.core.models.sites import (
+from core.models.sites import (
     list_sites,
     list_sites_with_filters,
     create_sites,
@@ -14,7 +14,7 @@ from src.core.models.sites import (
     EstadoConservacion,
     export_to_csv,
 )
-from src.core.database import db
+from core.database import db
 from flask import request, redirect, url_for
 from .validators.site_validator import validate_site_data
 import tempfile
