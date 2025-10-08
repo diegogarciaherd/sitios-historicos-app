@@ -12,15 +12,21 @@ tags_bp = Blueprint("tags", __name__, url_prefix="/tags", template_folder="../te
 # Página HTML
 @tags_bp.route("/", methods=["GET"])
 def tags_list():
+    search = request.args.get("search", "")
+    order_by = request.args.get("order_by", "name_asc")
     page = request.args.get("page", 1, type=int)
-    tagsI, total, total_pages = tags.get_tags_paginated(page=page)
+
+    tagsI, total, total_pages = tags.get_tags(search=search, order_by=order_by, page=page)
+
     return render_template(
         "list.html",
         tags=tagsI,
         page=page,
         total_pages=total_pages,
-        logged_user=session.get("user_id")
+        search=search,
+        order_by=order_by
     )
+
 
 # API JSON
 @tags_bp.route("/api", methods=["GET"])
