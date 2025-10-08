@@ -1,58 +1,203 @@
 {% extends "layout.html" %}
+{% block title %}Administración de Tags{% endblock %}
+{% block head_styles %}
+<style>
+/* Contenedor principal */
+.tags-admin-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-top: 2rem;
+}
 
-{% block title %}Tags{% endblock %}
-{% block head_styles %} {% endblock %}
+/* Tarjetas para formulario y tabla */
+.tag-form, .tag-list {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    flex: 1;
+}
+
+/* Títulos */
+.tag-form h2, .tag-list h2 {
+    margin-bottom: 1rem;
+}
+
+/* Tabla estilizada */
+/* Hacer tabla más compacta */
+.tag-list table {
+    font-size: 0.93rem;        /* Reduce el tamaño del texto */
+}
+
+.tag-list th, .tag-list td {
+    padding: 0.35rem 0.5rem;   /* Reduce el padding de celdas */
+}
+
+.tag-list tr {
+    height: 1.5rem;            /* Ajusta altura de fila si hace falta */
+}
+
+.tag-list button, .tag-list a {
+    padding: 0.3rem 0.6rem;    /* Botones más pequeños dentro de la tabla */
+    font-size: 0.75rem;
+}
+
+/* Paginación */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.pagination button.active {
+   
+}
+
+
+
+.btn {
+  background-color: #283a30;
+  border-radius: 8px;
+  border-style: none;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  height: 40px;
+  line-height: 20px;
+  list-style: none;
+  margin: 0;
+  outline: none;
+  padding: 10px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  transition: color 100ms;
+  vertical-align: baseline;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.btn_eliminar {
+  background-color: #E03131;
+  border-radius: 8px;
+  border-style: none;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: inline-block;
+  font-family: "Haas Grot Text R Web", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  height: 40px;
+  line-height: 20px;
+  list-style: none;
+  margin: 0;
+  outline: none;
+  padding: 10px 16px;
+  position: relative;
+  text-align: center;
+  text-decoration: none;
+  transition: color 100ms;
+  vertical-align: baseline;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.button-1:hover,
+.button-1:focus {
+  background-color: #F082AC;
+}
+
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
-    <h1>Tags</h1>
+    <h1>Administración de Tags</h1>
 
     <!-- Mensajes flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+          <div style="background:#f8d7da; padding:0.75rem 1rem; border-radius:0.5rem; margin-bottom:1rem;">
             {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>
         {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <!-- Barra de búsqueda -->
-    <form method="get" action="{{ url_for('tags.tags_list') }}" class="mb-3 d-flex">
-        <input type="text" name="search" class="form-control me-2" placeholder="Buscar tags..." value="{{ request.args.get('search', '') }}">
-        <button type="submit" class="btn btn-primary">Buscar</button>
-    </form>
+    <div class="tags-admin-container">
+        <!-- Formulario -->
+        <div class="tag-form">
+            <h2>Crear nuevo Tag</h2>
+            <form method="post" action="{{ url_for('tags.create_tag') }}">
+                <input type="text" id="name" name="name" placeholder="Nombre del tag" required minlength="3" maxlength="50">
+                <button type="submit" class="btn">Crear</button>
+                <button type="button" class="btn btn-outline" onclick="window.location.href='{{ url_for('tags.tags_list') }}'">Cancelar</button>
+            </form>
+        </div>
 
-    <!-- Botón crear tag -->
-    <a href="{{ url_for('tags.create_tag') }}" class="btn btn-success mb-3">Crear Tag</a>
+        <!-- Lista de tags -->
+        <div class="tag-list">
+            <h2>Lista de Tags</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Slug</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tag in tags %}
+                    <tr>
+                        <td>{{ tag.id }}</td>
+                        <td>{{ tag.name }}</td>
+                        <td>{{ tag.slug }}</td>
+                        <td>
+                            <button class="btn" onclick="window.location.href='{{ url_for('tags.edit_tag_view', tag_id=tag.id) }}'">Editar</button>
+                            <form action="{{ url_for('tags.delete_tag_view', tag_id=tag.id) }}" method="post" style="display:inline;" onsubmit="return confirm('¿Estás seguro?');">
+                                <button type="submit" class="btn_eliminar">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4">No hay tags disponibles.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-    <!-- Tabla de tags -->
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Slug</th>
-                <th>Asignado a sitios</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tag in tags %}
-            <tr>
-                <td>{{ tag.name }}</td>
-                <td>{{ tag.slug }}</td>
-                <td>{{ tag.sitios|length }}</td>
-                <td>
-                    <a href="{{ url_for('tags.edit_tag_view', tag_id=tag.id) }}" class="btn btn-sm btn-primary">Editar</a>
-
-                    <form method="post" action="{{ url_for('tags.delete_tag_view', tag_id=tag.id) }}" style="display:inline-block;" onsubmit="return confirm('¿Estás seguro de eliminar este tag?');">
-                        <button type="submit" class="btn btn-sm btn-danger" {% if tag.sitios|length > 0 %}disabled{% endif %}>Eliminar</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            <!-- Paginación -->
+            <div class="pagination">
+                {% if page > 1 %}
+                    <button class="btn" onclick="window.location.href='{{ url_for('tags.tags_list', page=page-1) }}'">Anterior</button>
+                {% endif %}
+                {% for p in range(1, total_pages + 1) %}
+                    <button class="btn {% if p == page %}active{% endif %}" onclick="window.location.href='{{ url_for('tags.tags_list', page=p) }}'">{{ p }}</button>
+                {% endfor %}
+                {% if page < total_pages %}
+                    <button class="btn" onclick="window.location.href='{{ url_for('tags.tags_list', page=page+1) }}'">Siguiente</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -286,7 +286,6 @@ def run():
     for site, tag_names in tags_mapping.items():
         associated_tags = [tags_dict[name] for name in tag_names if name in tags_dict]
         tags.assign_tags(site, associated_tags)
-        # List of all created sites for logging
     
 
     sites_created = [site1, site2, site3, site4, site5, site6, site7, site8, site9, site10, 
