@@ -18,6 +18,7 @@ from core.database import db
 from flask import request, redirect, url_for
 from .validators.site_validator import validate_site_data
 import tempfile
+from core.models.tags import get_all_tags
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -62,6 +63,7 @@ def list_all_sites():
 
     cities = [c[0] for c in get_all_cities()]
     provinces = [p[0] for p in get_all_provinces()]
+    tags = [t.name for t in get_all_tags()]
 
     return render_template(
         "sites.html",
@@ -69,6 +71,7 @@ def list_all_sites():
         sites=sites,
         cities=cities,
         provinces=provinces,
+        tags=tags,
     )
 
 

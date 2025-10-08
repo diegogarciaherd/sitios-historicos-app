@@ -11,16 +11,18 @@ from core.models.tags import Tag
 
 # Tabla de asociación
 sites_tags = Table(
-    'sites_tags',
+    "sites_tags",
     Base.metadata,
-    Column('site_id', Integer, ForeignKey('sitios_historicos.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+    Column("site_id", Integer, ForeignKey("sitios_historicos.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
 )
+
 
 class EstadoConservacion(enum.Enum):
     BUENO = "Bueno"
     REGULAR = "Regular"
     MALO = "Malo"
+
 
 class SitioHistorico(Base):
     __tablename__ = "sitios_historicos"
@@ -45,7 +47,7 @@ class SitioHistorico(Base):
         "Tag",
         secondary=sites_tags,
         backref="sitios_historicos",  # backref en lugar de back_populates
-        lazy="select"
+        lazy="select",
     )
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     localizacion: Mapped[Geometry] = mapped_column(
@@ -240,6 +242,16 @@ def apply_filters(query, filters):
             query = query.filter(SitioHistorico.fechaRegistro <= end_date)
         except ValueError:
             pass  # Si la fecha no es válida, no aplicar el filtro
+
+    if "tags" in filters and filters["tags"]:
+        # Filtrar por tags (lista de nombres de tags)
+        # Por cada sitio en la query se debe verificar que tenga almenos uno de los tags en la lista filters["tags"]
+
+        # Convertimos los tags a una lista porque es un string separado por comas
+        if isinstance(filters["tags"], str):
+            filters["tags"] = [tag.strip() for tag in filters["tags"].split(",")]
+
+        query = query.filter(SitioHistorico.tags.any(Tag.name.in_(filters["tags"])))
 
     return query
 
