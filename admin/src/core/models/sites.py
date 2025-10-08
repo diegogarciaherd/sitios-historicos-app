@@ -1,13 +1,15 @@
 from core.database import Base, db
 import enum
 from datetime import datetime
-from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum
+from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from core.models.tags import Tag
+from sqlalchemy.dialects import postgresql
+
 
 # Tabla de asociación
 sites_tags = Table(
@@ -259,6 +261,14 @@ def apply_filters(query, filters):
 def export_to_csv(file_path: str, filters: dict = None):
     """Exporta los sitios históricos a un archivo CSV aplicando filtros opcionales usando POSTGRE COPY."""
 
+    tag_subq = (
+        db.session.query(func.string_agg(Tag.name, ", "))
+        .select_from(sites_tags.join(Tag, sites_tags.c.tag_id == Tag.id))
+        .filter(sites_tags.c.site_id == SitioHistorico.id)
+        .correlate(SitioHistorico)  # IMPORTANTE: correlaciona con la tabla externa
+        .scalar_subquery()  # <- convierte la query en expresión escalar
+    )
+
     query = db.session.query(
         SitioHistorico.id,
         SitioHistorico.nombre,
@@ -268,8 +278,10 @@ def export_to_csv(file_path: str, filters: dict = None):
         SitioHistorico.estado,
         SitioHistorico.fechaRegistro,
         SitioHistorico.localizacion,
-        # proximamente incluir tags
+        # A cada sitio le agrego una columna con los tags asociados, separados por comas
+        tag_subq.label("tags"),
     )
+
     query = apply_filters(query, filters)
 
     # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
