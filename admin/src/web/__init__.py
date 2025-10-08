@@ -1,9 +1,5 @@
-# src/web/__init__.py
-<<<<<<< HEAD
+# admin/src/web/__init__.py
 from flask import Flask, render_template, jsonify
-=======
-from flask import Flask, request, render_template, session, redirect, url_for, jsonify
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 from flask_session import Session
 
 from core import database
@@ -14,17 +10,8 @@ from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
 from web.controllers.sites import sites_bp
 
-<<<<<<< HEAD
-# helpers de auth/roles
-from core.services.auth_roles import inject_template_helpers # can(), has_role(), current_user()
-from core.services.auth_roles import load_user # setea g.user
-
-=======
-# helpers de auth/roles:
-from core.services.auth_service import load_user
-from core.services.auth_roles import can as _can, get_logged_user
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-
+# Auth helpers (roles/permisos)
+from core.services.auth_roles import load_user, inject_template_helpers
 
 def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
@@ -34,23 +21,9 @@ def create_app(env="development", static_folder="../../static"):
     # DB
     database.init_app(app)
 
-<<<<<<< HEAD
-    # Auth: cargar user y helpers Jinja
+    # Auth: cargar usuario y helpers para Jinja en cada request
     app.before_request(load_user)
     app.context_processor(inject_template_helpers)
-=======
-    # Cargar usuario en cada request
-    app.before_request(load_user)
-
-    # Inyectar helpers a Jinja: logged_user y can('perm.code')
-    @app.context_processor
-    def inject_auth_helpers():
-        user = get_logged_user()
-        return {
-            "logged_user": user,
-            "can": (lambda code: _can(user, code)),
-        }
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 
     # Blueprints
     app.register_blueprint(sites_bp)

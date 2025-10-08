@@ -1,136 +1,98 @@
-<<<<<<< HEAD
-# src/core/services/auth_roles.py
-=======
-# src/core/services/authz.py
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
+# admin/src/core/services/auth_roles.py
 from functools import wraps
-from flask import g, session, redirect, url_for, flash
+from flask import g, session, abort
 from core.database import db
 from core.models.user import User
 from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
 
-<<<<<<< HEAD
-# --------- helpers de estado ---------
-def current_user():
-    uid = session.get("user_id")
-    return db.session.get(User, uid) if uid else None
+# ---------- Carga del usuario en cada request ----------
+def load_user():
+    """
+    - Lee session["user_id"] (email) y carga g.user
+    - Si está bloqueado/inactivo, deja g.user = None
+    - Calcula y guarda roles y permisos en g
+    """
+    g.user = None
+    g.roles = set()
+    g.perms = set()
 
-=======
+    email = session.get("user_id")
+    if not email:
+        return
 
-# --------- helpers de estado ---------
-def current_user():
-    """Devuelve el usuario logueado o None."""
-    uid = session.get("user_id")
-    return db.session.get(User, uid) if uid else None
+    user = db.session.query(User).filter_by(email=email).first()
+    if not user or not user.active:
+        return
 
+    # Bloqueado?
+    blocked = db.session.query(BlockedUser).filter_by(user_id=user.id).first()
+    if blocked:
+        return
 
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-def is_blocked(user: User) -> bool:
-    if not user:
-        return False
-    return db.session.query(BlockedUser).filter_by(user_id=user.id).first() is not None
-
-<<<<<<< HEAD
-=======
-
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-def has_role(user: User, role_name: str) -> bool:
-    if not user:
-        return False
-    q = (
-        db.session.query(Role)
-        .join(UserRole, UserRole.role_id == Role.id)
-        .filter(UserRole.user_id == user.id, Role.name == role_name)
-        .exists()
+    # Roles del usuario
+    role_ids = (
+        db.session.query(UserRole.role_id)
+        .filter(UserRole.user_id == user.id)
+        .all()
     )
-    return db.session.query(q).scalar()
+    role_ids = {rid for (rid,) in role_ids}
 
-<<<<<<< HEAD
-def has_perm(user: User, perm_code: str) -> bool:
-=======
+    if role_ids:
+        role_names = db.session.query(Role.name).filter(Role.id.in_(role_ids)).all()
+        g.roles = {name for (name,) in role_names}
 
-def has_perm(user: User, perm_code: str) -> bool:
-    """¿Alguno de los roles del usuario tiene este permiso?"""
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-    if not user:
-        return False
-    q = (
-        db.session.query(Permission)
-        .join(RolePermission, RolePermission.permission_id == Permission.id)
-        .join(Role, Role.id == RolePermission.role_id)
-        .join(UserRole, UserRole.role_id == Role.id)
-        .filter(UserRole.user_id == user.id, Permission.code == perm_code)
-        .exists()
-    )
-    return db.session.query(q).scalar()
+        # Permisos por rol
+        perm_ids = (
+            db.session.query(RolePermission.permission_id)
+            .filter(RolePermission.role_id.in_(role_ids))
+            .all()
+        )
+        perm_ids = {pid for (pid,) in perm_ids}
+        if perm_ids:
+            codes = db.session.query(Permission.code).filter(Permission.id.in_(perm_ids)).all()
+            g.perms = {c for (c,) in codes}
 
-<<<<<<< HEAD
-# --------- decoradores ---------
-=======
+    g.user = user
 
-# --------- decoradores para vistas ---------
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-def require_login(view):
-    @wraps(view)
-    def wrapper(*args, **kwargs):
-        if not g.user:
-            flash("Tenés que iniciar sesión.", "error")
-<<<<<<< HEAD
-            return redirect(url_for("login.login"))
-=======
-            return redirect(url_for("login.login"))  # endpoint de tu login_bp
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-        if is_blocked(g.user):
-            session.clear()
-            flash("Tu usuario está bloqueado.", "error")
-            return redirect(url_for("login.login"))
-        return view(*args, **kwargs)
-    return wrapper
 
-<<<<<<< HEAD
-def require_permission(perm_code: str):
-=======
+# ---------- Helpers para usar en Jinja y código ----------
+def has_role(role: str) -> bool:
+    return role in getattr(g, "roles", set())
 
-def require_permission(perm_code: str):
-    """Protege rutas con un permiso concreto, ej: 'sites.edit'."""
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-    def decorator(view):
-        @wraps(view)
+def has_perm(code: str) -> bool:
+    return code in getattr(g, "perms", set())
+
+# Alias común para plantillas
+def can(code: str) -> bool:
+    return has_perm(code)
+
+def inject_template_helpers():
+    """
+    Expone helpers y el usuario logueado a Jinja.
+    """
+    return {
+        "user": getattr(g, "user", None),
+        "logged_user": getattr(g, "user", None),
+        "can": can,
+        "has_role": has_role,
+    }
+
+
+# ---------- Decorador para proteger vistas ----------
+def require_permission(code: str):
+    """
+    Uso:
+        @require_permission("sites.edit")
+        def edit(...):
+            ...
+    """
+    def decorator(fn):
+        @wraps(fn)
         def wrapper(*args, **kwargs):
-            if not g.user:
-                flash("Tenés que iniciar sesión.", "error")
-                return redirect(url_for("login.login"))
-            if not has_perm(g.user, perm_code):
-                flash("No tenés permisos para realizar esta acción.", "error")
-                return redirect(url_for("home"))
-            return view(*args, **kwargs)
+            if not getattr(g, "user", None):
+                abort(401)
+            if not has_perm(code):
+                abort(401)
+            return fn(*args, **kwargs)
         return wrapper
     return decorator
-
-<<<<<<< HEAD
-# --------- integración con Flask ---------
-def load_user():
-    g.user = current_user()
-
-def inject_template_helpers():
-=======
-
-# --------- integración con Flask ---------
-def load_user():
-    """Hook para cargar g.user en cada request."""
-    g.user = current_user()
-    # Si querés forzar salida de bloqueados en cada request, descomentá:
-    # if g.user and is_blocked(g.user):
-    #     session.clear()
-    #     flash("Tu usuario está bloqueado.", "error")
-    #     return redirect(url_for("login.login"))
-
-
-def inject_template_helpers():
-    """Helpers para Jinja: can('perm'), has_role('admin') y current_user."""
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
-    return dict(
-        can=lambda code: has_perm(getattr(g, "user", None), code),
-        has_role=lambda name: has_role(getattr(g, "user", None), name),
-        current_user=lambda: getattr(g, "user", None),
-    )

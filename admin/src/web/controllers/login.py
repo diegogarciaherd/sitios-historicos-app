@@ -10,7 +10,6 @@ def login():
         return render_template("login.html")
     user = authenticate(request.form["email"], request.form["password"])
     if user:
-        session["user_id"] = user.id    # ← IMPORTANTE: guardar el id
+        session["user_id"] = user.email  # usado por load_user()
         return redirect(url_for("home"))
     return render_template("login.html", error="Usuario o clave incorrectos.")
-

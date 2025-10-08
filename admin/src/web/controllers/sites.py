@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # admin/src/web/controllers/sites.py
 from flask import Blueprint, render_template, flash, abort, request, redirect, url_for
 from core.models.sites import (
@@ -7,19 +6,6 @@ from core.models.sites import (
     delete_site as delete_site_model,
 )
 from core.services.auth_roles import require_permission
-=======
-from flask import Blueprint, render_template, flash, abort, request, redirect, url_for
-from core.models.sites import SitioHistorico, EstadoConservacion
-from core.models.sites import list_sites, create_sites, update_site, get_site, delete_site
-from core.database import db
-from core.models.sites import (
-    SitioHistorico, EstadoConservacion,
-    list_sites, create_sites, update_site, get_site,
-    delete_site as delete_site_model,     # evita problemas cnombres
-)
-from core.services.auth_roles import require_login, require_permission  # importa decoradores de permisos y roles
-
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -29,7 +15,7 @@ def validate_site_data(form_data):
     errors = []
     data = {}
 
-    required = ["nombre", "ciudad", "provincia", "latitud", "longitud", "estado"]
+    required = ["nombre", "ciudad", "provincia", "lat", "lng", "estado"]
     for f in required:
         if not form_data.get(f):
             errors.append(f"El campo {f} es obligatorio")
@@ -40,15 +26,15 @@ def validate_site_data(form_data):
         data["nombre"] = form_data["nombre"].strip()
         data["ciudad"] = form_data["ciudad"].strip()
         data["provincia"] = form_data["provincia"].strip()
-        data["latitud"] = float(form_data["latitud"])
-        data["longitud"] = float(form_data["longitud"])
+        data["lat"] = float(form_data["lat"])
+        data["lng"] = float(form_data["lng"])
         data["estado"] = EstadoConservacion[form_data["estado"]]
     except (ValueError, KeyError) as e:
         raise ValueError(f"Error en el formato de los datos: {str(e)}")
 
-    if not (-90 <= data["latitud"] <= 90):
+    if not (-90 <= data["lat"] <= 90):
         raise ValueError("La latitud debe estar entre -90 y 90")
-    if not (-180 <= data["longitud"] <= 180):
+    if not (-180 <= data["lng"] <= 180):
         raise ValueError("La longitud debe estar entre -180 y 180")
 
     data["descripcionBreve"] = form_data.get("descripcionBreve", "").strip() or None
@@ -67,19 +53,10 @@ def validate_site_data(form_data):
     else:
         data["añoInauguracion"] = None
 
-<<<<<<< HEAD
-    # mapeo para create/update
-    required = ["nombre", "ciudad", "provincia", "lat", "lng", "estado"]
-    data["lat"] = float(form_data["lat"])
-    data["lng"] = float(form_data["lng"])
-
+    return data
 
 @sites_bp.route("/")
 @require_permission("sites.view")
-=======
-@sites_bp.route('/')
-@require_permission("sites.view")  # Protege la ruta con el permiso 'sites.view'
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 def list_all_sites():
     page = request.args.get("page", 1, type=int)
     per_page = 10
@@ -98,15 +75,8 @@ def list_all_sites():
     }
     return render_template("sites.html", pagination=pagination, sites=sites)
 
-<<<<<<< HEAD
 @sites_bp.route("/crear_sitio", methods=["GET", "POST"])
 @require_permission("sites.create")
-=======
-
-
-@sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
-@require_permission("sites.create")  # crear sitio requiere permiso
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 def create_site():
     if request.method == "POST":
         try:
@@ -120,16 +90,8 @@ def create_site():
             flash(f"Error al crear el sitio: {str(e)}", "error")
     return render_template("form.html")
 
-<<<<<<< HEAD
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.edit")
-=======
-    return render_template('form.html')
-
-@sites_bp.route('/editar_sitio/<int:id>', methods=['GET', 'POST'])
-@require_permission("sites.edit")  # editar sitio requiere permiso
-# Mejorada con validación y manejo de errores
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 def edit_site(id):
     site = get_site(id)
     if not site:
@@ -137,7 +99,6 @@ def edit_site(id):
     if request.method == "POST":
         try:
             data = validate_site_data(request.form)
-<<<<<<< HEAD
             update_site(id, **data)
             flash("Sitio actualizado correctamente", "success")
             return redirect(url_for("sites.list_all_sites"))
@@ -154,26 +115,6 @@ def delete_site(id):
 
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
 @require_permission("sites.view")
-=======
-            # Actualizar
-            updated_site = update_site(id, **data)
-            flash('Sitio actualizado correctamente', 'success')
-            return redirect(url_for('sites.list_all_sites'))
-        except ValueError as e:         
-            flash(str(e), 'error')
-    
-    return render_template('form.html', site=site)
-
-@sites_bp.route('/eliminar_sitio/<int:id>', methods=['POST'])
-@require_permission("sites.delete")  # eliminar sitio requiere permiso
-def delete_site(id):
-    delete_site_model(id) # usamos el alias del modelo que pusimos en el import
-    flash('Sitio eliminado correctamente', 'success')
-    return redirect(url_for('sites.list_all_sites'))
-
-@sites_bp.route('/ver_sitio/<int:id>', methods=['GET'])
-@require_permission("sites.view")   # ver detalle requiere permiso
->>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 def view_site(id):
     site = get_site(id)
     return render_template("view.html", site=site)
