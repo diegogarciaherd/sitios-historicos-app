@@ -255,4 +255,3 @@ def export_to_csv(file_path: str, filters: dict | None = None):
             cur.copy_expert(sql, csvfile)
         finally:
             cur.close()
-

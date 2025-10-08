@@ -16,6 +16,21 @@
 {% endblock %}
 
 {% block content %}
+
+
+{% set necesita_permiso = 'sites.edit' if site else 'sites.create' %}
+{% if not can(necesita_permiso) %}
+  <div class="container">
+    <h1>Acceso restringido</h1>
+    <p>No tenés permisos para {{ 'editar' if site else 'crear' }} sitios.</p>
+    <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-secondary">Volver</a>
+  </div>
+  {% endblock %}
+  {% exit %} {# Termina el bloque si no tiene permiso #}
+{% endif %}
+
+
+
 <div class="form-container">
   <h1>{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}</h1>
 

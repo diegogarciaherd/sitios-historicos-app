@@ -1,59 +1,58 @@
 # src/core/seeds_roles.py
 from core.database import db
-from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
+from core.models.auth import Role, Permission, RolePermission, UserRole
 from core.models.user import User
 
+def _get_or_create(model, **kwargs):
+    inst = model.query.filter_by(**kwargs).first()
+    if inst: return inst
+    inst = model(**kwargs)
+    db.session.add(inst)
+    db.session.commit()
+    return inst
+
 def run():
-    print("🌱 Seeding roles, permissions, and admin user...")
+    print("🌱 Seeding roles/permissions/admin (idempotente)...")
 
-    # --- Roles ---
-    roles = {
-        "admin": Role(name="admin"),
-        "editor": Role(name="editor"),
-        "viewer": Role(name="viewer")
-    }
+    # Roles
+    admin  = _get_or_create(Role, name="admin")
+    editor = _get_or_create(Role, name="editor")
+    viewer = _get_or_create(Role, name="viewer")
 
-    db.session.add_all(roles.values())
-    db.session.commit()
-
-    # --- Permisos ---
-    permissions = [
-        Permission(code="sites.view"),
-        Permission(code="sites.create"),
-        Permission(code="sites.edit"),
-        Permission(code="sites.delete"),
-        Permission(code="users.manage"),
+    # Permisos
+    perm_codes = [
+        # sitios
+        "sites_index", "sites_show", "sites_create", "sites_update", "sites_destroy",
+        # usuarios (solo admin)
+        "user_index", "user_show", "user_new", "user_update", "user_destroy",
     ]
-    db.session.add_all(permissions)
-    db.session.commit()
+    perms = {c: _get_or_create(Permission, code=c) for c in perm_codes}
 
-    # --- Asignar permisos a roles ---
-    role_perms = [
-        # Admin: todos los permisos
-        *[RolePermission(role_id=roles["admin"].id, permission_id=p.id) for p in permissions],
-        # Editor: solo view, create, edit
-        *[RolePermission(role_id=roles["editor"].id, permission_id=p.id)
-          for p in permissions if p.code in ["sites.view", "sites.create", "sites.edit"]],
-        # Viewer: solo ver
-        RolePermission(role_id=roles["viewer"].id,
-                       permission_id=next(p.id for p in permissions if p.code == "sites.view"))
-    ]
-    db.session.add_all(role_perms)
-    db.session.commit()
+    # Asignación
+    def grant(role, codes):
+        for code in codes:
+            if not RolePermission.query.filter_by(role_id=role.id, permission_id=perms[code].id).first():
+                db.session.add(RolePermission(role_id=role.id, permission_id=perms[code].id))
+        db.session.commit()
 
-    # --- Usuario admin ---
-    admin = User(
-        email="admin@fiorella.com",
-        name="Admin",
-        last_name="Principal",
-        password="admin123",  # NOTA: en producción usar hash
-        active=True
-    )
-    db.session.add(admin)
-    db.session.commit()
+    # admin: todo
+    grant(admin, perm_codes)
+    # editor: sólo sitios (no usuarios)
+    grant(editor, ["sites_index","sites_show","sites_create","sites_update"])
+    # viewer: sólo ver
+    grant(viewer, ["sites_index","sites_show"])
 
-    # --- Asignar rol admin al usuario ---
-    db.session.add(UserRole(user_id=admin.id, role_id=roles["admin"].id))
-    db.session.commit()
+    # usuario admin por defecto
+    admin_user = User.query.filter_by(email="admin@fiorella.com").first()
+    if not admin_user:
+        admin_user = User(
+            email="admin@fiorella.com",
+            name="Admin", last_name="Principal",
+            password="admin123",  # <— recuerda hashear en login/alta!
+            active=True
+        )
+        db.session.add(admin_user); db.session.commit()
+    if not UserRole.query.filter_by(user_id=admin_user.id, role_id=admin.id).first():
+        db.session.add(UserRole(user_id=admin_user.id, role_id=admin.id)); db.session.commit()
 
-    print("✅ Roles, permisos y usuario admin creados correctamente.")
+    print("✅ Listo.")

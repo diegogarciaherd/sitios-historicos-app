@@ -23,6 +23,7 @@ block head_styles %}
 				</button>
 			</div>
 
+<<<<<<< HEAD
 			<div class="actions-group">
 				<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
 					<span class="btn-icon">➕</span>
@@ -58,6 +59,85 @@ block head_styles %}
 					{% endfor %}
 				</select>
 			</div>
+=======
+        <div class="navbar-right">
+            <div class="navbar-actions">
+                <div class="actions-group">
+                    {% if can('sites.create') %}
+                        <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
+                        <span class="btn-icon">➕</span> Crear Sitio
+                        </a>
+                    {% endif %}
+
+                    {% if can('sites.view') %}
+                        <button class="btn btn-secondary" type="button" id="exportCsvBtn">
+                        <span class="btn-icon">📄</span> Exportar CSV
+                        </button>
+                    {% endif %}
+                </div>
+
+                <div class="view-options">
+                    <button
+                        class="btn btn-outline btn-sm"
+                        id="gridViewBtn"
+                        title="Vista de cuadrícula"
+                    >
+                        <span class="btn-icon">⊞</span>
+                    </button>
+                    <button
+                        class="btn btn-outline btn-sm active"
+                        id="listViewBtn"
+                        title="Vista de lista"
+                    >
+                        <span class="btn-icon">☰</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    {% if sites %}
+    <div class="sites-list">
+        {% for site in sites %}
+        <div class="site-card">
+            <h3>{{ site.nombre }}</h3>
+            <p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
+            {% if site.descripcionBreve %}
+            <p class="description">{{ site.descripcionBreve }}</p>
+            {% endif %}
+            <div class="site-meta">
+                <span class="category"
+                    >{{ site.categoria or 'Sin categoría' }}</span
+                >
+                <span class="estado estado-{{ site.estado.value.lower() }}"
+                    >{{ site.estado.value }}</span
+                >
+            </div>
+            <div class="site-actions">
+                {% if can('sites.view') %}
+                    <a href="{{ url_for('sites.view_site', id=site.id) }}" class="btn btn-sm btn-info">Ver</a>
+                {% endif %}
+
+                {# Editar: editores y admins #}
+                {% if can('sites.edit') %}
+                    <a href="{{ url_for('sites.edit_site', id=site.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                {% endif %}
+
+                {# Eliminar: solo admins #}
+                {% if can('sites.delete') %}
+                    <form method="POST"
+                        action="{{ url_for('sites.delete_site', id=site.id) }}"
+                        style="display: inline"
+                        onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')">
+                    <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                    </form>
+                {% endif %}
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+>>>>>>> 1bae15a (agregue decoradores para permisos y bloques de chequeo en las vistas)
 
 			<div class="filter-selector">
 				<label for="provinceFilter">Provincia:</label>

@@ -1,3 +1,4 @@
+# admin/src/core/database.py
 from flask_sqlalchemy_lite import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
@@ -36,3 +37,4 @@ def ping_db() -> bool:
     except Exception as e:
         print(f"[DB] Ping fallido: {e}")
         return False
+
