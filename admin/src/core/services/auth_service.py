@@ -11,5 +11,8 @@ def authenticate(email: str, password: str) -> User:
     return None
 
 def check_flags(user: User):
-    flag = db.session.query(FeatureFlag).filter_by(name="Sitio administrativo").first()
-    return flag.activated if flag else False
+    if user:
+        return not user.sys_admin
+    else:
+        flag = db.session.query(FeatureFlag).filter_by(name="Sistema administrativo").first()
+        return flag.activated if flag else False

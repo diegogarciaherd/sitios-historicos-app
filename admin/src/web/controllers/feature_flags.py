@@ -72,3 +72,14 @@ def edit_feature_flag(id):
             flash(str(e), 'error')
 
     return render_template('form.html', feature_flag=feature_flag)
+
+@feature_flags_bp.route('/toggle_feature_flag/<int:id>', methods=['GET'])
+def toggle_feature_flag(id):
+    feature_flag = get_feature_flag(id)
+    if not feature_flag:
+        abort(404)
+
+    # Alternar el estado del flag
+    new_state = not feature_flag.activated
+    update_feature_flag(id, activated=new_state)
+    return '', 204

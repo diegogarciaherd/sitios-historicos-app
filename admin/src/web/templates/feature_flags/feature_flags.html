@@ -5,89 +5,55 @@
         <h1>Flags de Funcionalidad</h1>
     </div>
 
-    <!-- Barra de navegación con acciones -->
-    <nav class="sites-navbar">
-        <div class="navbar-left">
-            <div class="search-container">
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Buscar sitios..."
-                    class="search-input"
-                />
-                <button
-                    type="button"
-                    id="searchBtn"
-                    class="btn btn-info btn-sm"
-                >
-                    <span class="search-icon">🔍</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="navbar-right">
-            <div class="navbar-actions">
-                <div class="actions-group">
-                    <a
-                        href="{{ url_for('sites.create_site') }}"
-                        class="btn btn-primary"
-                    >
-                        <span class="btn-icon">➕</span>
-                        Crear Sitio
-                    </a>
-
-                    <button
-                        class="btn btn-secondary"
-                        type="button"
-                        id="exportCsvBtn"
-                    >
-                        <span class="btn-icon">📄</span>
-                        Exportar CSV
-                    </button>
-                </div>
-                <div class="view-options">
-                    <button
-                        class="btn btn-outline btn-sm"
-                        id="gridViewBtn"
-                        title="Vista de cuadrícula"
-                    >
-                        <span class="btn-icon">⊞</span>
-                    </button>
-                    <button
-                        class="btn btn-outline btn-sm active"
-                        id="listViewBtn"
-                        title="Vista de lista"
-                    >
-                        <span class="btn-icon">☰</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     {% if feature_flags %}
-    <div class="sites-list">
+    <section class="sites-list">
         {% for feature in feature_flags %}
         <div class="site-card">
             <h3>{{ feature.name }}</h3>
             {% if feature.description %}
             <p class="description">{{ feature.description }}</p>
             {% endif %}
+            <p>
+                Última modificación: {{ feature.history.user.email }} {{
+                feature.history.time if feature.history else 'N/A' }}
+            </p>
             <label class="switch">
                 <input
                     type="checkbox"
                     {%
                     if
-                    feature.enabled
+                    feature.activated
                     %}checked{%
                     endif
                     %}
+                    id="flag-switch-{{ feature.id }}"
+                    data-flag-id="{{ feature.id }}-{{ feature.name }}"
                 />
                 <span class="slider round"></span>
             </label>
         </div>
         {% endfor %}
-    </div>
+        <dialog id="featureFlagModal">
+            <form method="dialog">
+                <h2>Activar Flag de Funcionalidad</h2>
+                <p>
+                    ¿Estás seguro de que deseas activar este flag?
+                    <strong id="feature-flag-name"> </strong>
+                </p>
+                <button class="btn-warning">Cancelar</button>
+                <button
+                    class="btn btn-outline btn-danger"
+                    id="confirm-activate"
+                    form="toggle-feature-form"
+                    type="submit"
+                    onclick="toggleFlag(event)"
+                >
+                    Confirmar
+                </button>
+            </form>
+        </dialog>
+        <form id="toggle-feature-form" method="get"></form>
+    </section>
 
     <!-- Paginación -->
     {% if pagination.pages > 1 %}
@@ -96,7 +62,7 @@
             Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a
             {{ pagination.page * pagination.per_page if pagination.page *
             pagination.per_page < pagination.total else pagination.total }} de
-            {{ pagination.total }} sitios
+            {{ pagination.total }} flags
         </div>
 
         <nav class="pagination">
@@ -157,82 +123,39 @@
     </div>
     {% endif %} {% else %}
     <div class="empty-state">
-        <p>No hay sitios cargados.</p>
-        <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
-            >Crear el primer sitio</a
-        >
+        <p>No hay flags cargados.</p>
+        <a class="btn btn-primary">Crear el primer flag</a>
     </div>
     {% endif %}
 </div>
 
 <script>
-    // Funcionalidad de la barra de navegación
-    document.addEventListener("DOMContentLoaded", function () {
-        const searchInput = document.getElementById("searchInput");
-        const searchBtn = document.getElementById("searchBtn");
-        const gridViewBtn = document.getElementById("gridViewBtn");
-        const listViewBtn = document.getElementById("listViewBtn");
-        const sitesList = document.querySelector(".sites-list");
-        const siteCards = document.querySelectorAll(".site-card");
+    function toggleFlag(event) {
+        event.preventDefault();
+        document.getElementById("toggle-feature-form").submit();
+        document.getElementById("featureFlagModal").close();
+    }
 
-        // Función para filtrar sitios
-        function filterSites(searchTerm) {
-            siteCards.forEach((card) => {
-                const siteName = card
-                    .querySelector("h3")
-                    .textContent.toLowerCase();
-                const location = card
-                    .querySelector(".location")
-                    .textContent.toLowerCase();
-                const description =
-                    card
-                        .querySelector(".description")
-                        ?.textContent.toLowerCase() || "";
-                const category = card
-                    .querySelector(".category")
-                    .textContent.toLowerCase();
+    document
+        .querySelectorAll("[id^='flag-switch-']")
+        .forEach(function (element) {
+            element.addEventListener("change", function () {
+                const isChecked = this.checked;
+                const flagId = this.getAttribute("data-flag-id").split("-")[0];
+                const flagName =
+                    this.getAttribute("data-flag-id").split("-")[1];
 
-                const matches =
-                    siteName.includes(searchTerm) ||
-                    location.includes(searchTerm) ||
-                    description.includes(searchTerm) ||
-                    category.includes(searchTerm);
+                const modal = document.getElementById("featureFlagModal");
+                const form = document.getElementById("toggle-feature-form");
+                form.innerHTML = "";
+                form.setAttribute("action", "toggle_feature_flag/" + flagId);
 
-                card.style.display = matches ? "block" : "none";
+                const featureFlagName =
+                    document.getElementById("feature-flag-name");
+                featureFlagName.textContent = flagName;
+                modal.showModal();
             });
-
-            // Mostrar mensaje si no hay resultados
-            const visibleCards = Array.from(siteCards).filter(
-                (card) => card.style.display !== "none"
-            );
-            showNoResultsMessage(
-                visibleCards.length === 0 && searchTerm !== ""
-            );
-        }
-
-        // Cambio de vista
-        gridViewBtn.addEventListener("click", function () {
-            sitesList.className = "sites-list grid-view";
-            gridViewBtn.classList.add("active");
-            listViewBtn.classList.remove("active");
-            localStorage.setItem("sitesView", "grid");
         });
-
-        listViewBtn.addEventListener("click", function () {
-            sitesList.className = "sites-list list-view";
-            listViewBtn.classList.add("active");
-            gridViewBtn.classList.remove("active");
-            localStorage.setItem("sitesView", "list");
-        });
-
-        // Cargar vista guardada
-        const savedView = localStorage.getItem("sitesView") || "grid";
-        if (savedView === "list") {
-            listViewBtn.click();
-        } else {
-            gridViewBtn.click();
-        }
-    });
 </script>
 
 <style>

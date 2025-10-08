@@ -85,6 +85,11 @@ a {
     color: inherit;
 }
 
+a:hover:not(aside > a) {
+    color: var(--accent);
+    transition: color 0.2s ease;
+}
+
 main p {
     font-size: 1.2rem;
 }
@@ -121,6 +126,16 @@ button {
     transition: color 0.3s ease, transform 0.3s ease;
 }
 
+.btn {
+    background-color: var(--accent);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 1rem 2rem;
+    font-family: var(--font-primary);
+    color: var(--background);
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
 button:hover {
     color: var(--background);
     transform: scale(1.05);
@@ -144,22 +159,48 @@ button:not(.btn-outline):active::after {
     clip-path: circle(100% at 50% 50%);
 }
 
-button.btn-outline {
+.btn-outline {
     background-color: transparent;
     color: var(--foreground);
     border: 2px solid var(--foreground);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-button.btn-outline:hover {
+.btn-outline:hover {
     background-color: var(--foreground);
     color: var(--background);
     transform: none;
 }
 
-button.btn-outline:active {
+.btn-outline:active {
     transform: scale(0.95);
     transition: 0.3s ease;
+}
+
+.btn-danger {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #e74c3c;
+    color: var(--background-accent);
+}
+
+.btn-warning {
+    background-color: #f39c12;
+}
+
+:modal {
+    background-color: var(--background-accent);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    border: none;
+}
+
+dialog::backdrop {
+    transition: background 0.3s ease;
 }
 
 .switch {

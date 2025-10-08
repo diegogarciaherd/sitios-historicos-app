@@ -48,14 +48,14 @@ def create_app(env="development", static_folder="../../static"):
 
     @app.route('/mantenimiento')
     def mantenimiento():
-        return render_template("mantenimiento.html")
+        return render_template("mantenimiento.html", logged_user=session['user_id'] if 'user_id' in session else None)
     
-    # @app.before_request
-    # def before_request():
-    #     if check_flags(None) and request.endpoint != 'mantenimiento':
-    #         return redirect('/mantenimiento')
-    #     if not check_flags(None) and request.endpoint == 'mantenimiento':
-    #         return redirect(url_for('home'))
+    @app.before_request
+    def before_request():
+        if check_flags(session.get('user_id')) and request.endpoint not in ['mantenimiento', 'login.login', 'static', 'logout.logout']:
+            return redirect('/mantenimiento')
+        if not check_flags(None) and request.endpoint == 'mantenimiento':
+            return redirect(url_for('home'))
         
 
     return app

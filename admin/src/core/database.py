@@ -11,6 +11,9 @@ def init_app(app):
 def reset_db():
     from src.core.models.sites import SitioHistorico
     from core.models.user import User
+    from core.models.feature_flags import FeatureFlag
+    from core.models.feature_flags_history import FeatureFlagHistory
+    from core.models.userrole import UserRole
     print("Resetting database...")
     Base.metadata.drop_all(bind=db.engine)
     Base.metadata.create_all(bind=db.engine)
