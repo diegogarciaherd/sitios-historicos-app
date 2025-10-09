@@ -4,7 +4,16 @@ from __future__ import annotations
 from core.services.auth_roles import require_permission  # (tu cambio)
 
 from core.database import db
-from flask import abort, flash, jsonify, request, redirect, send_file, url_for, render_template
+from flask import (
+    abort,
+    flash,
+    jsonify,
+    request,
+    redirect,
+    send_file,
+    url_for,
+    render_template,
+)
 from .validators.site_validator import validate_site_data
 import tempfile
 
@@ -13,7 +22,10 @@ from core.models.sites import (
     export_to_csv,
     list_sites,
     create_sites,
-    list_sites_with_filters, update_site, get_site, delete_site_by_id,  # si existen
+    list_sites_with_filters,
+    update_site,
+    get_site,
+    delete_site_by_id,  # si existen
     get_all_cities,
     get_all_provinces,
 )
@@ -28,23 +40,17 @@ from datetime import datetime
 from flask import Blueprint
 
 sites_bp = Blueprint(
-    "sites",
-    __name__,
-    url_prefix="/sitios",
-    template_folder="../templates/sites"
+    "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
 )
 
 
-# --------------------------------------------------------------------
-# Listado con permisos + validación de fechas (tu rama) + paginación
-# + render completo (development)
-# --------------------------------------------------------------------
-@sites_bp.route("/", methods=["GET"])
+@sites_bp.route("/")
 @require_permission("sites.view")
 def list_all_sites():
     query_params = request.args.to_dict()
 
-    # Validación de fechas si vienen ambas (tu cambio)
+    # Si en los query params estan los filtros de startDate y endDate (ambos), verificar que
+    # startDate <= endDate. Si no, devolver error 400.
     if "startDate" in query_params and "endDate" in query_params:
         try:
             start_date = datetime.strptime(query_params["startDate"], "%Y-%m-%d")
@@ -55,9 +61,8 @@ def list_all_sites():
             return "Formato de fecha inválido. Use YYYY-MM-DD.", 400
 
     page = request.args.get("page", 1, type=int)
-    per_page = 10
-
-    # Pasamos filtros al listado (manteniendo API de development)
+    per_page = 25
+    # sites, total = list_sites(page=page, per_page=per_page)
     sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
     # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
@@ -101,7 +106,7 @@ def list_all_sites():
     )
 
 
-@sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
+@sites_bp.route("/crear_sitio", methods=["GET", "POST"])
 @require_permission("sites.create")
 def create_site():
     all_tags = db.session.query(Tag).all()
@@ -110,10 +115,10 @@ def create_site():
     if request.method == "POST":
         data = request.form.to_dict()
         # Manejar checkbox visible
-        data['visible'] = 'visible' in request.form
+        data["visible"] = "visible" in request.form
 
-        tag_ids = request.form.getlist('tags[]')  # Lista de ids seleccionados
-        data.pop('tags[]', None)
+        tag_ids = request.form.getlist("tags[]")  # Lista de ids seleccionados
+        data.pop("tags[]", None)
 
         site = create_sites(**data)
 
@@ -122,12 +127,14 @@ def create_site():
             tags.assign_tags(site, selected_tags)
 
         flash("Sitio creado correctamente", "success")
-        return redirect(url_for('sites.list_all_sites'))
+        return redirect(url_for("sites.list_all_sites"))
 
-    return render_template('form.html', site=None, tags=all_tags, selected_tag_ids=selected_tag_ids)
+    return render_template(
+        "form.html", site=None, tags=all_tags, selected_tag_ids=selected_tag_ids
+    )
 
 
-@sites_bp.route('/editar_sitio/<int:id>', methods=['GET', 'POST'])
+@sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.create")
 def edit_site(id):
     site = get_site(id)
@@ -139,10 +146,10 @@ def edit_site(id):
 
     if request.method == "POST":
         data = request.form.to_dict()
-        data['visible'] = 'visible' in request.form
+        data["visible"] = "visible" in request.form
 
-        tag_ids = request.form.getlist('tags[]')
-        data.pop('tags[]', None)
+        tag_ids = request.form.getlist("tags[]")
+        data.pop("tags[]", None)
 
         update_site(id, **data)
 
@@ -151,10 +158,11 @@ def edit_site(id):
         tags.assign_tags(site, selected_tags)
 
         flash("Sitio actualizado correctamente", "success")
-        return redirect(url_for('sites.list_all_sites'))
+        return redirect(url_for("sites.list_all_sites"))
 
-    return render_template('form.html', site=site, tags=all_tags, selected_tag_ids=selected_tag_ids)
-
+    return render_template(
+        "form.html", site=site, tags=all_tags, selected_tag_ids=selected_tag_ids
+    )
 
 
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
@@ -163,19 +171,21 @@ def delete_site(id):
     try:
         # Llama a la función existente
         delete_site_by_id(id)
-        site = get_site(id) # Verifica si el sitio aún existe
+        site = get_site(id)  # Verifica si el sitio aún existe
         if not site:
-            flash('Sitio eliminado correctamente', 'success')
+            flash("Sitio eliminado correctamente", "success")
         else:
-            flash('Sitio no encontrado', 'error')
+            flash("Sitio no encontrado", "error")
     except Exception as e:
-        flash(f'Error al eliminar el sitio: {str(e)}', 'error')
-    return redirect(url_for('sites.list_all_sites'))
+        flash(f"Error al eliminar el sitio: {str(e)}", "error")
+    return redirect(url_for("sites.list_all_sites"))
+
 
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
 def view_site(id):
     site = get_site(id)
-    return render_template('show_site.html', site=site)
+    return render_template("show_site.html", site=site)
+
 
 @sites_bp.route("/exportar_csv", methods=["GET"])
 def export_csv():
