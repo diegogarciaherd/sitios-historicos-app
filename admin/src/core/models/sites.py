@@ -1,13 +1,23 @@
 from core.database import Base, db
 import enum
 from datetime import datetime
-from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum
+from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
+from core.models.tags import Tag
 from sqlalchemy.dialects import postgresql
+
+
+# Tabla de asociación
+sites_tags = Table(
+    "sites_tags",
+    Base.metadata,
+    Column("site_id", Integer, ForeignKey("sitios_historicos.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
+)
 
 
 class EstadoConservacion(enum.Enum):
@@ -33,6 +43,13 @@ class SitioHistorico(Base):
     categoria: Mapped[str] = mapped_column(Text, nullable=True)
     fechaRegistro: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
+    )
+
+    tags: Mapped[list["Tag"]] = relationship(
+        "Tag",
+        secondary=sites_tags,
+        backref="sitios_historicos",  # backref en lugar de back_populates
+        lazy="select",
     )
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     localizacion: Mapped[Geometry] = mapped_column(
@@ -228,11 +245,29 @@ def apply_filters(query, filters):
         except ValueError:
             pass  # Si la fecha no es válida, no aplicar el filtro
 
+    if "tags" in filters and filters["tags"]:
+        # Filtrar por tags (lista de nombres de tags)
+        # Por cada sitio en la query se debe verificar que tenga almenos uno de los tags en la lista filters["tags"]
+
+        # Convertimos los tags a una lista porque es un string separado por comas
+        if isinstance(filters["tags"], str):
+            filters["tags"] = [tag.strip() for tag in filters["tags"].split(",")]
+
+        query = query.filter(SitioHistorico.tags.any(Tag.name.in_(filters["tags"])))
+
     return query
 
 
 def export_to_csv(file_path: str, filters: dict = None):
     """Exporta los sitios históricos a un archivo CSV aplicando filtros opcionales usando POSTGRE COPY."""
+
+    tag_subq = (
+        db.session.query(func.string_agg(Tag.name, ", "))
+        .select_from(sites_tags.join(Tag, sites_tags.c.tag_id == Tag.id))
+        .filter(sites_tags.c.site_id == SitioHistorico.id)
+        .correlate(SitioHistorico)  # IMPORTANTE: correlaciona con la tabla externa
+        .scalar_subquery()  # <- convierte la query en expresión escalar
+    )
 
     query = db.session.query(
         SitioHistorico.id,
@@ -243,8 +278,10 @@ def export_to_csv(file_path: str, filters: dict = None):
         SitioHistorico.estado,
         SitioHistorico.fechaRegistro,
         SitioHistorico.localizacion,
-        # proximamente incluir tags
+        # A cada sitio le agrego una columna con los tags asociados, separados por comas
+        tag_subq.label("tags"),
     )
+
     query = apply_filters(query, filters)
 
     # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
