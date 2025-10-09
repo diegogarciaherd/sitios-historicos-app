@@ -1,12 +1,71 @@
 {% extends "layout.html" %}
 {% block title %}{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}{% endblock %}
+
 {% block head_styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/sites.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style> 
+  #map {
+      height: 300px; 
+      width: 100%; 
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      margin-top: 1em;
+  }
+
+  .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.tag-button {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    font-size: 0.9em;
+    transition: 0.2s;
+    user-select: none;
+}
+
+.tag-button input[type="checkbox"] {
+    display: none; /* ocultamos el checkbox real */
+}
+
+.tag-button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+
+  
+</style>
 {% endblock %}
+
 {% block content %}
+
+
+{% set necesita_permiso = 'sites.edit' if site else 'sites.create' %}
+{% if not can(necesita_permiso) %}
+  <div class="container">
+    <h1>Acceso restringido</h1>
+    <p>No tenés permisos para {{ 'editar' if site else 'crear' }} sitios.</p>
+    <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-secondary">Volver</a>
+  </div>
+  {% endblock %}
+  {% exit %} {# Termina el bloque si no tiene permiso #}
+{% endif %}
+
+
+
 <div class="form-container">
     <h1>{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}</h1>
-    
+
     <!-- Mensajes flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -21,49 +80,45 @@
     <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post">
         <div class="form-group">
             <label for="nombre">Nombre *</label>
-            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}" required>
-            <div class="error-message" id="nombre-error"></div>
+            <input type="text" id="nombre" name="nombre" value="{{ site.nombre if site else '' }}">
         </div>
-        
+
         <div class="form-group">
             <label for="descripcionBreve">Descripción breve *</label>
             <textarea id="descripcionBreve" name="descripcionBreve" required>{{ site.descripcionBreve if site else '' }}</textarea>
             <div class="error-message" id="descripcionBreve-error"></div>
         </div>
-        
+
         <div class="form-group">
             <label for="descripcionCompleta">Descripción completa</label>
             <textarea id="descripcionCompleta" name="descripcionCompleta">{{ site.descripcionCompleta if site else '' }}</textarea>
         </div>
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label for="ciudad">Ciudad *</label>
                 <input type="text" id="ciudad" name="ciudad" value="{{ site.ciudad if site else '' }}" required>
                 <div class="error-message" id="ciudad-error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="provincia">Provincia *</label>
                 <input type="text" id="provincia" name="provincia" value="{{ site.provincia if site else '' }}" required>
                 <div class="error-message" id="provincia-error"></div>
             </div>
         </div>
-        
-        <div class="form-row">
-            <div class="form-group">
-                <label for="latitud">Latitud *</label>
-                <input type="number" id="latitud" name="latitud" step="any" min="-90" max="90" value="{{ site.latitud if site else '' }}" required>
-                <div class="error-message" id="latitud-error"></div>
-            </div>
-            
-            <div class="form-group">
-                <label for="longitud">Longitud *</label>
-                <input type="number" id="longitud" name="longitud" step="any" min="-180" max="180" value="{{ site.longitud if site else '' }}" required>
-                <div class="error-message" id="longitud-error"></div>
-            </div>
+
+        <div class="form-group">
+            <label for="localizacion">Localización *</label>
+            <div id="map"></div>
+            <input type="hidden" id="lat" name="lat" value="{{ site.latitud if site else '' }}">
+            <input type="hidden" id="lng" name="lng" value="{{ site.longitud if site else '' }}">
+            <div class="error-message" id="localizacion-error"></div>
         </div>
-        
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
         <div class="form-row">
             <div class="form-group">
                 <label for="estado">Estado de conservación *</label>
@@ -75,20 +130,20 @@
                 </select>
                 <div class="error-message" id="estado-error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="añoInauguracion">Año de inauguración</label>
                 <input type="number" id="añoInauguracion" name="añoInauguracion" min="1000" max="2024" value="{{ site.añoInauguracion if site and site.añoInauguracion else '' }}">
                 <div class="error-message" id="añoInauguracion-error"></div>
             </div>
         </div>
-        
+
         <div class="form-group">
-            <label for="categoria_nombre">Categoría *</label>
-            <input type="text" id="categoria_nombre" name="categoria_nombre" value="{{ site.categoria if site else '' }}" required>
+            <label for="categoria">Categoría *</label>
+            <input type="text" id="categoria" name="categoria" value="{{ site.categoria if site else '' }}" required>
             <div class="error-message" id="categoria_nombre-error"></div>
         </div>
-        
+
         <div class="form-group">
             <label class="checkbox-label">
                 <input type="checkbox" name="visible" {% if site and site.visible %}checked{% endif %}>
@@ -96,7 +151,21 @@
                 Visible
             </label>
         </div>
-        
+
+        <div class="form-group">
+    <label>Tags</label>
+    <div class="tags-container">
+        {% for tag in tags %}
+        <label class="tag-button {% if selected_tag_ids and (tag.id|string) in selected_tag_ids %}active{% endif %}">
+            <input type="checkbox" name="tags[]" value="{{ tag.id }}" {% if selected_tag_ids and (tag.id|string) in selected_tag_ids %}checked{% endif %}>
+            {{ tag.name }}
+        </label>
+        {% endfor %}
+    </div>
+</div>
+
+             
+
         <div class="form-actions">
             <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary">
@@ -107,76 +176,82 @@
 </div>
 
 <script>
-// Validación del lado del cliente
-document.getElementById('siteForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    // Limpiar errores anteriores
-    clearErrors();
-    
-    // Validar campos
-    let isValid = true;
-    
-    // Validar campos obligatorios
-    const requiredFields = ['nombre', 'descripcionBreve', 'ciudad', 'provincia', 'latitud', 'longitud', 'estado', 'categoria_nombre'];
-    requiredFields.forEach(field => {
-        const input = document.getElementById(field);
-        if (!input.value.trim()) {
-            showError(field, 'Este campo es obligatorio');
-            isValid = false;
+    var map = L.map('map').setView([-34.9333, -57.95], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 18,
+        minZoom: 3,
+        tileSize: 512,
+        zoomOffset: -1
+    }).addTo(map);
+
+    var marker;
+    {% if site and site.latitud and site.longitud %}
+        var initialLat = {{ site.latitud }};
+        var initialLng = {{ site.longitud }};
+        map.setView([initialLat, initialLng], 15);
+        marker = L.marker([initialLat, initialLng]).addTo(map);
+    {% endif %}
+
+    map.on('click', function(e) {
+        var lat = e.latlng.lat.toFixed(6);
+        var lng = e.latlng.lng.toFixed(6);
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
+        if(marker) {
+            marker.setLatLng(e.latlng);
+        } else {
+            marker = L.marker(e.latlng).addTo(map);
         }
     });
-    
-    // Validar coordenadas
-    const latitud = parseFloat(document.getElementById('latitud').value);
-    const longitud = parseFloat(document.getElementById('longitud').value);
-    
-    if (isNaN(latitud) || latitud < -90 || latitud > 90) {
-        showError('latitud', 'La latitud debe estar entre -90 y 90');
-        isValid = false;
-    }
-    
-    if (isNaN(longitud) || longitud < -180 || longitud > 180) {
-        showError('longitud', 'La longitud debe estar entre -180 y 180');
-        isValid = false;
-    }
-    
-    // Validar año de inauguración
-    const año = document.getElementById('añoInauguracion').value;
-    if (año) {
-        const añoNum = parseInt(año);
-        if (isNaN(añoNum) || añoNum < 1000 || añoNum > 2024) {
-            showError('añoInauguracion', 'El año debe estar entre 1000 y 2024');
+
+    document.getElementById('siteForm').addEventListener('submit', function(e) {
+        clearErrors();
+        let isValid = true;
+        const requiredFields = ['nombre', 'ciudad', 'provincia', 'estado', 'categoria'];
+        requiredFields.forEach(field => {
+            const input = document.getElementById(field);
+            if (!input.value.trim()) {
+                showError(field, 'Este campo es obligatorio');
+                isValid = false;
+            }
+        });
+
+        const latitud = parseFloat(document.getElementById('lat').value);
+        const longitud = parseFloat(document.getElementById('lng').value);
+        if (isNaN(latitud) || latitud < -90 || latitud > 90) {
+            showError('localizacion', 'La latitud debe estar entre -90 y 90');
             isValid = false;
         }
+        if (isNaN(longitud) || longitud < -180 || longitud > 180) {
+            showError('localizacion', 'La longitud debe estar entre -180 y 180');
+            isValid = false;
+        }
+
+        if (!isValid) e.preventDefault();
+    });
+
+    function showError(fieldId, message) {
+        const errorElement = document.getElementById(fieldId + '-error');
+        if(errorElement){
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+        const input = document.getElementById(fieldId);
+        if(input) input.classList.add('error');
     }
-    
-    if (isValid) {
-        this.submit();
+
+    function clearErrors() {
+        document.querySelectorAll('.error-message').forEach(el => { el.textContent=''; el.style.display='none'; });
+        document.querySelectorAll('.form-group input, .form-group textarea, .form-group select').forEach(input => input.classList.remove('error'));
     }
+
+    document.querySelectorAll('.tag-button').forEach(label => {
+    label.addEventListener('click', function() {
+        const checkbox = this.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+        this.classList.toggle('active', checkbox.checked);
+    });
 });
-
-function showError(fieldId, message) {
-    const errorElement = document.getElementById(fieldId + '-error');
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-    
-    const input = document.getElementById(fieldId);
-    input.classList.add('error');
-}
-
-function clearErrors() {
-    const errorElements = document.querySelectorAll('.error-message');
-    errorElements.forEach(element => {
-        element.textContent = '';
-        element.style.display = 'none';
-    });
-    
-    const inputs = document.querySelectorAll('.form-group input, .form-group textarea, .form-group select');
-    inputs.forEach(input => {
-        input.classList.remove('error');
-    });
-}
 </script>
 {% endblock %}
-
