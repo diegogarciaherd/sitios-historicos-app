@@ -1,4 +1,6 @@
 from core.models.sites import SitioHistorico, EstadoConservacion
+from core.models import sites
+from core.models import tags
 from core.models.tags import Tag
 from core.database import db
 from geoalchemy2.elements import WKTElement

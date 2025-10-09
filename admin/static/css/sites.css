@@ -108,6 +108,24 @@
 	gap: 0.5rem;
 }
 
+.exportCsvBtn {
+	display: inline-flex;
+	gap: 0.5rem;
+	align-items: center;
+	padding: 1rem;
+	border: 1px solid #ddd;
+	background-color: var(--accent);
+	color: white;
+	font-size: 1rem;
+	text-decoration: none;
+	border-radius: 1rem;
+	transition: all 0.3s ease;
+
+	&:hover {
+		transform: scale(1.05);
+	}
+}
+
 .filter-selector select {
 	padding: 0.5rem 1rem;
 	border: 1px solid #ddd;
@@ -173,9 +191,10 @@
 
 #tagsButtons {
 	gap: 0.5rem;
-	max-width: 95%;
+	width: 100%;
+	display: flex;
 	flex-wrap: wrap;
-	margin-right: 1rem;
+	margin-bottom: 1rem;
 }
 
 #tagsButtons button {
