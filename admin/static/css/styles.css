@@ -429,6 +429,60 @@ input:checked + .slider:before {
 
 /* Fin de tarjeta del login */
 
+/* Formulario para creacion y edicion de usuarios */
+
+.user-form {
+    background: white;
+    padding: 2rem 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    width: 550px;
+    text-align: center;
+    margin-left: 30%;
+}
+
+.user-form-field {    
+    text-align: left;
+    margin-bottom: 1.2rem;
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-form label {
+    display: block;
+    font-weight: 500;
+    color: #444;
+    margin-bottom: 0.4rem;
+}
+
+.user-form input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.custom-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.user-form-field:focus {
+    border-color: #0078ff;
+    outline: none;
+    box-shadow: 0 0 6px rgba(0, 120, 255, 0.3);
+}
+
+/* Fin de formulario para creacion y edicion de usuarios */
+
 /* Sección Responsive */
 
 @media only screen and (max-width: 1400px) {

@@ -8,6 +8,16 @@ from web.config import config
 
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
+from web.controllers.adminpanel import adminpanel_bp
+from flask_session import Session
+from core import database
+from web.config import config
+from web.controllers.sites import sites_bp
+from core.services.bcrypt import bcrypt
+from web.controllers.tags import tags_bp
+from core.services.auth_service import check_flags
+from core.models.user import create_user
+from core.models.userrole import UserRole
 from web.controllers.sites import sites_bp
 from web.controllers.feature_flags import feature_flags_bp
 from flask_session import Session
@@ -26,6 +36,8 @@ def create_app(env="development", static_folder="../../static"):
 
     # DB
     database.init_app(app)
+    # Initialize bcrypt
+    bcrypt.init_app(app)
 
     # Auth: cargar usuario y helpers para Jinja en cada request
     app.before_request(load_user)
@@ -35,12 +47,14 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(sites_bp)
     app.register_blueprint(logout_bp)
     app.register_blueprint(login_bp)
+    app.register_blueprint(adminpanel_bp)
+    app.register_blueprint(tags_bp)
     app.register_blueprint(feature_flags_bp)
 
     # Rutas mínimas
     @app.route("/")
     def home():
-        return render_template("home.html", logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("home.html", logged_user=session['user_email'] if 'user_email' in session else None)
     
     @app.route('/under-maintenance')
     def under_maintenance():

@@ -1,0 +1,36 @@
+<div class="user-form">
+    <form method="post">
+        <div class="user-form-field">
+            <label for="email">E-mail</label>
+            <input type="email" name="email" required><br>
+        </div>
+        
+        <div class="user-form-field">
+            <label for="name">Nombre</label>
+            <input type="text" name="name" required><br>
+        </div>
+        
+        <div class="user-form-field">
+            <label for="last_name">Apellido</label>
+            <input type="text" name="last_name" required><br>
+        </div>
+        
+        <div class="user-form-field">
+            <label for="password">Clave</label>
+            <input type="password" name="password" required><br>
+        </div>
+        
+        <div class="user-form-field">
+            <label for="role">Rol</label>
+            <div class="custom-select">
+                <select id="role" name="role" required>
+                    <option value="PUBLIC">Usuario publico</option>
+                    <option value="EDITOR">Usuario editor</option>
+                    <option value="ADMIN">Administrador</option>
+                </select><br>
+            </div>
+        </div>
+
+        <button type="submit">Crear</button>
+    </form>
+</div>

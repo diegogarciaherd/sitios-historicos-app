@@ -5,6 +5,7 @@ from core.models import tags
 from core.models.tags import Tag
 from core.database import db
 from geoalchemy2.elements import WKTElement
+from core.models import user, userrole
 from sqlalchemy import text
 
 def run():
@@ -63,9 +64,30 @@ def run():
         sitio.tags = [t for t in tags_objs if t.name in s["tags"]]
 
         db.session.add(sitio)
-    
 
-
-    db.session.commit()
-
+    pUser = user.create_user(
+        email="public@hotmail.com",
+        name="Public",
+        last_name="User",
+        password= "asd123",
+        active= True,
+        role= userrole.UserRole.PUBLIC
+    )
+    eUser = user.create_user(
+        email= "editor@hotmail.com",
+        name= "Editor",
+        last_name="User",
+        password="asd123",
+        active=True,
+        role= userrole.UserRole.EDITOR
+    )
+    admin = user.create_user(
+        email="admin@hotmail.com",
+        name="Admin",
+        last_name="User",
+        password="asd123",
+        active=True,
+        role= userrole.UserRole.ADMIN
+    )
     print(f"Seed completed: {len(sitios_data)} {len(tags_objs)} ")
+    db.session.commit()

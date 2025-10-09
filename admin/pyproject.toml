@@ -3,7 +3,8 @@ name = "web"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Diego Garcia Herd",email = "diegogarciaherd@hotmail.com.ar"}
+    {name = "Diego Garcia Herd",email = "diegogarciaherd@hotmail.com.ar"},
+    {name = "Valentin Paolini", email = "valenpaolini@hotmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,9 +16,9 @@ dependencies = [
     "python-dotenv (>=1.1.1,<2.0.0)",
     "geoalchemy2 (>=0.18.0,<0.19.0)",
     "shapely (>=2.1.2,<3.0.0)",
+    "flask-bcrypt (>=1.0.1,<2.0.0)",
     "sqlalchemy (>=2.0.43,<3.0.0)",
     "alembic (>=1.14.0,<2.0.0)",
-    "flask-sqlalchemy (>=3.1.1,<4.0.0)",
     "flask-login (>=0.6.3,<0.7.0)",
     "python-slugify (>=8.0.4,<9.0.0)",
 ]
