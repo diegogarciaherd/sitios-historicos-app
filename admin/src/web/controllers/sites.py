@@ -1,133 +1,156 @@
-from flask import Blueprint
-from flask import render_template, flash, abort
-from src.core.models.sites import SitioHistorico, EstadoConservacion
-from src.core.models.sites import list_sites, create_sites, update_site, get_site, delete_site
-from src.core.database import db
+# admin/src/web/controllers/sites.py
+from __future__ import annotations
+
+from core.services.auth_roles import require_permission  # (tu cambio)
+
+from core.database import db
+from flask import abort, flash, request, redirect, url_for, render_template
+from .validators.site_validator import validate_site_data
+import tempfile
+
+# Importá helpers/modelos que ya existían en development
+from core.models.sites import (
+    list_sites,
+    create_sites, update_site, get_site, delete_site_by_id,  # si existen
+    get_all_cities,
+    get_all_provinces,
+)
+from core.database import db
 from flask import request, redirect, url_for
+from .validators.site_validator import validate_site_data
+from core.models import tags
+from core.models.tags import Tag
+from core.models.tags import get_all_tags  # ya estaba en development
 
-sites_bp = Blueprint('sites', __name__, url_prefix='/sitios', template_folder='../templates/sites') # Define el blueprint para las rutas de sitios
+from datetime import datetime
+from flask import Blueprint
 
-def validate_site_data(form_data, is_update=False):
-    """Valida los datos del formulario de sitios"""
-    errors = []
-    data = {}
-    
-    # Validar campos obligatorios
-    required_fields = ['nombre', 'ciudad', 'provincia', 'latitud', 'longitud', 'estado']
-    for field in required_fields:
-        if not form_data.get(field):
-            errors.append(f"El campo {field} es obligatorio")
-    
-    if errors:
-        raise ValueError("; ".join(errors))
-    
-    # Validar y convertir datos
-    try:
-        data['nombre'] = form_data['nombre'].strip()
-        data['ciudad'] = form_data['ciudad'].strip()
-        data['provincia'] = form_data['provincia'].strip()
-        data['latitud'] = float(form_data['latitud'])
-        data['longitud'] = float(form_data['longitud'])
-        data['estado'] = EstadoConservacion[form_data['estado']]
-    except (ValueError, KeyError) as e:
-        raise ValueError(f"Error en el formato de los datos: {str(e)}")
-    
-    # Validar coordenadas
-    if not (-90 <= data['latitud'] <= 90):
-        raise ValueError("La latitud debe estar entre -90 y 90")
-    if not (-180 <= data['longitud'] <= 180):
-        raise ValueError("La longitud debe estar entre -180 y 180")
-    
-    # Campos opcionales
-    data['descripcionBreve'] = form_data.get('descripcionBreve', '').strip() or None
-    data['descripcionCompleta'] = form_data.get('descripcionCompleta', '').strip() or None
-    data['categoria'] = form_data.get('categoria_nombre', '').strip() or None
-    data['visible'] = 'visible' in form_data
-    
-    # Validar año de inauguración si se proporciona
-    if form_data.get('añoInauguracion'):
-        try:
-            año = int(form_data['añoInauguracion'])
-            if año < 1000 or año > 2024:
-                raise ValueError("El año de inauguración debe estar entre 1000 y 2024")
-            data['añoInauguracion'] = año
-        except ValueError:
-            raise ValueError("El año de inauguración debe ser un número válido")
-    else:
-        data['añoInauguracion'] = None
-    
-    return data
+sites_bp = Blueprint(
+    "sites",
+    __name__,
+    url_prefix="/sitios",
+    template_folder="../templates/sites"
+)
 
-@sites_bp.route('/')
+
+# --------------------------------------------------------------------
+# Listado con permisos + validación de fechas (tu rama) + paginación
+# + render completo (development)
+# --------------------------------------------------------------------
+@require_permission("sites.view")
 def list_all_sites():
-    page = request.args.get('page', 1, type=int)
+    query_params = request.args.to_dict()
+
+    # Validación de fechas si vienen ambas (tu cambio)
+    if "startDate" in query_params and "endDate" in query_params:
+        try:
+            start_date = datetime.strptime(query_params["startDate"], "%Y-%m-%d")
+            end_date = datetime.strptime(query_params["endDate"], "%Y-%m-%d")
+            if start_date > end_date:
+                return "La fecha de inicio no puede ser mayor a la fecha de fin.", 400
+        except ValueError:
+            return "Formato de fecha inválido. Use YYYY-MM-DD.", 400
+
+    page = request.args.get("page", 1, type=int)
     per_page = 10
-    sites, total = list_sites(page=page, per_page=per_page)
-    
-    # Calcular información de paginación
-    total_pages = (total + per_page - 1) // per_page
-    has_prev = page > 1
-    has_next = page < total_pages
-    prev_num = page - 1 if has_prev else None
-    next_num = page + 1 if has_next else None
-    
+
+    # Pasamos filtros al listado (manteniendo API de development)
+    sites, total = list_sites(page=page, per_page=per_page, filters=query_params)
+
     pagination = {
-        'page': page,
-        'per_page': per_page,
-        'total': total,
-        'pages': total_pages,
-        'has_prev': has_prev,
-        'has_next': has_next,
-        'prev_num': prev_num,
-        'next_num': next_num
+        "prev_num": page - 1 if page > 1 else None,
+        "next_num": page + 1 if page * per_page < total else None,
+        "page": page,
+        "per_page": per_page,
+        "total": total,
     }
-    return render_template('sites.html', pagination=pagination, sites=sites)
 
+    # Catálogos (mantiene lo de tus compas)
+    cities = [c[0] for c in get_all_cities()]
+    provinces = [p[0] for p in get_all_provinces()]
+    tags = [t.name for t in get_all_tags()]
 
+    return render_template(
+        "sites.html",
+        pagination=pagination,
+        sites=sites,
+        cities=cities,
+        provinces=provinces,
+        tags=tags,
+    )
 
 @sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
+@require_permission("sites.create")
 def create_site():
-    if request.method == 'POST':
-        try:
-            data = validate_site_data(request.form)
-            create_sites(**data)
-            flash('Sitio histórico creado correctamente', 'success')
-            return redirect(url_for('sites.list_all_sites'))
-        except ValueError as e:
-            flash(f'Error de validación: {str(e)}', 'error')
-        except Exception as e:
-            flash(f'Error al crear el sitio: {str(e)}', 'error')
+    all_tags = db.session.query(Tag).all()
+    selected_tag_ids = []
 
-    return render_template('form.html')
+    if request.method == "POST":
+        data = request.form.to_dict()
+        # Manejar checkbox visible
+        data['visible'] = 'visible' in request.form
+
+        tag_ids = request.form.getlist('tags[]')  # Lista de ids seleccionados
+        data.pop('tags[]', None)
+
+        site = create_sites(**data)
+
+        if tag_ids:
+            selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+            tags.assign_tags(site, selected_tags)
+
+        flash("Sitio creado correctamente", "success")
+        return redirect(url_for('sites.list_all_sites'))
+
+    return render_template('form.html', site=None, tags=all_tags, selected_tag_ids=selected_tag_ids)
+
 
 @sites_bp.route('/editar_sitio/<int:id>', methods=['GET', 'POST'])
-# Mejorada con validación y manejo de errores
+@require_permission("sites.create")
 def edit_site(id):
     site = get_site(id)
     if not site:
         abort(404)
-    
-    if request.method == 'POST':
-        try:
-            # Validar datos
-            data = validate_site_data(request.form)
-            # Actualizar
-            updated_site = update_site(id, **data)
-            flash('Sitio actualizado correctamente', 'success')
-            return redirect(url_for('sites.list_all_sites'))
-        except ValidationError as e:
-            flash(str(e), 'error')
-    
-    return render_template('form.html', site=site)
 
-@sites_bp.route('/eliminar_sitio/<int:id>', methods=['POST'])
+    all_tags = db.session.query(Tag).all()
+    selected_tag_ids = [str(tag.id) for tag in site.tags]
+
+    if request.method == "POST":
+        data = request.form.to_dict()
+        data['visible'] = 'visible' in request.form
+
+        tag_ids = request.form.getlist('tags[]')
+        data.pop('tags[]', None)
+
+        update_site(id, **data)
+
+        # Actualizar tags
+        selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+        tags.assign_tags(site, selected_tags)
+
+        flash("Sitio actualizado correctamente", "success")
+        return redirect(url_for('sites.list_all_sites'))
+
+    return render_template('form.html', site=site, tags=all_tags, selected_tag_ids=selected_tag_ids)
+
+
+
+@sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
+@require_permission("sites.create")
 def delete_site(id):
-    delete_site(id)
+    try:
+        # Llama a la función existente
+        delete_site_by_id(id)
+        site = get_site(id) # Verifica si el sitio aún existe
+        if not site:
+            flash('Sitio eliminado correctamente', 'success')
+        else:
+            flash('Sitio no encontrado', 'error')
+    except Exception as e:
+        flash(f'Error al eliminar el sitio: {str(e)}', 'error')
     return redirect(url_for('sites.list_all_sites'))
 
-@sites_bp.route('/ver_sitio/<int:id>', methods=['GET'])
+@sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
 def view_site(id):
     site = get_site(id)
-    return render_template('view.html', site=site)
-
-
+    return render_template('show_site.html', site=site)

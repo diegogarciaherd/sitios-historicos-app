@@ -66,11 +66,13 @@
                 >
                 <a>Validación de propuestas</a>
                 <a>Moderación de reseñas</a>
-                <a>Gestión de usuarios</a>
                 {% if logged_user and logged_user.sys_admin %}
                 <a href="{{ url_for('feature_flags.list_all_feature_flags') }}"
                     >Gestión de funcionalidades</a
                 >
+
+                {# Solo admins #} {% if can('users.manage') %}
+                <a>Gestión de usuarios</a>
                 {% endif %}
             </nav>
         </aside>
