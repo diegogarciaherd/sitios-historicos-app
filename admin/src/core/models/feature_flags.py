@@ -35,11 +35,11 @@ def list_feature_flags(page=1, per_page=10):
 
 
 def create_feature_flag(**kwargs):
+    user_id = kwargs.get('user_id', None) or session.get('user_id').id
     flag = FeatureFlag(**kwargs)
     db.session.add(flag)
     db.session.commit()
 
-    user_id = kwargs.get('user_id', None) or session.get('user_id').id
 
     # Creo el historial a la vez que creo el feature flag
     create_feature_flag_history(flag.id, user_id=user_id)

@@ -70,8 +70,7 @@
                 <a href="{{ url_for('feature_flags.list_all_feature_flags') }}"
                     >Gestión de funcionalidades</a
                 >
-
-                {# Solo admins #} {% if can('users.manage') %}
+                {% endif %} {% if can('users.manage') %}
                 <a>Gestión de usuarios</a>
                 {% endif %}
             </nav>
