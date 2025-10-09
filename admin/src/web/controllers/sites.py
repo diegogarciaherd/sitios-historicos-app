@@ -37,6 +37,7 @@ sites_bp = Blueprint(
 # Listado con permisos + validación de fechas (tu rama) + paginación
 # + render completo (development)
 # --------------------------------------------------------------------
+@sites_bp.route("/", methods=["GET"])
 @require_permission("sites.view")
 def list_all_sites():
     query_params = request.args.to_dict()

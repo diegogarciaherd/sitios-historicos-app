@@ -12,6 +12,7 @@ body {
     color: var(--foreground);
     text-align: center;
     font-family: var(--font-primary);
+    font-weight: 500;
     min-height: 100vh;
     margin: 0;
     padding: 0;
@@ -85,6 +86,30 @@ a {
     color: inherit;
 }
 
+aside a {
+    margin-left: 1rem;
+}
+
+a:hover:not(aside > a) {
+    color: var(--accent);
+    transition: color 0.2s ease;
+}
+
+input.message-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    width: 250px;
+    transition: border-color 0.3s ease;
+}
+
+input.message-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 143, 243, 0.1);
+}
+
 main p {
     font-size: 1.2rem;
 }
@@ -100,6 +125,7 @@ aside nav {
 
 aside nav a {
     padding: 0.5rem 1rem;
+    margin-left: 0;
     border-radius: 0.5rem;
     width: calc(84%);
     text-align: left;
@@ -112,6 +138,16 @@ aside nav a:hover {
 }
 
 button {
+    background-color: var(--accent);
+    border: none;
+    border-radius: 0.5rem;
+    padding: 1rem 2rem;
+    font-family: var(--font-primary);
+    color: var(--background);
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.btn {
     background-color: var(--accent);
     border: none;
     border-radius: 0.5rem;
@@ -144,22 +180,105 @@ button:not(.btn-outline):active::after {
     clip-path: circle(100% at 50% 50%);
 }
 
-button.btn-outline {
+.btn-outline {
     background-color: transparent;
     color: var(--foreground);
     border: 2px solid var(--foreground);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-button.btn-outline:hover {
+.btn-outline:hover {
     background-color: var(--foreground);
     color: var(--background);
     transform: none;
 }
 
-button.btn-outline:active {
+.btn-outline:active {
     transform: scale(0.95);
     transition: 0.3s ease;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+}
+
+button.btn-danger::after {
+    background-color: #a13529;
+}
+
+.btn-warning.btn-outline {
+    border-color: #f39c12;
+    color: #f39c12;
+}
+
+.btn-warning.btn-outline:hover {
+    background-color: #f39c12;
+    color: var(--background-accent);
+}
+
+:modal {
+    background-color: var(--background-accent);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    border: none;
+}
+
+dialog::backdrop {
+    transition: background 0.3s ease;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 2rem;
+    height: 1rem;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: 0.4s;
+    transition: 0.4s;
+    border-radius: 1.4rem;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 0.8rem;
+    width: 0.8rem;
+    left: 0.1rem;
+    bottom: 0.1rem;
+    background-color: white;
+    -webkit-transition: 0.4s;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--accent);
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--accent);
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(1rem);
+    -ms-transform: translateX(1rem);
+    transform: translateX(1rem);
 }
 
 /* Menú Dropdown de cuenta */
@@ -201,6 +320,7 @@ button.btn-outline:active {
     min-width: 130px;
     margin: 0;
     box-sizing: border-box;
+    box-shadow: 0, 0.3rem, 0.4rem, rgba(0, 0, 0, 0.1);
 }
 
 .dropdown:hover button {
@@ -223,6 +343,25 @@ button.btn-outline:active {
 .bold-title {
     font-family: var(--font-secondary);
     font-size: 4rem;
+}
+
+.maintenance-container {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+}
+
+.maintenance-container h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.maintenance-container p {
+    font-size: 1.5rem;
+    color: #555;
+    margin: 0 1rem;
 }
 
 /* Tarjeta del login */

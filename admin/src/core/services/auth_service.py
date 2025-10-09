@@ -12,9 +12,12 @@ def authenticate(email: str, password: str) -> User | None:
         return user
     return None
 
-def check_flags(user: User | None) -> bool:
-    flag = db.session.query(FeatureFlag).filter_by(name="Sitio administrativo").first()
-    return bool(flag and flag.activated)
+def check_flags(user: User):
+    if user:
+        return not user.sys_admin
+    else:
+        flag = db.session.query(FeatureFlag).filter_by(name="Sistema administrativo").first()
+        return flag.activated if flag else False
 
 def load_user():
     """Carga el usuario logueado en flask.g antes de cada request."""

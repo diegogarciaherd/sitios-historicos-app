@@ -15,7 +15,11 @@ class Base(DeclarativeBase):
 def reset_db():
     from core.models.sites import SitioHistorico
     from core.models.user import User
+    from core.models.feature_flags import FeatureFlag
+    from core.models.feature_flags_history import FeatureFlagHistory
+    from core.models.userrole import UserRole
     from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
+    from core.models.tags import Tag
 
     print("Resetting database...")
     Base.metadata.drop_all(bind=db.engine)

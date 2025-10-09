@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -22,7 +22,10 @@
             <div class="dropdown">
                 <button class="btn-outline">Cuenta</button>
                 <div class="dropdown-content">
-                    <p class="email">Cuenta: {{ logged_user }}</p>
+                    <p class="email">
+                        Cuenta: {{ logged_user.name }} {{ logged_user.last_name
+                        }} ({{ logged_user.email }})
+                    </p>
                     <a>Ver perfil</a>
                     <a href="/logout">Cerrar sesión</a>
                 </div>
@@ -58,16 +61,19 @@
                 </h3>
             </a>
             <nav>
-                <a href="{{ url_for('sites.list_all_sites') }}">Gestion de sitios históricos</a>
+                <a href="{{ url_for('sites.list_all_sites') }}"
+                    >Gestion de sitios históricos</a
+                >
                 <a>Validación de propuestas</a>
                 <a>Moderación de reseñas</a>
-
-                {# Solo admins #}
-                {% if can('users.manage') %}
-                    <a>Gestión de usuarios</a>
+                {% if logged_user and logged_user.sys_admin %}
+                <a href="{{ url_for('feature_flags.list_all_feature_flags') }}"
+                    >Gestión de funcionalidades</a
+                >
+                {% endif %} {% if can('users.manage') %}
+                <a>Gestión de usuarios</a>
                 {% endif %}
             </nav>
-
         </aside>
 
         <main>{% block content %}{% endblock %}</main>

@@ -1,5 +1,6 @@
+from core.models import sites, feature_flags
+from core.database import db
 from core.models.sites import SitioHistorico, EstadoConservacion
-from core.models import sites
 from core.models import tags
 from core.models.tags import Tag
 from core.database import db
@@ -59,11 +60,11 @@ def run():
             estado=EstadoConservacion.BUENO,
             localizacion=make_point(s["lat"], s["lng"])
         )
-
-        # Asignar tags por nombre
         sitio.tags = [t for t in tags_objs if t.name in s["tags"]]
 
         db.session.add(sitio)
+    
+
 
     db.session.commit()
 
