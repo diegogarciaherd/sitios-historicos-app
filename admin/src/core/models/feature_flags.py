@@ -21,21 +21,20 @@ class FeatureFlag(Base):
         "FeatureFlagHistory",
         back_populates="feature_flag",
         cascade="all, delete-orphan",
-        order_by="FeatureFlagHistory.time",
     )
     def __repr__(self):
         return f"<Feature Flag {self.id}: {self.activated} last modified at {self.history.time if self.history else 'N/A'}>"
 
 
 def list_feature_flags(page=1, per_page=10):
-    query = db.session.query(FeatureFlag)
+    query = db.session.query(FeatureFlag).order_by(FeatureFlag.id)
     total = query.count()
     flags = query.offset((page - 1) * per_page).limit(per_page).all()
     return flags, total
 
 
 def create_feature_flag(**kwargs):
-    user_id = kwargs.get('user_id', None) or session.get('user_id').id
+    user_id = kwargs.pop('user_id', None) or session.get('user_id').id
     flag = FeatureFlag(**kwargs)
     db.session.add(flag)
     db.session.commit()

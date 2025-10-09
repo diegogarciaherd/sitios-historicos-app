@@ -1,4 +1,4 @@
-from core.models import sites, feature_flags
+from core.models import sites, feature_flags, feature_flags_history
 from core.database import db
 from core.models.sites import SitioHistorico, EstadoConservacion
 from core.models import tags
@@ -7,6 +7,7 @@ from core.database import db
 from geoalchemy2.elements import WKTElement
 from core.models import user, userrole
 from sqlalchemy import text
+from datetime import datetime
 
 def run():
     print("Seeding database...")
@@ -65,29 +66,11 @@ def run():
 
         db.session.add(sitio)
 
-    pUser = user.create_user(
-        email="public@hotmail.com",
-        name="Public",
-        last_name="User",
-        password= "asd123",
-        active= True,
-        role= userrole.UserRole.PUBLIC
-    )
-    eUser = user.create_user(
-        email= "editor@hotmail.com",
-        name= "Editor",
-        last_name="User",
-        password="asd123",
-        active=True,
-        role= userrole.UserRole.EDITOR
-    )
-    admin = user.create_user(
-        email="admin@hotmail.com",
-        name="Admin",
-        last_name="User",
-        password="asd123",
-        active=True,
-        role= userrole.UserRole.ADMIN
-    )
     print(f"Seed completed: {len(sitios_data)} {len(tags_objs)} ")
+
+    # Feature Flags
+    feature_flags.create_feature_flag(user_id=1, name="Sistema administrativo", activated=False, description="Deshabilita el sistema administrativo para los usuarios.", message="El sistema administrativo está en mantenimiento. Por favor, vuelva más tarde.")
+    feature_flags.create_feature_flag(user_id=1, name="Sitio público", activated=False, description="Deshabilita el acceso al sitio público.")
+    feature_flags.create_feature_flag(user_id=1, name="Reseñas", activated=False, description="Deshabilita el acceso a la creación de reseñas.")
+
     db.session.commit()

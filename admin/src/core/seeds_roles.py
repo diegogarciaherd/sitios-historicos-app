@@ -1,7 +1,7 @@
 # src/core/seeds_roles.py
 from core.database import db
 from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
-from core.models.user import User
+from core.models.user import User, create_user
 
 def _get_or_create(model, defaults=None, **kwargs):
     inst = db.session.query(model).filter_by(**kwargs).first()
@@ -49,19 +49,19 @@ def run():
     db.session.commit()
 
     # Usuarios
-    u_admin  = _get_or_create(User, email="admin@fiorella.com",
-                              defaults=dict(name="Admin", last_name="Root", password="admin123", active=True))
-    u_edit1  = _get_or_create(User, email="editor1@fiorella.com",
-                              defaults=dict(name="Elena", last_name="Editor", password="editor123", active=True))
-    u_edit2  = _get_or_create(User, email="editor2@fiorella.com",
-                              defaults=dict(name="Eduardo", last_name="Bloq", password="editor123", active=True))
-    u_view1  = _get_or_create(User, email="viewer1@fiorella.com",
-                              defaults=dict(name="Violeta", last_name="View", password="viewer123", active=True))
-    u_view2  = _get_or_create(User, email="viewer2@fiorella.com",
-                              defaults=dict(name="Victor", last_name="View", password="viewer123", active=True))
-    u_norole = _get_or_create(User, email="norole@fiorella.com",
-                              defaults=dict(name="Nora", last_name="NoRole", password="norole123", active=True))
-
+    u_admin  = create_user(email="admin@fiorella.com",
+                              name="Admin", last_name="Root", password="admin123", active=True)
+    u_edit1  = create_user(email="editor1@fiorella.com",
+                              name="Elena", last_name="Editor", password="editor123", active=True)
+    u_edit2  = create_user(email="editor2@fiorella.com",
+                              name="Eduardo", last_name="Bloq", password="editor123", active=True)
+    u_view1  = create_user(email="viewer1@fiorella.com",
+                              name="Violeta", last_name="View", password="viewer123", active=True)
+    u_view2  = create_user(email="viewer2@fiorella.com",
+                              name="Victor", last_name="View", password="viewer123", active=True)
+    u_norole = create_user(email="norole@fiorella.com",
+                              name="Nora", last_name="NoRole", password="norole123", active=True, sys_admin=True)
+    
     db.session.commit()
 
     # Asignación de roles

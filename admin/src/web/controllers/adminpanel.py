@@ -2,6 +2,7 @@ from flask import Blueprint, request, render_template, flash, redirect, url_for,
 from core.models.userrole import UserRole
 from core.models.user import create_user as create, read_user_by_email, read_users_by_activeness
 from core.models.user import read_users_by_role, update_user, delete_user, get_user_by_id, list_all_users
+from core.services.auth_roles import require_permission
 from web.decorators.loginrequired import login_required
 from web.decorators.permissionrequired import role_required
 from flask import session
@@ -9,8 +10,7 @@ from flask import session
 adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admin", template_folder="../templates")
 
 @adminpanel_bp.route("/", methods=["GET"])
-@login_required
-@role_required(UserRole.ADMIN)
+@require_permission("users.manage")
 def admin_panel():
     return render_template("adminpanel.html", logged_user=session['user_email'] if 'user_email' in session else None)
 
@@ -40,8 +40,7 @@ def validate_user_data(form_data: dict, is_update=False) -> dict:
     return data
 
 @adminpanel_bp.route("/buscar-usuarios", methods=["GET", "POST"])
-@login_required
-@role_required(UserRole.ADMIN)
+@require_permission("users.manage")
 def list_users() -> str:
     if request.method == "GET":
         page = request.args.get("page", 1, type=int)
@@ -98,8 +97,7 @@ def list_users() -> str:
         return render_template("searchuser.html", users=users, logged_user=session['user_email'] if 'user_email' in session else None)
 
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
-@login_required
-@role_required(UserRole.ADMIN)
+@require_permission("users.manage")
 def create_user() -> str:
     if request.method == "POST":
         try:
@@ -113,8 +111,7 @@ def create_user() -> str:
     return render_template("createuser.html", logged_user=session['user_email'] if 'user_email' in session else None)
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
-@login_required
-@role_required(UserRole.ADMIN)
+@require_permission("users.manage")
 def edit_user(id):    
     if request.method == "POST":
         try:
@@ -128,8 +125,7 @@ def edit_user(id):
     return render_template("edituser.html", logged_user=session['user_email'] if 'user_email' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
-@login_required
-@role_required(UserRole.ADMIN)
+@require_permission("users.manage")
 def del_user(id: int):
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
