@@ -58,33 +58,4 @@ def create_app(env="development", static_folder="../../static"):
     #     if not check_flags(None) and request.endpoint == 'mantenimiento':
     #         return redirect(url_for('home'))
 
-    with app.app_context():
-        pUser = {
-            "email": "public@hotmail.com",
-            "name": "Public",
-            "last_name": "User",
-            "password": "asd123",
-            "active": True,
-            "role": UserRole.PUBLIC
-        }
-        eUser = {
-            "email": "editor@hotmail.com",
-            "name": "Editor",
-            "last_name": "User",
-            "password": "asd123",
-            "active": True,
-            "role": UserRole.EDITOR
-        }
-        admin = {
-            "email": "admin@hotmail.com",
-            "name": "Admin",
-            "last_name": "User",
-            "password": "asd123",
-            "active": True,
-            "role": UserRole.ADMIN
-        }
-        create_user(**pUser)
-        create_user(**eUser)
-        create_user(**admin)
-
     return app

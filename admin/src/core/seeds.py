@@ -1,6 +1,7 @@
 from src.core.models import sites
-from src.core.database import db
+from core.database import db
 from geoalchemy2.elements import WKTElement
+from core.models import user, userrole
 
 def run(): 
 
@@ -246,7 +247,7 @@ def run():
         añoInauguracion=2002,
         categoria="Museo",
         localizacion=make_point(-34.6037, -58.3816)
-        )
+    )
 
     sites_created = [site1, site2, site3, site4, site5, site6, site7, site8, site9, site10, 
                     site11, site12, site13, site14, site15, site16, site17, site18, site19, site20]
@@ -255,3 +256,28 @@ def run():
     print(f"Created {len(sites_created)} sites:")
     for i, site in enumerate(sites_created, 1):
         print(f"{i}. {site.nombre} - {site.ciudad}, {site.provincia}")
+
+    pUser = user.create_user(
+        email="public@hotmail.com",
+        name="Public",
+        last_name="User",
+        password= "asd123",
+        active= True,
+        role= userrole.UserRole.PUBLIC
+    )
+    eUser = user.create_user(
+        email= "editor@hotmail.com",
+        name= "Editor",
+        last_name="User",
+        password="asd123",
+        active=True,
+        role= userrole.UserRole.EDITOR
+    )
+    admin = user.create_user(
+        email="admin@hotmail.com",
+        name="Admin",
+        last_name="User",
+        password="asd123",
+        active=True,
+        role= userrole.UserRole.ADMIN
+    )

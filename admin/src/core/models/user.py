@@ -12,8 +12,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    active: Mapped[bool] = mapped_column(nullable=False, default=True)
-    role: Mapped[Role] = mapped_column(nullable=False, default=Role.PUBLIC)
+    active: Mapped[bool] = mapped_column(nullable=True, default=True)
+    role: Mapped[Role] = mapped_column(nullable=True, default=Role.PUBLIC)
 
     def __repr__(self):
         return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, {self.role}>"
@@ -36,11 +36,17 @@ def get_user_by_id(id):
 def read_user_by_email(email):
     return db.session.query(User).filter_by(email=email).first()
 
-def read_users_by_activeness(active):
-    return db.session.query(User).filter_by(active=active)
+def read_users_by_activeness(active, page=1, per_page=10):
+    query = db.session.query(User).filter_by(active=active)
+    total = query.count()
+    users = query.offset((page - 1) * per_page).limit(per_page).all()
+    return users, total
 
-def read_users_by_role(role):
-    return db.session.query(User).filter_by(role=role)
+def read_users_by_role(role, page=1, per_page=10):
+    query = db.session.query(User).filter_by(role=role)
+    total = query.count()
+    users = query.offset((page - 1) * per_page).limit(per_page).all()
+    return users, total
 
 def update_user(id, values):
     db.session.query(User).filter_by(id=id).update(values)

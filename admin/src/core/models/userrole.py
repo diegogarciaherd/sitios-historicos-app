@@ -1,6 +1,6 @@
 import enum
 
 class UserRole(enum.Enum):
-    PUBLIC = "publico"
+    PUBLIC = "public"
     EDITOR = "editor"
     ADMIN = "admin"
