@@ -1,8 +1,7 @@
 {% extends "adminpanel.html" %} {% block title %}Inicio{% endblock %} {% block
 content %}
 <h1>Buscar usuario(s)</h1>
-<select id="search-option" required 
-style="margin-bottom: 1rem;">
+<select id="search-option" required style="margin-bottom: 1rem">
     <option value="by-email">Por correo electronico</option>
     <option value="by-activeness">Por actividad</option>
     <option value="by-role">Por rol</option>
@@ -10,70 +9,87 @@ style="margin-bottom: 1rem;">
 
 <form method="post" id="option-email">
     <label for="email">Email:</label>
-    <input type="text" id="email" name="email" required placeholder="usuario@ejemplo.com"
-    style="box-sizing: border-box; padding: 8px; border: 1px solid #ccc;
-    border-radius: 6px;">
-	<button type="submit" style="margin-top: 1rem;">Buscar</button>
+    <input
+        type="text"
+        id="email"
+        name="email"
+        required
+        placeholder="usuario@ejemplo.com"
+        style="
+            box-sizing: border-box;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        "
+    />
+    <button type="submit" style="margin-top: 1rem">Buscar</button>
 </form>
 
 <form method="post" id="option-activeness" class="hidden">
     <label>Actividad:</label>
     <div class="radio-group">
-        <label><input type="radio" name="actividad" value="activo">Activo</label>
-        <label><input type="radio" name="actividad" value="inactivo">Inactivo</label>
+        <label
+            ><input type="radio" name="actividad" value="activo" />Activo</label
+        >
+        <label
+            ><input
+                type="radio"
+                name="actividad"
+                value="inactivo"
+            />Inactivo</label
+        >
     </div>
-	<button type="submit" style="margin-top: 1rem;">Buscar</button>
+    <button type="submit" style="margin-top: 1rem">Buscar</button>
 </form>
 
 <form method="post" id="option-role" class="hidden">
     <label>Rol:</label>
     <div class="radio-group">
-        <label><input type="radio" name="rol" value="public">Público</label>
-        <label><input type="radio" name="rol" value="editor">Editor</label>
-        <label><input type="radio" name="rol" value="admin">Admin</label>
+        <label><input type="radio" name="rol" value="public" />Público</label>
+        <label><input type="radio" name="rol" value="editor" />Editor</label>
+        <label><input type="radio" name="rol" value="admin" />Admin</label>
     </div>
-	<button type="submit" style="margin-top: 1rem;">Buscar</button>
+    <button type="submit" style="margin-top: 1rem">Buscar</button>
 </form>
 
 {% if users %}
 <div class="users-list">
     {% for user in users %}
-		<div class="user-card">
-			<p>Email: {{ user.email }}</p><br>
-			<p>Nombre completo: {{ user.name }} {{ user.last_name }}</p><br>
-			<p>Activo: {{ "Si" if user.active else "No" }}</p><br>
-			<p>Rol:</p>
-			<p>
-				{% if user.role.value == "public" %}
-					Usuario publico
-				{% elif user.role.value == "editor" %}
-					Usuario editor
-				{% elif user.role.value == "admin" %}
-					Administrador
-				{% else %}
-					Desconocido
-				{% endif %}
-			</p><br>
-			<div class="user-actions">
-				<a
+    <div class="user-card">
+        <p>Email: {{ user.email }}</p>
+        <br />
+        <p>Nombre completo: {{ user.name }} {{ user.last_name }}</p>
+        <br />
+        <p>Activo: {{ "Si" if user.active else "No" }}</p>
+        <br />
+        <p>Rol:</p>
+        <p>
+            {% if user.role.value == "public" %} Usuario publico {% elif
+            user.role.value == "editor" %} Usuario editor {% elif
+            user.role.value == "admin" %} Administrador {% else %} Desconocido
+            {% endif %}
+        </p>
+        <br />
+        <div class="user-actions">
+            <!-- <a
 					href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
 					class="btn edit-btn"
 					>Editar</a
-				>
-				<form
-					method="POST"
-					action="{{ url_for('adminpanel.del_user', id=user.id) }}"
-					style="display: inline"
-					onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
-				>
-					<button type="submit" class="btn delete-btn">Eliminar</button>
-				</form>
-			</div>
-		</div>
-	{% endfor %}
+				> -->
+            <form
+                method="POST"
+                action="{{ url_for('adminpanel.del_user', id=user.id) }}"
+                style="display: inline"
+                onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
+            >
+                <button type="submit" class="btn delete-btn">Eliminar</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
 </div>
 {% else %}
-  <h1>No se encontraron resultados que cumplan con el criterio.</h1>
+<h1>No se encontraron resultados que cumplan con el criterio.</h1>
 {% endif %}
 
 <script>
@@ -82,22 +98,22 @@ style="margin-bottom: 1rem;">
     const activenessForm = document.getElementById("option-activeness");
     const roleForm = document.getElementById("option-role");
 
-    select.addEventListener("change", function() {
-      const opcion = select.value;
+    select.addEventListener("change", function () {
+        const opcion = select.value;
 
-      // Ocultar todos los campos
-      emailForm.classList.add("hidden");
-      activenessForm.classList.add("hidden");
-      roleForm.classList.add("hidden");
+        // Ocultar todos los campos
+        emailForm.classList.add("hidden");
+        activenessForm.classList.add("hidden");
+        roleForm.classList.add("hidden");
 
-      // Mostrar el campo correspondiente
-      if (opcion === "by-email") {
-        emailForm.classList.remove("hidden");
-      } else if (opcion === "by-activeness") {
-        activenessForm.classList.remove("hidden");
-      } else if (opcion === "by-role") {
-        roleForm.classList.remove("hidden");
-      }
+        // Mostrar el campo correspondiente
+        if (opcion === "by-email") {
+            emailForm.classList.remove("hidden");
+        } else if (opcion === "by-activeness") {
+            activenessForm.classList.remove("hidden");
+        } else if (opcion === "by-role") {
+            roleForm.classList.remove("hidden");
+        }
     });
 </script>
 {% endblock %}
