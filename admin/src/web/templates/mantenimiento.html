@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Mantenimiento</title>
+        <title>Sitio en mantenimiento</title>
         <link
             rel="stylesheet"
             href="{{ url_for('static', filename='css/styles.css') }}"
@@ -16,7 +16,15 @@
         />
     </head>
     <body>
-        <h1>Estamos en mantenimiento</h1>
-        <p>Por favor, vuelva más tarde.</p>
+        <div class="maintenance-container">
+            <h1>Sitio en mantenimiento</h1>
+            <p>{{ message }}</p>
+            {% if logged_user %}
+            <p>Usuario: {{ logged_user.email }}</p>
+            <a href="/logout ">Cerrar sesión</a>
+            {% else %}
+            <a href="{{ url_for('login.login') }}">Iniciar sesión</a>
+            {% endif %}
+        </div>
     </body>
 </html>
