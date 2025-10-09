@@ -4,17 +4,22 @@ from __future__ import annotations
 from core.services.auth_roles import require_permission  # (tu cambio)
 
 from core.database import db
-from flask import request, redirect, url_for, render_template
+from flask import abort, flash, request, redirect, url_for, render_template
 from .validators.site_validator import validate_site_data
 import tempfile
 
 # Importá helpers/modelos que ya existían en development
 from core.models.sites import (
     list_sites,
-    # create_site, update_site, get_site, delete_site as delete_site_model,  # si existen
+    create_sites, update_site, get_site, delete_site_by_id,  # si existen
     get_all_cities,
     get_all_provinces,
 )
+from core.database import db
+from flask import request, redirect, url_for
+from .validators.site_validator import validate_site_data
+from core.models import tags
+from core.models.tags import Tag
 from core.models.tags import get_all_tags  # ya estaba en development
 
 from datetime import datetime
@@ -74,29 +79,78 @@ def list_all_sites():
         tags=tags,
     )
 
-
-# Si tu blueprint lo registra con rutas, mantené estas decoraciones:
-@sites_bp.route("/", methods=["GET"])
-def route_list_all_sites():
-    return list_all_sites()
-
-
-# --------------------------------------------------------------------
-# Ejemplo de endpoint protegido para creación (dejado listo por si ya existe)
-# --------------------------------------------------------------------
-@sites_bp.route("/crear_sitio", methods=["GET", "POST"])
+@sites_bp.route('/crear_sitio', methods=['GET', 'POST'])
 @require_permission("sites.create")
-def route_create_site():
-    if request.method == "GET":
-        return render_template("create_site.html")
+def create_site():
+    all_tags = db.session.query(Tag).all()
+    selected_tag_ids = []
 
-    form_data = request.form.to_dict()
-    errors = validate_site_data(form_data)
-    if errors:
-        return render_template("create_site.html", errors=errors, data=form_data), 400
+    if request.method == "POST":
+        data = request.form.to_dict()
+        # Manejar checkbox visible
+        data['visible'] = 'visible' in request.form
 
-    # Si usás servicio/modelo create_site, descomentá la línea:
-    # new_id = create_site(form_data)
-    # return redirect(url_for("sites.route_get_site", site_id=new_id))
+        tag_ids = request.form.getlist('tags[]')  # Lista de ids seleccionados
+        data.pop('tags[]', None)
 
-    return redirect(url_for("sites.route_list_all_sites"))
+        site = create_sites(**data)
+
+        if tag_ids:
+            selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+            tags.assign_tags(site, selected_tags)
+
+        flash("Sitio creado correctamente", "success")
+        return redirect(url_for('sites.list_all_sites'))
+
+    return render_template('form.html', site=None, tags=all_tags, selected_tag_ids=selected_tag_ids)
+
+
+@sites_bp.route('/editar_sitio/<int:id>', methods=['GET', 'POST'])
+@require_permission("sites.create")
+def edit_site(id):
+    site = get_site(id)
+    if not site:
+        abort(404)
+
+    all_tags = db.session.query(Tag).all()
+    selected_tag_ids = [str(tag.id) for tag in site.tags]
+
+    if request.method == "POST":
+        data = request.form.to_dict()
+        data['visible'] = 'visible' in request.form
+
+        tag_ids = request.form.getlist('tags[]')
+        data.pop('tags[]', None)
+
+        update_site(id, **data)
+
+        # Actualizar tags
+        selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+        tags.assign_tags(site, selected_tags)
+
+        flash("Sitio actualizado correctamente", "success")
+        return redirect(url_for('sites.list_all_sites'))
+
+    return render_template('form.html', site=site, tags=all_tags, selected_tag_ids=selected_tag_ids)
+
+
+
+@sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
+@require_permission("sites.create")
+def delete_site(id):
+    try:
+        # Llama a la función existente
+        delete_site_by_id(id)
+        site = get_site(id) # Verifica si el sitio aún existe
+        if not site:
+            flash('Sitio eliminado correctamente', 'success')
+        else:
+            flash('Sitio no encontrado', 'error')
+    except Exception as e:
+        flash(f'Error al eliminar el sitio: {str(e)}', 'error')
+    return redirect(url_for('sites.list_all_sites'))
+
+@sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
+def view_site(id):
+    site = get_site(id)
+    return render_template('show_site.html', site=site)
