@@ -1,6 +1,9 @@
 from core.models import sites
+<<<<<<< HEAD
 from core.models import tags
 from core.models.tags import Tag
+=======
+>>>>>>> eabee01 (agregue el script de seed_roles)
 from core.database import db
 from geoalchemy2.elements import WKTElement
 
