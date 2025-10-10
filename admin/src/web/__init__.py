@@ -54,11 +54,7 @@ def create_app(env="development", static_folder="../../static"):
     # Rutas mínimas
     @app.route("/")
     def home():
-        return render_template("home.html", logged_user=session['user_email'] if 'user_email' in session else None)
-    
-    @app.route('/under-maintenance')
-    def under_maintenance():
-        return render_template("under_maintenance.html", logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("home.html", logged_user=session['user_id'] if 'user_id' in session else None)
     
     @app.route("/health/db")
     def health_db():
@@ -81,8 +77,9 @@ def create_app(env="development", static_folder="../../static"):
 
     @app.route('/mantenimiento')
     def mantenimiento():
-        return render_template("mantenimiento.html", logged_user=session['user_id'] if 'user_id' in session else None, message=database.db.session.query(FeatureFlag).filter(FeatureFlag.name=="Sistema administrativo").first().message)
-    
+        message = database.db.session.query(FeatureFlag).filter(FeatureFlag.name=="Sistema administrativo").first().message
+        return render_template("mantenimiento.html", logged_user=session['user_id'] if 'user_id' in session else None, message=message if message else "")
+
     @app.before_request
     def before_request():
         if check_flags(session.get('user_id')) and request.endpoint not in ['mantenimiento', 'login.login', 'static', 'logout.logout']:

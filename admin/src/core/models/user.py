@@ -32,13 +32,13 @@ def create_user(**kwargs):
     email = kwargs["email"]
     existente = db.session.query(User).filter_by(email=email).first()
     if existente:
-        return False
+        return None
     else:
         kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
         user = User(**kwargs)
         db.session.add(user)
         db.session.commit()
-        return True
+        return user
     
 def get_user_by_id(id):
     return db.session.query(User).filter_by(id=id).first()

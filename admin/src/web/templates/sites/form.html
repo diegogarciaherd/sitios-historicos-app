@@ -57,8 +57,8 @@
     <p>No tenés permisos para {{ 'editar' if site else 'crear' }} sitios.</p>
     <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-secondary">Volver</a>
   </div>
-  {% endblock %}
-  {% exit %} {# Termina el bloque si no tiene permiso #}
+ 
+   {# Termina el bloque si no tiene permiso #}
 {% endif %}
 
 
@@ -115,9 +115,6 @@
             <input type="hidden" id="lng" name="lng" value="{{ site.longitud if site else '' }}">
             <div class="error-message" id="localizacion-error"></div>
         </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
 
         <div class="form-row">
             <div class="form-group">

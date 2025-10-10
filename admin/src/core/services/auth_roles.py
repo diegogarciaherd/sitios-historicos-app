@@ -16,11 +16,7 @@ def load_user():
     g.roles = set()
     g.perms = set()
 
-    email = session.get("user_id")
-    if not email:
-        return
-
-    user = db.session.query(User).filter_by(email=email).first()
+    user = session.get("user_id")
     if not user or not user.active:
         return
 
