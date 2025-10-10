@@ -16,3 +16,24 @@ y entrar en la base de datos y correr el comando:
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 ```
+
+# Grupo45
+
+## Credenciales de prueba
+
+## Credenciales de prueba
+
+| Usuario               | Contraseña  | Rol en la app | Permisos / Notas                        |
+|-----------------------|------------|---------------|----------------------------------------|
+| admin@fiorella.com    | admin123   | admin         | Todo permitido                          |
+| editor1@fiorella.com  | editor123  | editor        | Ver / Crear / Editar                     |
+| editor2@fiorella.com  | editor123  | editor        | Bloqueado                                |
+| viewer1@fiorella.com  | viewer123  | viewer        | Solo ver                                 |
+| viewer2@fiorella.com  | viewer123  | viewer        | Solo ver                                 |
+| norole@fiorella.com   | norole123  | sin rol       | SysAdmin:                                |
+
+---                     |
+
+
+### Gestion de tags 
+/tags
