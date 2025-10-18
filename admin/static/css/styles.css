@@ -137,6 +137,41 @@ aside nav a:hover {
     color: var(--background);
 }
 
+.nav-section {
+    display: flex;
+    flex-direction: column;
+    margin-left: 1rem;
+    align-items: start;
+}
+
+.nav-section a {
+    position: relative;
+}
+
+.nav-section a::before {
+    content: ""; /* Essential for pseudo-elements */
+    position: absolute;
+    left: 0; /* Position the line at the beginning of the list item */
+    top: 0;
+    width: 2px; /* Width of the vertical line */
+    height: 100%; /* Make the line extend the full height of the list item */
+    background-color: var(--background); /* Color of the line */
+}
+
+.nav-section a::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 0.7rem;
+    height: 2px;
+    background-color: var(--background); /* Color of the line */
+}
+
+.nav-section a:last-child::before {
+    height: 50%;
+}
+
 button {
     background-color: var(--accent);
     border: none;
@@ -441,7 +476,7 @@ input:checked + .slider:before {
     margin-left: 30%;
 }
 
-.user-form-field {    
+.user-form-field {
     text-align: left;
     margin-bottom: 1.2rem;
     width: 100%;

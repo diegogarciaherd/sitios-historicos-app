@@ -12,7 +12,7 @@ adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admi
 @adminpanel_bp.route("/", methods=["GET"])
 @require_permission("users.manage")
 def admin_panel():
-    return render_template("adminpanel.html", logged_user=session['user_email'] if 'user_email' in session else None)
+    return render_template("adminpanel.html")
 
 def validate_user_data(form_data: dict, is_update=False) -> dict:
     form_data["active"] = True
@@ -63,7 +63,7 @@ def list_users() -> str:
             "prev_num": prev_num,
             "next_num": next_num
         }
-        return render_template("searchuser.html", users=users if users else None, logged_user=session['user_email'] if 'user_email' in session else None)
+        return render_template("searchuser.html", users=users if users else None)
     else: #request.method == POST
         users = []
         search_option = request.form.keys()
@@ -94,7 +94,7 @@ def list_users() -> str:
         if not users:
             users = None
 
-        return render_template("searchuser.html", users=users, logged_user=session['user_email'] if 'user_email' in session else None)
+        return render_template("searchuser.html", users=users)
 
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")
@@ -108,7 +108,7 @@ def create_user() -> str:
         except Exception as e:
             print(f"Error al crear el usuario: {str(e)}", "error")
 
-    return render_template("createuser.html", logged_user=session['user_email'] if 'user_email' in session else None)
+    return render_template("createuser.html")
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
@@ -122,7 +122,7 @@ def edit_user(id):
         except ValueError as e:
             flash(str(e), "error")
 
-    return render_template("edituser.html", logged_user=session['user_email'] if 'user_email' in session else None)
+    return render_template("edituser.html", logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")

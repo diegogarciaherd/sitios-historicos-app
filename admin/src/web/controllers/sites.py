@@ -43,8 +43,12 @@ sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
 )
 
-
 @sites_bp.route("/")
+@require_permission("sites.view")
+def home():
+    return render_template("sites_home.html")
+
+@sites_bp.route("/listar")
 @require_permission("sites.view")
 def list_all_sites():
     query_params = request.args.to_dict()
