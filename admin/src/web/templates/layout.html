@@ -67,7 +67,7 @@
                 {% block site_navigation_links %}{% endblock %}
                 <a>Validación de propuestas</a>
                 <a>Moderación de reseñas</a>
-                {% if logged_user and logged_user.sys_admin %}
+                {% if can('feature_flags.manage') %}
                 <a href="{{ url_for('feature_flags.list_all_feature_flags') }}"
                     >Gestión de funcionalidades</a
                 >

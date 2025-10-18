@@ -19,6 +19,7 @@ def run():
     print("🌱 Seeding roles, permissions, role-permissions, users, user-roles, blocked ...")
 
     # Roles
+    sys_admin = _get_or_create(Role, name="sys_admin")
     admin = _get_or_create(Role, name="admin")
     editor = _get_or_create(Role, name="editor")
     viewer = _get_or_create(Role, name="viewer")
@@ -29,12 +30,17 @@ def run():
     p_edit   = _get_or_create(Permission, code="sites.edit")
     p_delete = _get_or_create(Permission, code="sites.delete")
     p_users  = _get_or_create(Permission, code="users.manage")
+    p_flags  = _get_or_create(Permission, code="feature_flags.manage")
 
     db.session.commit()
 
     # Role -> Permisos (idempotente)
     def grant(r, p):
         _get_or_create(RolePermission, role_id=r.id, permission_id=p.id)
+
+    # sys_admin: todos los permisos
+    for p in (p_view, p_create, p_edit, p_delete, p_users, p_flags):
+        grant(sys_admin, p)
 
     # admin: todos
     for p in (p_view, p_create, p_edit, p_delete, p_users):
@@ -49,6 +55,8 @@ def run():
     db.session.commit()
 
     # Usuarios
+    u_sys_admin = create_user(email="sysadmin@fiorella.com",
+                               name="System", last_name="Admin", password="sysadmin123", active=True)
     u_admin  = create_user(email="admin@fiorella.com",
                               name="Admin", last_name="Root", password="admin123", active=True)
     u_edit1  = create_user(email="editor1@fiorella.com",
@@ -60,7 +68,7 @@ def run():
     u_view2  = create_user(email="viewer2@fiorella.com",
                               name="Victor", last_name="View", password="viewer123", active=True)
     u_norole = create_user(email="norole@fiorella.com",
-                              name="Nora", last_name="NoRole", password="norole123", active=True, sys_admin=True)
+                              name="Nora", last_name="NoRole", password="norole123", active=True)
     
     db.session.commit()
 
@@ -68,6 +76,7 @@ def run():
     def assign(user, role):
         _get_or_create(UserRole, user_id=user.id, role_id=role.id)
 
+    assign(u_sys_admin, sys_admin)
     assign(u_admin, admin)
     assign(u_edit1, editor)
     assign(u_edit2, editor)
