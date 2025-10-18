@@ -61,9 +61,10 @@
                 </h3>
             </a>
             <nav>
-                <a href="{{ url_for('sites.list_all_sites') }}"
+                <a href="{{ url_for('sites.home') }}"
                     >Gestion de sitios históricos</a
                 >
+                {% block site_navigation_links %}{% endblock %}
                 <a>Validación de propuestas</a>
                 <a>Moderación de reseñas</a>
                 {% if logged_user and logged_user.sys_admin %}
@@ -74,7 +75,7 @@
                 <a href="{{ url_for('adminpanel.admin_panel') }}"
                     >Gestión de usuarios</a
                 >
-                {% endif %}
+                {% block admin_navigation_links %}{% endblock %} {% endif %}
             </nav>
         </aside>
 
