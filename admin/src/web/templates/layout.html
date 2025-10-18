@@ -61,6 +61,7 @@
                 </h3>
             </a>
             <nav>
+                {% if logged_user %}
                 <a href="{{ url_for('sites.home') }}"
                     >Gestion de sitios históricos</a
                 >
@@ -75,7 +76,8 @@
                 <a href="{{ url_for('adminpanel.admin_panel') }}"
                     >Gestión de usuarios</a
                 >
-                {% block admin_navigation_links %}{% endblock %} {% endif %}
+                {% block admin_navigation_links %}{% endblock %} {% endif %} {%
+                endif %}
             </nav>
         </aside>
 
