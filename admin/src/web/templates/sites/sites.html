@@ -29,20 +29,12 @@ block head_styles %}
 					<span class="btn-icon">➕</span>
 					Crear Sitio
 				</a>
-				{% endif %} {% if can('sites.view') %} {% if sites %}
-				<a id="exportCsvBtn" href="#" class="exportCsvBtn">
-					<span class="btn-icon">📄</span>
-					Exportar CSV
-				</a>
-				{% else %}
-				<button
-					onclick="alert('No hay datos para exportar')"
-					class="exportCsvBtn"
-				>
+				{% endif %} {% if can('sites.view') %}
+				<button id="exportCsvBtn" class="exportCsvBtn">
 					<span class="btn-icon">📄</span>
 					Exportar CSV
 				</button>
-				{% endif %} {% endif %}
+				{% endif %}
 			</div>
 		</nav>
 	</div>
@@ -125,6 +117,8 @@ block head_styles %}
 			<span class="btn-icon">☰</span>
 		</button>
 	</div>
+
+	<div id="sites-data" data-sites="{{ sitesJson }}" style="display: none"></div>
 
 	{% if sites %}
 	<div class="sites-list">
@@ -539,12 +533,54 @@ block head_styles %}
 		} else {
 			gridViewBtn.click()
 		}
+	})
 
-		// Funcionalidad para exportar CSV
-		const exportCsvBtn = document.getElementById('exportCsvBtn')
+	// Funcion para exportar a CSV los sitios listados en la pagina.
+	document.getElementById('exportCsvBtn').addEventListener('click', () => {
+		// Obtener la lista de sitios actualmente mostrados en la pagina.
+
+		const sitesDataElement = document.getElementById('sites-data')
+		let currentSites = sitesDataElement.getAttribute('data-sites')
+		currentSites = JSON.parse(currentSites)
+
+		if (currentSites.length === 0) {
+			alert('No hay datos para exportar')
+			return
+		}
+
 		const baseUrl = '{{ url_for("sites.export_csv") }}'
-		const currentParams = window.location.search
-		exportCsvBtn.href = baseUrl + currentParams
+		// Hacer un POST a baseUrl pasandole la lista de sitios actuales.
+		fetch(baseUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ sites: currentSites }),
+		})
+			.then(async response => {
+				const dispositionHeader = response.headers.get('Content-Disposition')
+				let filename = 'sitios_historicos.csv' // Nombre por defecto
+
+				if (dispositionHeader && dispositionHeader.includes('filename=')) {
+					const filenameMatch = dispositionHeader.match(/filename="?([^"]+)"?/)
+					if (filenameMatch.length > 1) {
+						filename = filenameMatch[1]
+					}
+				}
+
+				return { blob: await response.blob(), filename: filename }
+			})
+			.then(({ blob, filename }) => {
+				// Descargar el archivo CSV
+				const url = window.URL.createObjectURL(blob)
+				const a = document.createElement('a')
+				a.href = url
+				a.download = filename
+				document.body.appendChild(a)
+				a.click()
+				a.remove()
+			})
+			.catch(err => console.log('Error al exportar CSV:', err))
 	})
 
 	/*

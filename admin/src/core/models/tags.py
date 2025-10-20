@@ -33,6 +33,14 @@ class Tag(Base):
 
         return slug
 
+    def to_dict(self) -> dict:
+        """Convierte el tag a un diccionario"""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "slug": self.slug,
+        }
+
     def __repr__(self):
         return f"<Tag {self.id}: {self.name} ({self.slug})>"
 
@@ -54,6 +62,7 @@ def create_tag(name):
     db.session.commit()
     return tag
 
+
 def assign_tags(site, tag_list):
     """
     Asigna una lista de objetos Tag a un sitio histórico.
@@ -63,9 +72,10 @@ def assign_tags(site, tag_list):
     if not isinstance(tag_list, list):
         raise ValueError("tag_list debe ser una lista de objetos Tag")
 
-    site.tags.clear()          # Limpiar tags existentes
-    site.tags.extend(tag_list) # Asignar nuevos tags
+    site.tags.clear()  # Limpiar tags existentes
+    site.tags.extend(tag_list)  # Asignar nuevos tags
     db.session.commit()
+
 
 def list_tags(search=None, page=1, per_page=25):
     """Devuelve los tags, con soporte opcional para búsqueda y paginación."""
@@ -161,6 +171,7 @@ def get_tags(search="", order_by="name_asc", page=1, per_page=10):
     total_pages = (total + per_page - 1) // per_page
 
     return tags, total, total_pages
+
 
 def get_all_tags():
     return db.session.query(Tag).order_by(Tag.name.asc()).all()
