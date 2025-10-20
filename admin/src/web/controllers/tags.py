@@ -6,11 +6,13 @@ from sqlalchemy import func
 from slugify import slugify
 from flask import flash, redirect, url_for
 from core.models import tags
+from core.services.auth_roles import require_permission
 
 tags_bp = Blueprint("tags", __name__, url_prefix="/tags", template_folder="../templates/tags")
 
 # Página HTML
 @tags_bp.route("/", methods=["GET"])
+@require_permission("tags.manage")
 def tags_list():
     search = request.args.get("search", "")
     order_by = request.args.get("order_by", "name_asc")
@@ -30,6 +32,7 @@ def tags_list():
 
 # API JSON
 @tags_bp.route("/api", methods=["GET"])
+@require_permission("tags.manage")
 def get_tags():
     search = request.args.get("search", "").strip()
     page = int(request.args.get("page", 1))
@@ -48,6 +51,7 @@ def get_tags():
 
 # Crear tag
 @tags_bp.route("/create", methods=["GET", "POST"])
+@require_permission("tags.manage")
 def create_tag():
     if request.method == "POST":
         try:
@@ -62,6 +66,7 @@ def create_tag():
 
 # Editar tag
 @tags_bp.route("/edit/<int:tag_id>", methods=["GET", "POST"])
+@require_permission("tags.manage")
 def edit_tag_view(tag_id):
     tag = db.session.query(Tag).get(tag_id)
     if not tag:
@@ -81,6 +86,7 @@ def edit_tag_view(tag_id):
 
 # Eliminar tag
 @tags_bp.route("/delete/<int:tag_id>", methods=["POST"])
+@require_permission("tags.manage")
 def delete_tag_view(tag_id):
     tag = db.session.query(Tag).get(tag_id)
     if not tag:

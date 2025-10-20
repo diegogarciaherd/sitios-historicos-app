@@ -16,8 +16,20 @@ def load_user():
     g.roles = set()
     g.perms = set()
 
-    user = session.get("user_id")
-    if not user or not user.active:
+    # session['user_id'] should store the numeric id of the user
+    user_id = session.get("user_id")
+    # Backwards-compat: if an object was stored previously, extract its id
+    if user_id and not isinstance(user_id, (int, str)):
+        try:
+            user_id = getattr(user_id, "id", None)
+        except Exception:
+            user_id = None
+    if not user_id:
+        return
+
+    # Cargar usuario desde la base de datos
+    user = db.session.query(User).filter_by(id=user_id).first()
+    if not user or not getattr(user, "active", True):
         return
 
     # Bloqueado?

@@ -61,12 +61,14 @@
                 </h3>
             </a>
             <nav>
-                <a href="{{ url_for('sites.list_all_sites') }}"
+                {% if logged_user %}
+                <a href="{{ url_for('sites.home') }}"
                     >Gestion de sitios históricos</a
                 >
+                {% block site_navigation_links %}{% endblock %}
                 <a>Validación de propuestas</a>
                 <a>Moderación de reseñas</a>
-                {% if logged_user and logged_user.sys_admin %}
+                {% if can('feature_flags.manage') %}
                 <a href="{{ url_for('feature_flags.list_all_feature_flags') }}"
                     >Gestión de funcionalidades</a
                 >
@@ -74,7 +76,8 @@
                 <a href="{{ url_for('adminpanel.admin_panel') }}"
                     >Gestión de usuarios</a
                 >
-                {% endif %}
+                {% block admin_navigation_links %}{% endblock %} {% endif %} {%
+                endif %}
             </nav>
         </aside>
 
