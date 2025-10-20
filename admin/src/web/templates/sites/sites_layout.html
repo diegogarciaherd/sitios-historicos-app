@@ -4,6 +4,9 @@ block site_navigation_links %}
     <a href="{{ url_for('sites.list_all_sites') }}"
         >Gestion de sitios históricos</a
     >
-    <a href="{{ url_for('tags.tags_list') }}">Crear tag</a>
+    {% if can('tags.manage')  %}
+        <a href="{{ url_for('tags.tags_list') }}">Crear tag</a>
+    {% endif %}
+
 </div>
 {% endblock %}

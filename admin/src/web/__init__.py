@@ -25,6 +25,7 @@ from core import database
 from web.config import config
 from core.services.auth_service import check_flags
 from core.models.feature_flags import FeatureFlag
+from core.seeds_roles import run as seed_roles_run
 
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
@@ -74,6 +75,11 @@ def create_app(env="development", static_folder="../../static"):
     @app.cli.command("seed-db")
     def seed_db():
         database.seed_db()
+
+    @app.cli.command("seed-roles")
+    def seed_roles():
+        seed_roles_run()
+
 
     @app.route('/mantenimiento')
     def mantenimiento():

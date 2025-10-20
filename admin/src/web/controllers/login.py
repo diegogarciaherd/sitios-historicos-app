@@ -13,7 +13,8 @@ def login():
     else:
         user = authenticate(request.form["email"], request.form["password"])
         if user:
-            session["user_id"] = user
+            # Guardar solo el id del usuario en la sesión (no el objeto SQLAlchemy)
+            session["user_id"] = user.id
             return redirect(url_for("home"))
         else:
             return render_template("login.html", error="Usuario o clave incorrectos.")
