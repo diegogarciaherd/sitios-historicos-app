@@ -9,7 +9,9 @@
     <a href="{{ url_for('sites.list_all_sites') }}"
         >Gestion de sitios históricos</a
     >
+    {% if can('tags.manage')  %}
     <a href="{{ url_for('tags.tags_list') }}">Crear tag</a>
+    {% endif%}
 </div>
 {% endblock %} {% block content %}
 <div class="container">
