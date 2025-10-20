@@ -2,63 +2,66 @@
 from functools import wraps
 from flask import g, session, abort
 from core.database import db
-from core.models.user import User
+# 🔽 IMPORTS de auth (no generan ciclo)
 from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
 
 # ---------- Carga del usuario en cada request ----------
 def load_user():
     """
-    - Lee session["user_id"] (email) y carga g.user
+    - Lee session["user_id"] (id) y carga g.user
     - Si está bloqueado/inactivo, deja g.user = None
     - Calcula y guarda roles y permisos en g
     """
+    # 🔽 import tardío para evitar ciclo con core.models.user
+    from core.models.user import User
+
     g.user = None
     g.roles = set()
     g.perms = set()
 
-    # session['user_id'] should store the numeric id of the user
     user_id = session.get("user_id")
-    # Backwards-compat: if an object was stored previously, extract its id
+    # Compatibilidad por si alguna vez se guardó un objeto en session
     if user_id and not isinstance(user_id, (int, str)):
-        try:
-            user_id = getattr(user_id, "id", None)
-        except Exception:
-            user_id = None
+        user_id = getattr(user_id, "id", None)
+
     if not user_id:
         return
 
-    # Cargar usuario desde la base de datos
+    # Cargar usuario desde la base
     user = db.session.query(User).filter_by(id=user_id).first()
     if not user or not getattr(user, "active", True):
         return
 
-    # Bloqueado?
-    blocked = db.session.query(BlockedUser).filter_by(user_id=user.id).first()
-    if blocked:
+    # ¿Bloqueado?
+    if db.session.query(BlockedUser).filter_by(user_id=user.id).first():
         return
 
     # Roles del usuario
-    role_ids = (
-        db.session.query(UserRole.role_id)
+    role_ids = {
+        rid for (rid,) in db.session.query(UserRole.role_id)
         .filter(UserRole.user_id == user.id)
         .all()
-    )
-    role_ids = {rid for (rid,) in role_ids}
+    }
 
     if role_ids:
-        role_names = db.session.query(Role.name).filter(Role.id.in_(role_ids)).all()
-        g.roles = {name for (name,) in role_names}
+        g.roles = {
+            name for (name,) in db.session.query(Role.name)
+            .filter(Role.id.in_(role_ids))
+            .all()
+        }
 
         # Permisos por rol
-        perm_ids = (
-            db.session.query(RolePermission.permission_id)
+        perm_ids = {
+            pid for (pid,) in db.session.query(RolePermission.permission_id)
             .filter(RolePermission.role_id.in_(role_ids))
             .all()
-        )
-        perm_ids = {pid for (pid,) in perm_ids}
+        }
         if perm_ids:
-            codes = db.session.query(Permission.code).filter(Permission.id.in_(perm_ids)).all()
-            g.perms = {c for (c,) in codes}
+            g.perms = {
+                code for (code,) in db.session.query(Permission.code)
+                .filter(Permission.id.in_(perm_ids))
+                .all()
+            }
 
     g.user = user
 
@@ -75,9 +78,7 @@ def can(code: str) -> bool:
     return has_perm(code)
 
 def inject_template_helpers():
-    """
-    Expone helpers y el usuario logueado a Jinja.
-    """
+    """Expone helpers y el usuario logueado a Jinja."""
     return {
         "user": getattr(g, "user", None),
         "logged_user": getattr(g, "user", None),
@@ -98,9 +99,10 @@ def require_permission(code: str):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             if not getattr(g, "user", None):
-                abort(401)
+                abort(401)  # no autenticado
             if not has_perm(code):
-                abort(401)
+                abort(403)  # autenticado pero sin permiso
             return fn(*args, **kwargs)
         return wrapper
     return decorator
+
