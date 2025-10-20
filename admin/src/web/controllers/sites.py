@@ -44,10 +44,12 @@ sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
 )
 
+
 @sites_bp.route("/")
 @require_permission("sites.view")
 def home():
     return render_template("sites_home.html")
+
 
 @sites_bp.route("/listar")
 @require_permission("sites.view")
@@ -198,7 +200,7 @@ def view_site(id):
     return render_template("show_site.html", site=site)
 
 
-@sites_bp.route("/exportar_csv", methods=["GET"])
+@sites_bp.route("/exportar_csv", methods=["POST"])
 @require_permission("sites.export")
 def export_csv():
     """Función para exportar los sitios a un archivo CSV."""
