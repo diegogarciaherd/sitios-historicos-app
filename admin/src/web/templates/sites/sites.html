@@ -36,32 +36,21 @@
                 </button>
             </div>
 
-            <div class="actions-group">
-                {% if can('sites.create') %}
-                <a
-                    href="{{ url_for('sites.create_site') }}"
-                    class="btn btn-primary"
-                >
-                    <span class="btn-icon">➕</span>
-                    Crear Sitio
-                </a>
-                {% endif %} {% if can('sites.view') %} {% if sites %}
-                <a id="exportCsvBtn" href="#" class="exportCsvBtn">
-                    <span class="btn-icon">📄</span>
-                    Exportar CSV
-                </a>
-                {% else %}
-                <button
-                    onclick="alert('No hay datos para exportar')"
-                    class="exportCsvBtn"
-                >
-                    <span class="btn-icon">📄</span>
-                    Exportar CSV
-                </button>
-                {% endif %} {% endif %}
-            </div>
-        </nav>
-    </div>
+			<div class="actions-group">
+				{% if can('sites.create') %}
+				<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
+					<span class="btn-icon">➕</span>
+					Crear Sitio
+				</a>
+				{% endif %} {% if can('sites.view') %}
+				<button id="exportCsvBtn" class="exportCsvBtn">
+					<span class="btn-icon">📄</span>
+					Exportar CSV
+				</button>
+				{% endif %}
+			</div>
+		</nav>
+	</div>
 
     <div class="filter-container">
         <div class="filter-row">
@@ -142,56 +131,53 @@
         </button>
     </div>
 
-    {% if sites %}
-    <div class="sites-list">
-        {% for site in sites %}
-        <div class="site-card">
-            <h3>{{ site.nombre }}</h3>
-            <p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
-            {% if site.descripcionBreve %}
-            <p class="description">{{ site.descripcionBreve }}</p>
-            {% endif %}
-            <div class="site-meta">
-                <span class="category"
-                    >{{ site.categoria or 'Sin categoría' }}</span
-                >
-                <span class="estado estado-{{ site.estado.value.lower() }}"
-                    >{{ site.estado.value }}</span
-                >
-                <span class="category"
-                    >Visible: {% if site.visible %}Sí{% else %}No{% endif
-                    %}</span
-                >
-            </div>
-            <div class="site-actions">
-                {% if can('sites.view') %}
-                <a
-                    href="{{ url_for('sites.view_site', id=site.id) }}"
-                    class="btn btn-sm btn-info"
-                    >Ver</a
-                >
-                {% endif %} {% if can('sites.edit') %}
-                <a
-                    href="{{ url_for('sites.edit_site', id=site.id) }}"
-                    class="btn btn-sm btn-warning"
-                    >Editar</a
-                >
-                {% endif %} {% if can('sites.delete') %}
-                <form
-                    method="POST"
-                    action="{{ url_for('sites.delete_site', id=site.id) }}"
-                    style="display: inline"
-                    onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
-                >
-                    <button type="submit" class="btn btn-sm btn-danger">
-                        Eliminar
-                    </button>
-                </form>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+	<div id="sites-data" data-sites="{{ sitesJson }}" style="display: none"></div>
+
+	{% if sites %}
+	<div class="sites-list">
+		{% for site in sites %}
+		<div class="site-card">
+			<h3>{{ site.nombre }}</h3>
+			<p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
+			{% if site.descripcionBreve %}
+			<p class="description">{{ site.descripcionBreve }}</p>
+			{% endif %}
+			<div class="site-meta">
+				<span class="category">{{ site.categoria or 'Sin categoría' }}</span>
+				<span class="estado estado-{{ site.estado.value.lower() }}"
+					>{{ site.estado.value }}</span
+				>
+				<span class="category"
+					>Visible: {% if site.visible %}Sí{% else %}No{% endif %}</span
+				>
+			</div>
+			<div class="site-actions">
+				{% if can('sites.view') %}
+				<a
+					href="{{ url_for('sites.view_site', id=site.id) }}"
+					class="btn btn-sm btn-info"
+					>Ver</a
+				>
+				{% endif %} {% if can('sites.edit') %}
+				<a
+					href="{{ url_for('sites.edit_site', id=site.id) }}"
+					class="btn btn-sm btn-warning"
+					>Editar</a
+				>
+				{% endif %} {% if can('sites.delete') %}
+				<form
+					method="POST"
+					action="{{ url_for('sites.delete_site', id=site.id) }}"
+					style="display: inline"
+					onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
+				>
+					<button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+				</form>
+				{% endif %}
+			</div>
+		</div>
+		{% endfor %}
+	</div>
 
     <!-- Paginación -->
     {% if pagination.pages > 1 %}
@@ -577,20 +563,62 @@
             localStorage.setItem("sitesView", "list");
         });
 
-        // Cargar vista guardada
-        const savedView = localStorage.getItem("sitesView") || "grid";
-        if (savedView === "list") {
-            listViewBtn.click();
-        } else {
-            gridViewBtn.click();
-        }
+		// Cargar vista guardada
+		const savedView = localStorage.getItem('sitesView') || 'grid'
+		if (savedView === 'list') {
+			listViewBtn.click()
+		} else {
+			gridViewBtn.click()
+		}
+	})
 
-        // Funcionalidad para exportar CSV
-        const exportCsvBtn = document.getElementById("exportCsvBtn");
-        const baseUrl = '{{ url_for("sites.export_csv") }}';
-        const currentParams = window.location.search;
-        exportCsvBtn.href = baseUrl + currentParams;
-    });
+	// Funcion para exportar a CSV los sitios listados en la pagina.
+	document.getElementById('exportCsvBtn').addEventListener('click', () => {
+		// Obtener la lista de sitios actualmente mostrados en la pagina.
+
+		const sitesDataElement = document.getElementById('sites-data')
+		let currentSites = sitesDataElement.getAttribute('data-sites')
+		currentSites = JSON.parse(currentSites)
+
+		if (currentSites.length === 0) {
+			alert('No hay datos para exportar')
+			return
+		}
+
+		const baseUrl = '{{ url_for("sites.export_csv") }}'
+		// Hacer un POST a baseUrl pasandole la lista de sitios actuales.
+		fetch(baseUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ sites: currentSites }),
+		})
+			.then(async response => {
+				const dispositionHeader = response.headers.get('Content-Disposition')
+				let filename = 'sitios_historicos.csv' // Nombre por defecto
+
+				if (dispositionHeader && dispositionHeader.includes('filename=')) {
+					const filenameMatch = dispositionHeader.match(/filename="?([^"]+)"?/)
+					if (filenameMatch.length > 1) {
+						filename = filenameMatch[1]
+					}
+				}
+
+				return { blob: await response.blob(), filename: filename }
+			})
+			.then(({ blob, filename }) => {
+				// Descargar el archivo CSV
+				const url = window.URL.createObjectURL(blob)
+				const a = document.createElement('a')
+				a.href = url
+				a.download = filename
+				document.body.appendChild(a)
+				a.click()
+				a.remove()
+			})
+			.catch(err => console.log('Error al exportar CSV:', err))
+	})
 
     /*
 	    // Mapa

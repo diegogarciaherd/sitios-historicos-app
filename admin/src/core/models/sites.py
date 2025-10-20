@@ -13,16 +13,18 @@ from sqlalchemy.dialects import postgresql
 
 # Tabla de asociación
 sites_tags = Table(
-    'sites_tags',
+    "sites_tags",
     Base.metadata,
-    Column('site_id', Integer, ForeignKey('sitios_historicos.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
+    Column("site_id", Integer, ForeignKey("sitios_historicos.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
 )
+
 
 class EstadoConservacion(enum.Enum):
     BUENO = "Bueno"
     REGULAR = "Regular"
     MALO = "Malo"
+
 
 class SitioHistorico(Base):
     __tablename__ = "sitios_historicos"
@@ -47,29 +49,29 @@ class SitioHistorico(Base):
         "Tag",
         secondary=sites_tags,
         backref="sitios_historicos",  # backref en lugar de back_populates
-        lazy="select"
+        lazy="select",
     )
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     localizacion: Mapped[Geometry] = mapped_column(
         Geometry(geometry_type="POINT", srid=4326), nullable=True
     )
 
-    @property 
+    @property
     def lat(self) -> float:
         "Devuelve la latitud del sitio"
-        if self.localizacion: 
+        if self.localizacion:
             punto = to_shape(self.localizacion)
-            return punto.y # Latitud
+            return punto.y  # Latitud
         return None
 
     @property
     def lng(self) -> float:
         "Devuelve la longitud del sitio"
-        if self.localizacion: 
+        if self.localizacion:
             punto = to_shape(self.localizacion)
-            return punto.x # Longitud
+            return punto.x  # Longitud
         return None
-    
+
     def to_dict(self) -> dict:
         """Convierte el sitio a un diccionario"""
         return {
@@ -79,20 +81,26 @@ class SitioHistorico(Base):
             "descripcionCompleta": self.descripcionCompleta,
             "ciudad": self.ciudad,
             "provincia": self.provincia,
-            "estado": self.estado.value if isinstance(self.estado, enum.Enum) else self.estado,
+            "estado": (
+                self.estado.value if isinstance(self.estado, enum.Enum) else self.estado
+            ),
             "añoInauguracion": self.añoInauguracion,
             "categoria": self.categoria,
             "lat": self.lat,
             "lng": self.lng,
-            "fechaRegistro": self.fechaRegistro.isoformat() if self.fechaRegistro else None,
+            "fechaRegistro": (
+                self.fechaRegistro.isoformat() if self.fechaRegistro else None
+            ),
             "visible": self.visible,
+            "tags": [tag.to_dict() for tag in self.tags],
         }
+
 
 def list_sites(page=1, per_page=10):
     query = db.session.query(SitioHistorico)
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
-    return sites , total
+    return sites, total
 
 
 def list_sites_with_filters(filters, page=1, per_page=10):
@@ -103,6 +111,7 @@ def list_sites_with_filters(filters, page=1, per_page=10):
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
+
 
 def get_all_provinces():
     """Devuelve una lista de todas las provincias únicas en la base de datos."""
@@ -118,62 +127,66 @@ def create_sites(**kwargs):
     # Extraer y convertir coordenadas
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
-    
+
     # Convertir año si existe
     año_inauguracion = kwargs.get("añoInauguracion")
     if año_inauguracion:
         kwargs["añoInauguracion"] = int(año_inauguracion)
-    
+
     # Crear el sitio
     site = SitioHistorico(**kwargs)
 
     # Asignar geometría si hay coordenadas
     if lat is not None and lng is not None:
-        site.localizacion = WKTElement(f'POINT({float(lng)} {float(lat)})', srid=4326)
+        site.localizacion = WKTElement(f"POINT({float(lng)} {float(lat)})", srid=4326)
 
     db.session.add(site)
     db.session.commit()
     return site
 
+
 def update_site(id, **kwargs):
     site = get_site(id)
     if not site:
         raise ValueError(f"Sitio con id {id} no encontrado")
-    
+
     # Extraer coordenadas si vienen en kwargs
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
-    
+
     # Convertir año si existe
     año_inauguracion = kwargs.get("añoInauguracion")
     if año_inauguracion is not None:
-        if año_inauguracion == '':
+        if año_inauguracion == "":
             kwargs["añoInauguracion"] = None
         else:
             try:
                 kwargs["añoInauguracion"] = int(año_inauguracion)
             except (ValueError, TypeError):
                 raise ValueError("El año de inauguración debe ser un número válido")
-    
+
     # Actualizar atributos
     for key, value in kwargs.items():
         if hasattr(site, key):
             setattr(site, key, value)
-    
+
     # Actualizar geometría si hay nuevas coordenadas
     if lat is not None and lng is not None:
         try:
-            site.localizacion = WKTElement(f'POINT({float(lng)} {float(lat)})', srid=4326)
+            site.localizacion = WKTElement(
+                f"POINT({float(lng)} {float(lat)})", srid=4326
+            )
             # También actualizar latitud y longitud por separado si existen en tu modelo
-            if hasattr(site, 'latitud'):
+            if hasattr(site, "latitud"):
                 site.latitud = float(lat)
-            if hasattr(site, 'longitud'):
+            if hasattr(site, "longitud"):
                 site.longitud = float(lng)
         except (ValueError, TypeError):
             raise ValueError("Las coordenadas deben ser números válidos")
-    
+
     db.session.commit()
     return site
+
 
 def get_site(id):
     return db.session.query(SitioHistorico).filter(SitioHistorico.id == id).first()
@@ -184,6 +197,7 @@ def delete_site_by_id(id):
     db.session.delete(site)
     db.session.commit()
     return site
+
 
 def apply_filters(query, filters):
     """Aplica filtros a una consulta de sitios históricos."""
@@ -243,58 +257,3 @@ def apply_filters(query, filters):
         query = query.filter(SitioHistorico.tags.any(Tag.name.in_(filters["tags"])))
 
     return query
-
-
-def export_to_csv(file_path: str, filters: dict = None):
-    """Exporta los sitios históricos a un archivo CSV aplicando filtros opcionales usando POSTGRE COPY."""
-
-    tag_subq = (
-        db.session.query(func.string_agg(Tag.name, ", "))
-        .select_from(sites_tags.join(Tag, sites_tags.c.tag_id == Tag.id))
-        .filter(sites_tags.c.site_id == SitioHistorico.id)
-        .correlate(SitioHistorico)  # IMPORTANTE: correlaciona con la tabla externa
-        .scalar_subquery()  # <- convierte la query en expresión escalar
-    )
-
-    query = db.session.query(
-        SitioHistorico.id,
-        SitioHistorico.nombre,
-        SitioHistorico.descripcionBreve,
-        SitioHistorico.ciudad,
-        SitioHistorico.provincia,
-        SitioHistorico.estado,
-        SitioHistorico.fechaRegistro,
-        SitioHistorico.localizacion,
-        # A cada sitio le agrego una columna con los tags asociados, separados por comas
-        tag_subq.label("tags"),
-    )
-
-    query = apply_filters(query, filters)
-
-    # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
-    # Primero por fecha de registro descendente (los más recientes primero)
-    # En caso de empate, por nombre ascendente (A-Z)
-    # En caso de nuevo empate, por ciudad ascendente (A-Z)
-    query = query.order_by(
-        SitioHistorico.fechaRegistro.desc(),
-        SitioHistorico.nombre.asc(),
-        SitioHistorico.ciudad.asc(),
-    )
-
-    # verificar si hay resultados
-    if query.count() == 0:
-        raise ValueError("No hay datos para exportar con los filtros proporcionados.")
-
-    query_compiled = query.statement.compile(
-        dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
-    )
-
-    with open(file_path, "w", encoding="utf-8") as csvfile:
-        # Usar el método COPY de PostgreSQL para exportar directamente a CSV
-        connection = db.session.connection().connection
-        cursor = connection.cursor()
-        try:
-            sql = f"COPY ({str(query_compiled)}) TO STDOUT WITH CSV HEADER"
-            cursor.copy_expert(sql, csvfile)
-        finally:
-            cursor.close()
