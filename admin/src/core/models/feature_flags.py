@@ -1,7 +1,7 @@
 from core.database import Base, db
 from sqlalchemy import ForeignKeyConstraint, Integer, Column, String, Boolean
 from sqlalchemy.orm import Mapped, relationship
-from flask import session
+from flask import session, g
 
 from core.models.feature_flags_history import FeatureFlagHistory, create_feature_flag_history, update_feature_flag_history
 
@@ -52,7 +52,7 @@ def update_feature_flag(id, **kwargs):
     db.session.commit()
 
     # Actualizo el historial cada vez que actualizo el feature flag
-    update_feature_flag_history(flag.id, session.get('user_id').id)
+    update_feature_flag_history(flag.id, g.user.id)
     return flag
 
 def toggle_feature_flag(id):

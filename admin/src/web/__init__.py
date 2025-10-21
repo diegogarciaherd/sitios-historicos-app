@@ -1,23 +1,13 @@
 # admin/src/web/__init__.py
-from flask import Flask, render_template, jsonify, session, url_for, redirect, request
-from flask_session import Session
+from flask import Flask, render_template, jsonify, url_for, redirect, request, g
 
-from core import database
 from web.handlers import error
-from web.config import config
 
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
 from web.controllers.adminpanel import adminpanel_bp
-from flask_session import Session
-from core import database
-from web.config import config
-from web.controllers.sites import sites_bp
 from core.services.bcrypt import bcrypt
 from web.controllers.tags import tags_bp
-from core.services.auth_service import check_flags
-from core.models.user import create_user
-from core.models.userrole import UserRole
 from web.controllers.sites import sites_bp
 from web.controllers.feature_flags import feature_flags_bp
 from flask_session import Session
@@ -55,7 +45,7 @@ def create_app(env="development", static_folder="../../static"):
     # Rutas mínimas
     @app.route("/")
     def home():
-        return render_template("home.html", logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("home.html")
     
     @app.route("/health/db")
     def health_db():
@@ -84,11 +74,11 @@ def create_app(env="development", static_folder="../../static"):
     @app.route('/mantenimiento')
     def mantenimiento():
         message = database.db.session.query(FeatureFlag).filter(FeatureFlag.name=="Sistema administrativo").first().message
-        return render_template("mantenimiento.html", logged_user=session['user_id'] if 'user_id' in session else None, message=message if message else "")
+        return render_template("mantenimiento.html", message=message if message else "")
 
     @app.before_request
     def before_request():
-        if check_flags(session.get('user_id')) and request.endpoint not in ['mantenimiento', 'login.login', 'static', 'logout.logout']:
+        if check_flags(g.user) and request.endpoint not in ['mantenimiento', 'login.login', 'static', 'logout.logout']:
             return redirect('/mantenimiento')
         if not check_flags(None) and request.endpoint == 'mantenimiento':
             return redirect(url_for('home'))
