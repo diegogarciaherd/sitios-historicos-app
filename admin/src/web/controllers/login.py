@@ -1,8 +1,6 @@
 # admin/src/web/controllers/login.py
-from flask import Blueprint, redirect, url_for, render_template, request, session
+from flask import Blueprint, redirect, url_for, render_template, request, session, flash
 from core.services.auth_service import authenticate
-from core.models.user import create_user
-from core.models.userrole import UserRole
 
 login_bp = Blueprint("login", __name__)
 
@@ -17,4 +15,5 @@ def login():
             session["user_id"] = user.id
             return redirect(url_for("home"))
         else:
-            return render_template("login.html", error="Usuario o clave incorrectos.")
+            flash("Usuario o clave incorrectos.", "error")
+            return render_template("login.html", email=request.form["email"], pw=request.form["password"])
