@@ -3,8 +3,8 @@ from core.database import db
 from core.models.user import User
 from core.models.feature_flags import FeatureFlag
 from core.services.bcrypt import bcrypt
-from flask import redirect, url_for
 from flask import session, g
+from core.services.auth_roles import has_role
 # from werkzeug.security import check_password_hash  # para después hashear
 
 def authenticate(email: str, password: str) -> User | None:
@@ -19,7 +19,7 @@ def check_flags(user: User | None):
     if not activated:
         return False
     if user:
-        return not user.sys_admin
+        return not has_role("sys_admin")
     return True
 
 def load_user():

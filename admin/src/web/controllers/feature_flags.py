@@ -32,7 +32,7 @@ def list_all_feature_flags():
         'prev_num': prev_num,
         'next_num': next_num
     }
-    return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags, logged_user=session.get('user_id'))
+    return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags)
 
 @feature_flags_bp.route('/editar_flag/<int:id>', methods=['GET', 'POST'])
 @require_permission('feature_flags.manage')

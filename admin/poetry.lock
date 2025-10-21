@@ -252,22 +252,6 @@ bcrypt = ">=3.1.1"
 Flask = "*"
 
 [[package]]
-name = "flask-login"
-version = "0.6.3"
-description = "User authentication and session management for Flask."
-optional = false
-python-versions = ">=3.7"
-groups = ["main"]
-files = [
-    {file = "Flask-Login-0.6.3.tar.gz", hash = "sha256:5e23d14a607ef12806c699590b89d0f0e0d67baeec599d75947bf9c147330333"},
-    {file = "Flask_Login-0.6.3-py3-none-any.whl", hash = "sha256:849b25b82a436bf830a054e74214074af59097171562ab10bfa999e6b78aae5d"},
-]
-
-[package.dependencies]
-Flask = ">=1.0.4"
-Werkzeug = ">=1.0.1"
-
-[[package]]
 name = "flask-session"
 version = "0.8.0"
 description = "Server-side session support for Flask"
@@ -1141,4 +1125,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "e45456c14e1f1dafc4871219e08c0448fa60783cc38badbf3d1452b3e7bde13c"
+content-hash = "ee9b0c97907053559f0a4ff8ac31be980bcab12c9b0bda3d1e6e5a86ad3637fc"
