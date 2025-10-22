@@ -71,11 +71,11 @@ content %}
         </p>
         <br />
         <div class="user-actions">
-            <!-- <a
+            <a
 					href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
 					class="btn edit-btn"
 					>Editar</a
-				> -->
+				>
             <form
                 method="POST"
                 action="{{ url_for('adminpanel.del_user', id=user.id) }}"
