@@ -122,29 +122,60 @@ def list_all_sites():
 @require_permission("sites.create")
 def create_site():
     all_tags = db.session.query(Tag).all()
-    selected_tag_ids = []
-
+    
     if request.method == "POST":
         data = request.form.to_dict()
         # Manejar checkbox visible
         data["visible"] = "visible" in request.form
 
-        tag_ids = request.form.getlist("tags[]")  # Lista de ids seleccionados
+        tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
+        
+        # Validar datos
+        errors = validate_site_data(data)
+        
+        # Si hay errores, mostrar el formulario con los errores
+        if errors:
+            # Mostrar cada error individualmente
+            for error in errors:
+                flash(error, "error")
+            return render_template(
+                "form.html", 
+                site=None, 
+                tags=all_tags, 
+                selected_tag_ids=tag_ids,
+                form_data=data  # Mantener datos del formulario
+            )
+        
+        # SOLO crear el sitio si NO hay errores
+        try:
+            site = create_sites(**data)
 
-        site = create_sites(**data)
+            if tag_ids:
+                selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+                tags.assign_tags(site, selected_tags)
 
-        if tag_ids:
-            selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
-            tags.assign_tags(site, selected_tags)
+            # IMPORTANTE: Flash ANTES de redirect
+            flash("Sitio creado correctamente", "success")
+            return redirect(url_for("sites.list_all_sites"))  # ← Redirigir a la lista
+            
+        except Exception as e:
+            flash(f"Error al crear el sitio: {str(e)}", "error")
+            return render_template(
+                "form.html", 
+                site=None, 
+                tags=all_tags, 
+                selected_tag_ids=tag_ids,
+                form_data=data
+            )
 
-        flash("Sitio creado correctamente", "success")
-        return redirect(url_for("sites.list_all_sites"))
-
+    # GET request
     return render_template(
-        "form.html", site=None, tags=all_tags, selected_tag_ids=selected_tag_ids
+        "form.html", 
+        site=None, 
+        tags=all_tags, 
+        selected_tag_ids=[]
     )
-
 
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.create")
@@ -157,7 +188,7 @@ def edit_site(id):
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
-        data = request.form.to_dict()
+        data = request.form.to_dict() 
         data["visible"] = "visible" in request.form
 
         tag_ids = request.form.getlist("tags[]")
