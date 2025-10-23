@@ -68,9 +68,14 @@ def read_users_by(role, active):
         query = db.session.query(User).filter_by(role=role).filter_by(active=active)
     return query
 
-def update_user(id, values):
-    db.session.query(User).filter_by(id=id).update(values)
+def update_user(id, **kwargs):
+    email = kwargs["email"]
+    existente = db.session.query(User).filter_by(email=email).first()
+    if existente:
+        return "El correo electronico ingresado ya se encuentra en uso."
+    db.session.query(User).filter_by(id=id).update(kwargs)
     db.session.commit()
+    return ""
 
 def delete_user(id):
     db.session.query(User).filter_by(id=id).delete()

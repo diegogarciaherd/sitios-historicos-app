@@ -2,35 +2,64 @@
     <form method="post">
         <div class="user-form-field">
             <label for="email">E-mail</label>
-            <input type="email" name="email" required><br>
+            <input type="email" name="email" value="{{ user.email if edit else '' }}" required><br>
         </div>
         
         <div class="user-form-field">
             <label for="name">Nombre</label>
-            <input type="text" name="name" required><br>
+            <input type="text" name="name" value="{{ user.name if edit else '' }}" required><br>
         </div>
         
         <div class="user-form-field">
             <label for="last_name">Apellido</label>
-            <input type="text" name="last_name" required><br>
+            <input type="text" name="last_name" value="{{ user.last_name if edit else '' }}" required><br>
         </div>
         
-        <div class="user-form-field">
-            <label for="password">Clave</label>
-            <input type="password" name="password" required><br>
-        </div>
+        {% if edit %}
+            <div class="user-form-field">
+                <label for="password">Nueva clave</label>
+                <input type="password" name="password"><br>
+            </div> 
+            <div class="user-form-field">
+                <label for="repeat-password">Repetir clave</label>
+                <input type="password" name="repeat-password"><br>
+            </div>
+            <div class="user-form-field">
+                <label for="activeness">Activo</label>
+                <input type="checkbox" id="active" name="active" {% if user.active %}checked{% endif %}>
+            </div>
+        {% else %}
+            <div class="user-form-field">
+                <label for="password">Clave</label>
+                <input type="password" name="password" required><br>
+            </div>
+        {% endif %}
         
         <div class="user-form-field">
             <label for="role">Rol</label>
             <div class="custom-select">
                 <select id="role" name="role" required>
-                    <option value="PUBLIC">Usuario publico</option>
-                    <option value="EDITOR">Usuario editor</option>
-                    <option value="ADMIN">Administrador</option>
+                    <option value="public" {% if user.role.value == "public" %}selected{% endif %}>Usuario publico</option>
+                    <option value="editor" {% if user.role.value == "editor" %}selected{% endif %}>Usuario editor</option>
+                    <option value="admin" {% if user.role.value == "admin" %}selected{% endif %}>Administrador</option>
                 </select><br>
             </div>
         </div>
-
-        <button type="submit">Crear</button>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="msg"
+                    {% if category == "success" %}
+                        style="color: green;"
+                    {% else %}
+                        style="color: red;"
+                    {% endif %}
+                    >
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <button type="submit">{% if edit %}Guardar cambios{% else %}Crear{% endif %}</button>
     </form>
 </div>

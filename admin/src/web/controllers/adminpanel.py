@@ -14,7 +14,7 @@ adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admi
 def admin_panel():
     return render_template("adminpanel.html")
 
-def validate_user_data(form_data: dict, is_update=False) -> dict:
+def validate_user_data(form_data: dict) -> dict:
     form_data["active"] = True
     errors = []
     data = {}
@@ -123,17 +123,44 @@ def create_user() -> str:
 def edit_user(id):    
     if request.method == "POST":
         try:
-            data = validate_user_data(request.form)
-            updated_user = update_user(id, **data)
-            flash("Usuario editado correctamente.", "success")
-            return redirect(url_for("panel-de-admin"))
+            data, error = validate_edit_request_data(request.form.to_dict())
+            if not error:
+                error = update_user(id, **data)
+            if not error:
+                flash("Usuario editado correctamente.", "success")
+            else:
+                flash(error, "error")
+            return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
         except ValueError as e:
             flash(str(e), "error")
-
-    return render_template("edituser.html", logged_user=session['user_id'] if 'user_id' in session else None)
+    else:
+        user_to_edit = get_user_by_id(id)
+        return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
 def del_user(id: int):
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
+
+def validate_edit_request_data(form_data):
+    ret_data = {}
+    ret_data["email"] = form_data["email"] if "email" in form_data else None
+    ret_data["name"] = form_data["name"] if "name" in form_data else None
+    ret_data["last_name"] = form_data["last_name"] if "last_name" in form_data else None
+    ret_data["active"] = True if "active" in form_data else False
+    
+    match (form_data["role"]):
+        case ("public"):
+            ret_data["role"] = UserRole.PUBLIC
+        case ("editor"):
+            ret_data["role"] = UserRole.EDITOR
+        case ("admin"):
+            ret_data["role"] = UserRole.ADMIN
+
+    if "password" in form_data:
+        if form_data["password"] != form_data["repeat-password"]:
+            return ret_data, "Las contraseñas deben coincidir en ambos campos."
+        ret_data["password"] = form_data["password"]
+        
+    return ret_data, ""
