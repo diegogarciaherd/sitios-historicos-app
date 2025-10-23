@@ -7,6 +7,7 @@ logout_bp = Blueprint("logout", __name__)
 @logout_bp.route("/logout", methods=["GET"])
 @login_required
 def logout():
+    '''Maneja el cierre de sesión de usuarios'''
     if session:
         session.clear()
     return redirect(url_for("home"))

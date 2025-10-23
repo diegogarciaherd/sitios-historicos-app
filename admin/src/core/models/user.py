@@ -10,6 +10,18 @@ if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
 
 class User(Base):
+    '''Modelo de usuario
+    atributos:
+    - id: Identificador único del usuario
+    - email: Email del usuario
+    - name: Nombre del usuario
+    - last_name: Apellido del usuario
+    - password: Contraseña hasheada del usuario
+    - active: Estado del usuario (activo/inactivo)
+    - role: Rol del usuario (admin, editor, public)
+    - sys_admin: Indica si el usuario es administrador del sistema
+    feature_flags_history: Relación con el historial de cambios de feature flags realizados por el usuario
+    '''
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(nullable=False)
@@ -26,9 +38,14 @@ class User(Base):
     )
 
     def __repr__(self):
+        '''Representación en string del Usuario'''
         return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, {self.role}, {self.sys_admin}>"
 
 def create_user(**kwargs):
+    '''Crea un nuevo usuario
+    params:
+        kwargs: atributos del usuario
+        returns: instancia de User o None si el email ya existe'''
     email = kwargs["email"]
     existente = db.session.query(User).filter_by(email=email).first()
     if existente:
@@ -41,24 +58,45 @@ def create_user(**kwargs):
         return user
     
 def get_user_by_id(id):
+    '''Obtiene un usuario por su id'''
     return db.session.query(User).filter_by(id=id).first()
 
 def read_user_by_email(email):
+    '''Obtiene un usuario por su email'''
     return db.session.query(User).filter_by(email=email).first()
 
 def read_users_by_activeness(active, page=1, per_page=10):
+    '''Obtiene usuarios por su estado de actividad
+    params:
+        active: estado de actividad (True/False)
+        page: número de página
+        per_page: cantidad de items por página
+        returns: (users, total)'''
     query = db.session.query(User).filter_by(active=active)
     total = query.count()
     users = query.offset((page - 1) * per_page).limit(per_page).all()
     return users, total
 
 def read_users_by_role(role, page=1, per_page=10):
+    '''Obtiene usuarios por su rol
+    params:
+        role: rol del usuario
+        page: número de página
+        per_page: cantidad de items por página
+        returns: (users, total)
+    '''
     query = db.session.query(User).filter_by(role=role)
     total = query.count()
     users = query.offset((page - 1) * per_page).limit(per_page).all()
     return users, total
 
 def read_users_by(role, active):
+    '''Obtiene usuarios por rol y/o estado de actividad
+    params:
+        role: rol del usuario (opcional)
+        active: estado de actividad (opcional)
+        returns: query de usuarios filtrados
+    '''
     query = None
     if (role and active is None):
         query = db.session.query(User).filter_by(role=role)
@@ -69,14 +107,22 @@ def read_users_by(role, active):
     return query
 
 def update_user(id, values):
+    '''Actualiza un usuario
+    params:
+        id: id del usuario
+        values: diccionario con los atributos a actualizar
+    '''
     db.session.query(User).filter_by(id=id).update(values)
     db.session.commit()
 
 def delete_user(id):
+    '''Elimina un usuario por su id'''
     db.session.query(User).filter_by(id=id).delete()
     db.session.commit()
 
 def list_all_users(page=1, per_page=10):
+    '''Lista todos los usuarios'''
+    
     query = db.session.query(User)
     total = query.count()
     users = query.offset((page - 1) * per_page).limit(per_page).all()

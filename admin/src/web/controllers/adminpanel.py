@@ -12,9 +12,11 @@ adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admi
 @adminpanel_bp.route("/", methods=["GET"])
 @require_permission("users.manage")
 def admin_panel():
+    '''Renderiza la página principal del panel de administración'''
     return render_template("adminpanel.html")
 
 def validate_user_data(form_data: dict, is_update=False) -> dict:
+    '''Valida y procesa los datos del formulario para crear o actualizar un usuario'''
     form_data["active"] = True
     errors = []
     data = {}
@@ -42,6 +44,7 @@ def validate_user_data(form_data: dict, is_update=False) -> dict:
 @adminpanel_bp.route("/buscar-usuarios", methods=["GET", "POST"])
 @require_permission("users.manage")
 def list_users() -> str:
+    '''Lista y busca usuarios en el panel de administración'''
     if request.method == "GET":
         page = request.args.get("page", 1, type=int)
         per_page = 25
@@ -107,6 +110,7 @@ def list_users() -> str:
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")
 def create_user() -> str:
+    '''Crea un nuevo usuario desde el panel de administración'''
     if request.method == "POST":
         try:
             data = validate_user_data(request.form.to_dict())
@@ -121,6 +125,7 @@ def create_user() -> str:
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
 def edit_user(id):    
+    '''Edita un usuario existente desde el panel de administración'''
     if request.method == "POST":
         try:
             data = validate_user_data(request.form)
@@ -135,5 +140,6 @@ def edit_user(id):
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
 def del_user(id: int):
+    '''Elimina un usuario desde el panel de administración'''
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))

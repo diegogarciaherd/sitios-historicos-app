@@ -11,6 +11,7 @@ feature_flags_bp = Blueprint('feature_flags', __name__, url_prefix='/feature_fla
 @feature_flags_bp.route('/')
 @require_permission('feature_flags.manage')
 def list_all_feature_flags():
+    '''Lista todos los flags de funcionalidad con paginación'''
     page = request.args.get('page', 1, type=int)
     per_page = 10
     feature_flags, total = list_feature_flags(page=page, per_page=per_page)
@@ -38,6 +39,7 @@ def list_all_feature_flags():
 @require_permission('feature_flags.manage')
 # Mejorada con validación y manejo de errores
 def edit_feature_flag(id):
+    '''Edita un flag de funcionalidad existente'''
     feature_flag = get_feature_flag(id)
     if not feature_flag:
         abort(404)
@@ -58,6 +60,7 @@ def edit_feature_flag(id):
 @feature_flags_bp.route('/toggle_feature_flag/<int:id>', methods=['GET'])
 @require_permission('feature_flags.manage')
 def toggle_feature_flag(id):
+    '''Activa o desactiva un flag de funcionalidad'''
     feature_flag = get_feature_flag(id)
     if not feature_flag:
         abort(404)

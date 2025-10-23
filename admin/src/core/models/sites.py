@@ -12,6 +12,12 @@ from sqlalchemy import func
 from sqlalchemy.dialects import postgresql
 
 # Tabla de asociación
+''' Tabla de asociación entre sitios históricos y tags ''' 
+''' atributos: 
+     id: Identificador único de la asociación
+     site_id: Identificador del sitio histórico
+     tag_id: Identificador del tag asociado
+     '''
 sites_tags = Table(
     "sites_tags",
     Base.metadata,
@@ -21,12 +27,15 @@ sites_tags = Table(
 
 
 class EstadoConservacion(enum.Enum):
+    '''Enum para el estado de conservación de un sitio histórico'''
     BUENO = "Bueno"
     REGULAR = "Regular"
     MALO = "Malo"
 
 
 class SitioHistorico(Base):
+    '''Modelo de Sitio Histórico'''
+  
     __tablename__ = "sitios_historicos"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -58,7 +67,8 @@ class SitioHistorico(Base):
 
     @property
     def lat(self) -> float:
-        ''''''
+        '''Devuelve la latitud del sitio
+        '''
         if self.localizacion:
             punto = to_shape(self.localizacion)
             return punto.y  # Latitud

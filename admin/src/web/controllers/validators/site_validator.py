@@ -1,5 +1,8 @@
 
 def validate_site_data(data):
+    '''Valida los datos del sitio histórico proporcionados en el formulario.
+    Devuelve una lista de mensajes de error si hay problemas, o una lista vacía si
+    todo es correcto.'''
     errors = []
 
     # Validar nombre 

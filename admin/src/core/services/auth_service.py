@@ -8,12 +8,14 @@ from core.services.auth_roles import has_role
 # from werkzeug.security import check_password_hash  # para después hashear
 
 def authenticate(email: str, password: str) -> User | None:
+    '''Autentica un usuario por email y contraseña.'''
     user = db.session.query(User).filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password, password):
         return user
     return None
 
 def check_flags(user: User | None):
+    '''Verifica si el sistema administrativo está activado mediante feature flag.'''
     flag = db.session.query(FeatureFlag).filter_by(name="Sistema administrativo").first()
     activated = flag.activated if flag else False
     if not activated:
