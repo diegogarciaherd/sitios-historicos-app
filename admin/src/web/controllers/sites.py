@@ -197,7 +197,10 @@ def delete_site(id):
 @require_permission("sites.view")
 def view_site(id):
     site = get_site(id)
-    return render_template("show_site.html", site=site)
+    site_lat = site.lat
+    site_lng = site.lng
+    return render_template("show_site.html", site=site, site_lat=site_lat, site_lng=site_lng)
+
 
 
 @sites_bp.route("/exportar_csv", methods=["POST"])
