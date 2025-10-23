@@ -3,8 +3,7 @@ content %}
 <h1>Buscar usuario(s)</h1>
 <select id="search-option" required style="margin-bottom: 1rem">
     <option value="by-email">Por correo electronico</option>
-    <option value="by-activeness">Por actividad</option>
-    <option value="by-role">Por rol</option>
+    <option value="by-activeness-and-role">Por actividad y/o rol</option>
 </select>
 
 <form method="post" id="option-email">
@@ -25,30 +24,20 @@ content %}
     <button type="submit" style="margin-top: 1rem">Buscar</button>
 </form>
 
-<form method="post" id="option-activeness" class="hidden">
+<form method="post" id="option-activeness-and-role" class="hidden">
     <label>Actividad:</label>
     <div class="radio-group">
-        <label
-            ><input type="radio" name="actividad" value="activo" />Activo</label
-        >
-        <label
-            ><input
-                type="radio"
-                name="actividad"
-                value="inactivo"
-            />Inactivo</label
-        >
+        <label><input type="radio" name="actividad" value="activo" />Activo</label>
+        <label><input type="radio" name="actividad" value="inactivo"/>Inactivo</label>
+        <label><input type="radio" name="actividad" value="any" checked/>Cualquiera</label>
     </div>
-    <button type="submit" style="margin-top: 1rem">Buscar</button>
-</form>
-
-<form method="post" id="option-role" class="hidden">
     <label>Rol:</label>
     <div class="radio-group">
         <label><input type="radio" name="rol" value="public" />Público</label>
         <label><input type="radio" name="rol" value="editor" />Editor</label>
         <label><input type="radio" name="rol" value="admin" />Admin</label>
-    </div>
+        <label><input type="radio" name="rol" value="any" checked>Cualquiera</label>
+    </div>    
     <button type="submit" style="margin-top: 1rem">Buscar</button>
 </form>
 
@@ -95,24 +84,18 @@ content %}
 <script>
     const select = document.getElementById("search-option");
     const emailForm = document.getElementById("option-email");
-    const activenessForm = document.getElementById("option-activeness");
-    const roleForm = document.getElementById("option-role");
+    const activenessAndRoleForm = document.getElementById("option-activeness-and-role");
 
     select.addEventListener("change", function () {
         const opcion = select.value;
 
-        // Ocultar todos los campos
         emailForm.classList.add("hidden");
-        activenessForm.classList.add("hidden");
-        roleForm.classList.add("hidden");
+        activenessAndRoleForm.classList.add("hidden");
 
-        // Mostrar el campo correspondiente
         if (opcion === "by-email") {
             emailForm.classList.remove("hidden");
-        } else if (opcion === "by-activeness") {
-            activenessForm.classList.remove("hidden");
-        } else if (opcion === "by-role") {
-            roleForm.classList.remove("hidden");
+        } else if (opcion === "by-activeness-and-role") {
+            activenessAndRoleForm.classList.remove("hidden");
         }
     });
 </script>

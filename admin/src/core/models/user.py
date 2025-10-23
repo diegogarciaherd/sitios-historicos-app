@@ -58,6 +58,16 @@ def read_users_by_role(role, page=1, per_page=10):
     users = query.offset((page - 1) * per_page).limit(per_page).all()
     return users, total
 
+def read_users_by(role, active):
+    query = None
+    if (role and active is None):
+        query = db.session.query(User).filter_by(role=role)
+    if (active is not None and not role):
+        query = db.session.query(User).filter_by(active=active)
+    if (role is not None and active):
+        query = db.session.query(User).filter_by(role=role).filter_by(active=active)
+    return query
+
 def update_user(id, values):
     db.session.query(User).filter_by(id=id).update(values)
     db.session.commit()

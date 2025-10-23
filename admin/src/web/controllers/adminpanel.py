@@ -1,7 +1,7 @@
-from flask import Blueprint, request, render_template, flash, redirect, url_for, abort
+from flask import Blueprint, request, render_template, flash, redirect, url_for
 from core.models.userrole import UserRole
-from core.models.user import create_user as create, read_user_by_email, read_users_by_activeness
-from core.models.user import read_users_by_role, update_user, delete_user, get_user_by_id, list_all_users
+from core.models.user import create_user as create, read_user_by_email, read_users_by
+from core.models.user import update_user, delete_user, list_all_users
 from core.services.auth_roles import require_permission
 from web.decorators.loginrequired import login_required
 from web.decorators.permissionrequired import role_required
@@ -67,29 +67,37 @@ def list_users() -> str:
     else: #request.method == POST
         users = []
         search_option = request.form.keys()
-        if "email" in request.form:
+        print(search_option)
+        if "email" in search_option:
             email = request.form.get("email")
             result = read_user_by_email(email)
             if result:
                 users.append(result)
-        
-        elif "actividad" in request.form:
-            is_active_str = request.form.get("actividad")
-            if is_active_str == "activo":
-                is_active = True
-            elif is_active_str == "inactivo":
-                is_active = False
-            users = read_users_by_activeness(is_active)[0]
 
-        elif "rol" in request.form:
-            role_str = request.form.get("rol")
-            if role_str == "public":
-                role = UserRole.PUBLIC
-            elif role_str == "editor":
-                role = UserRole.EDITOR
-            elif role_str == "admin":
-                role = UserRole.ADMIN
-            users = read_users_by_role(role)[0]
+        elif "actividad" or "rol" in search_option:
+            act = request.form.get("actividad")
+            match act:
+                case "activo":
+                    act = True
+                case "inactivo":
+                    act = False
+                case "any":
+                    act = None
+
+            role = request.form.get("rol")
+            match role:
+                case "public":
+                    role = UserRole.PUBLIC
+                case "editor":
+                    role = UserRole.EDITOR
+                case "admin":
+                    role = UserRole.ADMIN
+                case "any":
+                    role = None
+            if (act is None and role is None):
+                users = list_all_users()[0]
+            else:
+                users = read_users_by(role, act)
 
         if not users:
             users = None
