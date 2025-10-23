@@ -1,5 +1,5 @@
 from core.database import Base, db
-from sqlalchemy import ForeignKey, Integer, Column, DateTime, func
+from sqlalchemy import ForeignKey, Integer, Column, DateTime
 from sqlalchemy.orm import Mapped, relationship
 from typing import  TYPE_CHECKING
 import datetime
