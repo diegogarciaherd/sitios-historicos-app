@@ -58,9 +58,27 @@ def read_users_by_role(role, page=1, per_page=10):
     users = query.offset((page - 1) * per_page).limit(per_page).all()
     return users, total
 
-def update_user(id, values):
-    db.session.query(User).filter_by(id=id).update(values)
+def read_users_by(role, active):
+    query = None
+    if (role is not None and active is None):
+        query = db.session.query(User).filter_by(role=role).all()
+    if (active is not None and role is None):
+        query = db.session.query(User).filter_by(active=active).all()
+    if (role is not None and active is not None):
+        query = db.session.query(User).filter_by(role=role).filter_by(active=active).all()
+    return query
+
+def update_user(id, **kwargs):
+    new_email = kwargs["email"]
+    old_email = db.session.query(User).filter_by(id=id).first().email
+    if old_email != new_email:
+        exists = db.session.query(User).filter_by(email=new_email).first()
+        if exists:
+            return "El correo electronico ingresado ya se encuentra en uso."
+    kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
+    db.session.query(User).filter_by(id=id).update(kwargs)
     db.session.commit()
+    return ""
 
 def delete_user(id):
     db.session.query(User).filter_by(id=id).delete()

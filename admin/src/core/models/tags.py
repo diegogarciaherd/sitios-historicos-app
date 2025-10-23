@@ -8,6 +8,13 @@ from datetime import datetime
 
 
 class Tag(Base):
+    '''Modelo de Tag para categorizar sitios históricos'''
+    ''' Atributos:
+        id: Identificador único del tag
+        name: Nombre del tag
+        slug: Versión amigable para URLs del nombre
+        created_at: Fecha de creación del tag
+        '''
     __tablename__ = "tags"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -18,10 +25,12 @@ class Tag(Base):
     )
 
     def __init__(self, name):
+        '''Constructor del Tag'''
         self.name = name
         self.slug = self._generate_unique_slug(name)
 
     def _generate_unique_slug(self, name):
+        '''Genera un slug único basado en el nombre'''
         base_slug = slugify(name)
         slug = base_slug
         counter = 1
@@ -33,7 +42,16 @@ class Tag(Base):
 
         return slug
 
+    def to_dict(self) -> dict:
+        """Convierte el tag a un diccionario"""
+        return {
+            "id": self.id,
+            "name": self.name,
+            "slug": self.slug,
+        }
+
     def __repr__(self):
+        '''Representación en string del Tag'''
         return f"<Tag {self.id}: {self.name} ({self.slug})>"
 
 
@@ -54,6 +72,7 @@ def create_tag(name):
     db.session.commit()
     return tag
 
+
 def assign_tags(site, tag_list):
     """
     Asigna una lista de objetos Tag a un sitio histórico.
@@ -63,12 +82,17 @@ def assign_tags(site, tag_list):
     if not isinstance(tag_list, list):
         raise ValueError("tag_list debe ser una lista de objetos Tag")
 
-    site.tags.clear()          # Limpiar tags existentes
-    site.tags.extend(tag_list) # Asignar nuevos tags
+    site.tags.clear()  # Limpiar tags existentes
+    site.tags.extend(tag_list)  # Asignar nuevos tags
     db.session.commit()
+
 
 def list_tags(search=None, page=1, per_page=25):
     """Devuelve los tags, con soporte opcional para búsqueda y paginación."""
+    ''' params: page: número de página
+        per_page: cantidad de tags por página
+        search: cadena de búsqueda para filtrar por nombre
+    '''
     query = db.session.query(Tag)
 
     if search:
@@ -88,6 +112,7 @@ def list_tags(search=None, page=1, per_page=25):
 
 def update_tag(tag_id, new_name):
     """Actualiza un tag existente."""
+
     tag = db.session.query(Tag).get(tag_id)
     if not tag:
         raise ValueError("Tag no encontrado.")
@@ -111,6 +136,7 @@ def update_tag(tag_id, new_name):
 
 
 def delete_tag(tag_id, can_delete=True):
+    """Elimina un tag por su ID si es posible."""
     tag = db.session.query(Tag).get(tag_id)
     if not tag or not can_delete:
         return None
@@ -120,6 +146,7 @@ def delete_tag(tag_id, can_delete=True):
 
 
 def get_tags_paginated(page=1, per_page=10, search=""):
+    '''Obtiene tags con paginación y búsqueda opcional.'''
     query = db.session.query(Tag)
 
     if search:
@@ -133,6 +160,12 @@ def get_tags_paginated(page=1, per_page=10, search=""):
 
 
 def get_tags(search="", order_by="name_asc", page=1, per_page=10):
+    '''Obtiene tags con búsqueda, orden y paginación.'''
+    ''' params:
+        search: cadena de búsqueda para filtrar por nombre
+        order_by: criterio de orden ("name_asc", "name_desc", "date_asc", "date_desc")
+        page: número de página
+        per_page: cantidad de tags por página'''
     # Base query
     query = db.session.query(Tag)
 
@@ -162,5 +195,7 @@ def get_tags(search="", order_by="name_asc", page=1, per_page=10):
 
     return tags, total, total_pages
 
+
 def get_all_tags():
+    '''Obtiene todos los tags sin paginación ordenados por nombre ascendente'''
     return db.session.query(Tag).order_by(Tag.name.asc()).all()

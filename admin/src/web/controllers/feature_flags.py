@@ -4,10 +4,12 @@ from msgspec import ValidationError
 from core.models.feature_flags import list_feature_flags, create_feature_flag, update_feature_flag, get_feature_flag, delete_feature_flag
 from src.core.database import db
 from flask import request, redirect, url_for
+from core.services.auth_roles import require_permission
 
 feature_flags_bp = Blueprint('feature_flags', __name__, url_prefix='/feature_flags', template_folder='../templates/feature_flags') # Define el blueprint para las rutas de sitios
 
 @feature_flags_bp.route('/')
+@require_permission('feature_flags.manage')
 def list_all_feature_flags():
     page = request.args.get('page', 1, type=int)
     per_page = 10
@@ -30,9 +32,10 @@ def list_all_feature_flags():
         'prev_num': prev_num,
         'next_num': next_num
     }
-    return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags, logged_user=session.get('user_id'))
+    return render_template('feature_flags.html', pagination=pagination, feature_flags=feature_flags)
 
 @feature_flags_bp.route('/editar_flag/<int:id>', methods=['GET', 'POST'])
+@require_permission('feature_flags.manage')
 # Mejorada con validación y manejo de errores
 def edit_feature_flag(id):
     feature_flag = get_feature_flag(id)
@@ -53,6 +56,7 @@ def edit_feature_flag(id):
     return render_template('form.html', feature_flag=feature_flag)
 
 @feature_flags_bp.route('/toggle_feature_flag/<int:id>', methods=['GET'])
+@require_permission('feature_flags.manage')
 def toggle_feature_flag(id):
     feature_flag = get_feature_flag(id)
     if not feature_flag:

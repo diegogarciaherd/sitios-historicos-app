@@ -1,0 +1,12 @@
+{% extends "layout.html" %} {% block title %}Sitios históricos{% endblock %} {%
+block site_navigation_links %}
+<div class="nav-section">
+    <a href="{{ url_for('sites.list_all_sites') }}"
+        >Gestion de sitios históricos</a
+    >
+    {% if can('tags.manage')  %}
+        <a href="{{ url_for('tags.tags_list') }}">Crear tag</a>
+    {% endif %}
+
+</div>
+{% endblock %}

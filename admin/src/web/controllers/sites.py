@@ -19,7 +19,6 @@ import tempfile
 
 # Importá helpers/modelos que ya existían en development
 from core.models.sites import (
-    export_to_csv,
     list_sites,
     create_sites,
     list_sites_with_filters,
@@ -38,6 +37,8 @@ from core.models.tags import get_all_tags  # ya estaba en development
 
 from datetime import datetime
 from flask import Blueprint
+import json
+import csv
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -45,6 +46,12 @@ sites_bp = Blueprint(
 
 
 @sites_bp.route("/")
+@require_permission("sites.view")
+def home():
+    return render_template("sites_home.html")
+
+
+@sites_bp.route("/listar")
 @require_permission("sites.view")
 def list_all_sites():
     query_params = request.args.to_dict()
@@ -96,10 +103,15 @@ def list_all_sites():
     provinces = [p[0] for p in get_all_provinces()]
     tags = [t.name for t in get_all_tags()]
 
+    sitesJson = [
+        site.to_dict() for site in sites
+    ]  # Sitios en formato JSON para guardar en el frontend, para luego poder exportarlos a CSV
+
     return render_template(
         "sites.html",
         pagination=pagination,
         sites=sites,
+        sitesJson=json.dumps(sitesJson),
         cities=cities,
         provinces=provinces,
         tags=tags,
@@ -110,29 +122,60 @@ def list_all_sites():
 @require_permission("sites.create")
 def create_site():
     all_tags = db.session.query(Tag).all()
-    selected_tag_ids = []
-
+    
     if request.method == "POST":
         data = request.form.to_dict()
         # Manejar checkbox visible
         data["visible"] = "visible" in request.form
 
-        tag_ids = request.form.getlist("tags[]")  # Lista de ids seleccionados
+        tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
+        
+        # Validar datos
+        errors = validate_site_data(data)
+        
+        # Si hay errores, mostrar el formulario con los errores
+        if errors:
+            # Mostrar cada error individualmente
+            for error in errors:
+                flash(error, "error")
+            return render_template(
+                "form.html", 
+                site=None, 
+                tags=all_tags, 
+                selected_tag_ids=tag_ids,
+                form_data=data  # Mantener datos del formulario
+            )
+        
+        # SOLO crear el sitio si NO hay errores
+        try:
+            site = create_sites(**data)
 
-        site = create_sites(**data)
+            if tag_ids:
+                selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+                tags.assign_tags(site, selected_tags)
 
-        if tag_ids:
-            selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
-            tags.assign_tags(site, selected_tags)
+            # IMPORTANTE: Flash ANTES de redirect
+            flash("Sitio creado correctamente", "success")
+            return redirect(url_for("sites.list_all_sites"))  # ← Redirigir a la lista
+            
+        except Exception as e:
+            flash(f"Error al crear el sitio: {str(e)}", "error")
+            return render_template(
+                "form.html", 
+                site=None, 
+                tags=all_tags, 
+                selected_tag_ids=tag_ids,
+                form_data=data
+            )
 
-        flash("Sitio creado correctamente", "success")
-        return redirect(url_for("sites.list_all_sites"))
-
+    # GET request
     return render_template(
-        "form.html", site=None, tags=all_tags, selected_tag_ids=selected_tag_ids
+        "form.html", 
+        site=None, 
+        tags=all_tags, 
+        selected_tag_ids=[]
     )
-
 
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.create")
@@ -145,7 +188,7 @@ def edit_site(id):
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
-        data = request.form.to_dict()
+        data = request.form.to_dict() 
         data["visible"] = "visible" in request.form
 
         tag_ids = request.form.getlist("tags[]")
@@ -182,35 +225,66 @@ def delete_site(id):
 
 
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
+@require_permission("sites.view")
 def view_site(id):
     site = get_site(id)
-    return render_template("show_site.html", site=site)
+    site_lat = site.lat
+    site_lng = site.lng
+    return render_template("show_site.html", site=site, site_lat=site_lat, site_lng=site_lng)
 
 
-@sites_bp.route("/exportar_csv", methods=["GET"])
+
+@sites_bp.route("/exportar_csv", methods=["POST"])
+@require_permission("sites.export")
 def export_csv():
     """Función para exportar los sitios a un archivo CSV."""
 
-    try:
-        query_params = request.args.to_dict()
+    sitesToExport = request.get_json().get("sites", [])
 
-        with tempfile.NamedTemporaryFile(
-            mode="w+", delete=False, suffix=".csv"
-        ) as temp_csv:
-            export_to_csv(temp_csv.name, filters=query_params)
-            temp_csv.flush()
-
-        # Nombre del archivo: sitios_<YYYYMMDD_HHMM>.csv
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M")
-        download_name = f"sitios_{timestamp}.csv"
-
-        return send_file(
-            temp_csv.name,
-            as_attachment=True,
-            download_name=download_name,
-            mimetype="text/csv",
+    with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".csv") as file:
+        writer = csv.writer(file)
+        writer.writerow(
+            [
+                "ID",
+                "Nombre",
+                "Descripción",
+                "Ciudad",
+                "Provincia",
+                "Estado de conservación",
+                "Fecha de registro",
+                "Coordenadas (Lat, Lng)",
+                "Tags",
+            ]
         )
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        return jsonify({"error": f"Error al exportar CSV: {str(e)}"}), 500
+        for site in sitesToExport:
+            fechaRegistro = datetime.fromisoformat(site["fechaRegistro"])
+            fechaRegistro = fechaRegistro.strftime("%d/%m/%Y %H:%M")
+
+            writer.writerow(
+                [
+                    site["id"],
+                    site["nombre"],
+                    site["descripcionBreve"],
+                    site["ciudad"],
+                    site["provincia"],
+                    site["estado"],
+                    fechaRegistro,
+                    f"{site['lat']}, {site['lng']}",
+                    ", ".join(
+                        tag["name"] for tag in site["tags"]
+                    ),  # Esto crea una cadena con los nombres de los tags separados por comas
+                ]
+            )
+        file.flush()
+        file.seek(0)
+
+    # Nombre del archivo: sitios_<YYYYMMDD_HHMM>.csv
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"sitios_{timestamp}.csv"
+
+    return send_file(
+        file.name,  # Ruta absoluta del archivo que creamos antes con tempfile
+        as_attachment=True,  # Indica al navegador que lo descargue
+        download_name=filename,
+        mimetype="text/csv",
+    )

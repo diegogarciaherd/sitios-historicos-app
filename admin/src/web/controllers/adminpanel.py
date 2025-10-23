@@ -1,7 +1,7 @@
-from flask import Blueprint, request, render_template, flash, redirect, url_for, abort
+from flask import Blueprint, request, render_template, flash, redirect, url_for
 from core.models.userrole import UserRole
-from core.models.user import create_user as create, read_user_by_email, read_users_by_activeness
-from core.models.user import read_users_by_role, update_user, delete_user, get_user_by_id, list_all_users
+from core.models.user import create_user as create, read_user_by_email, read_users_by
+from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
 from web.decorators.loginrequired import login_required
 from web.decorators.permissionrequired import role_required
@@ -12,9 +12,9 @@ adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admi
 @adminpanel_bp.route("/", methods=["GET"])
 @require_permission("users.manage")
 def admin_panel():
-    return render_template("adminpanel.html", logged_user=session['user_email'] if 'user_email' in session else None)
+    return render_template("adminpanel.html")
 
-def validate_user_data(form_data: dict, is_update=False) -> dict:
+def validate_user_data(form_data: dict) -> dict:
     form_data["active"] = True
     errors = []
     data = {}
@@ -63,38 +63,45 @@ def list_users() -> str:
             "prev_num": prev_num,
             "next_num": next_num
         }
-        return render_template("searchuser.html", users=users if users else None, logged_user=session['user_email'] if 'user_email' in session else None)
-    else: #request.method == POST
+        return render_template("searchuser.html", users=users if users else None)
+    else:
         users = []
         search_option = request.form.keys()
-        if "email" in request.form:
+        if "email" in search_option:
             email = request.form.get("email")
             result = read_user_by_email(email)
             if result:
                 users.append(result)
-        
-        elif "actividad" in request.form:
-            is_active_str = request.form.get("actividad")
-            if is_active_str == "activo":
-                is_active = True
-            elif is_active_str == "inactivo":
-                is_active = False
-            users = read_users_by_activeness(is_active)[0]
 
-        elif "rol" in request.form:
-            role_str = request.form.get("rol")
-            if role_str == "public":
-                role = UserRole.PUBLIC
-            elif role_str == "editor":
-                role = UserRole.EDITOR
-            elif role_str == "admin":
-                role = UserRole.ADMIN
-            users = read_users_by_role(role)[0]
+        elif "actividad" or "rol" in search_option:
+            act = request.form.get("actividad")
+            match act:
+                case "activo":
+                    act = True
+                case "inactivo":
+                    act = False
+                case "any":
+                    act = None
+
+            role = request.form.get("rol")
+            match role:
+                case "public":
+                    role = UserRole.PUBLIC
+                case "editor":
+                    role = UserRole.EDITOR
+                case "admin":
+                    role = UserRole.ADMIN
+                case "any":
+                    role = None
+            if (act is None and role is None):
+                users = list_all_users()[0]
+            else:
+                users = read_users_by(role, act)
 
         if not users:
             users = None
 
-        return render_template("searchuser.html", users=users, logged_user=session['user_email'] if 'user_email' in session else None)
+        return render_template("searchuser.html", users=users)
 
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")
@@ -108,24 +115,49 @@ def create_user() -> str:
         except Exception as e:
             print(f"Error al crear el usuario: {str(e)}", "error")
 
-    return render_template("createuser.html", logged_user=session['user_email'] if 'user_email' in session else None)
+    return render_template("createuser.html")
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
-def edit_user(id):    
+def edit_user(id):
+    print(id)
     if request.method == "POST":
-        try:
-            data = validate_user_data(request.form)
-            updated_user = update_user(id, **data)
+        data, error = validate_edit_request_data(request.form.to_dict())
+        if not error:
+            error = update_user(id, **data)
+        if not error:
             flash("Usuario editado correctamente.", "success")
-            return redirect(url_for("panel-de-admin"))
-        except ValueError as e:
-            flash(str(e), "error")
-
-    return render_template("edituser.html", logged_user=session['user_email'] if 'user_email' in session else None)
+        else:
+            flash(error, "error")
+        return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
+    else:
+        user_to_edit = get_user_by_id(id)
+        return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
 def del_user(id: int):
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
+
+def validate_edit_request_data(form_data):
+    ret_data = {}
+    ret_data["email"] = form_data["email"] if "email" in form_data else None
+    ret_data["name"] = form_data["name"] if "name" in form_data else None
+    ret_data["last_name"] = form_data["last_name"] if "last_name" in form_data else None
+    ret_data["active"] = True if "active" in form_data else False
+    
+    match (form_data["role"]):
+        case ("public"):
+            ret_data["role"] = UserRole.PUBLIC
+        case ("editor"):
+            ret_data["role"] = UserRole.EDITOR
+        case ("admin"):
+            ret_data["role"] = UserRole.ADMIN
+
+    if "password" in form_data:
+        if form_data["password"] != form_data["repeat-password"]:
+            return ret_data, "Las contraseñas deben coincidir en ambos campos."
+        ret_data["password"] = form_data["password"]
+        
+    return ret_data, ""
