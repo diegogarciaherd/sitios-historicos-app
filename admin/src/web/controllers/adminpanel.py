@@ -3,18 +3,29 @@ from core.models.userrole import UserRole
 from core.models.user import create_user as create, read_user_by_email, read_users_by
 from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
-from web.decorators.loginrequired import login_required
-from web.decorators.permissionrequired import role_required
 from flask import session
 
 adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admin", template_folder="../templates")
 
 @adminpanel_bp.route("/", methods=["GET"])
 @require_permission("users.manage")
-def admin_panel():
+def admin_panel() -> str:
+    """
+    Puerta de entrada al panel de administrador.
+    """
     return render_template("adminpanel.html")
 
 def validate_user_data(form_data: dict) -> dict:
+    """
+    Sanitiza los datos recibidos del front-end, quitandoles los espacios
+    en blanco y asegurandose de que los requeridos estan.
+
+    Args:
+        form_data (dict): Los datos a validar.
+
+    Returns:
+        dict: Los datos validados.
+    """
     form_data["active"] = True
     errors = []
     data = {}
@@ -42,6 +53,9 @@ def validate_user_data(form_data: dict) -> dict:
 @adminpanel_bp.route("/buscar-usuarios", methods=["GET", "POST"])
 @require_permission("users.manage")
 def list_users() -> str:
+    """
+    Lista los usuarios existentes.
+    """
     if request.method == "GET":
         page = request.args.get("page", 1, type=int)
         per_page = 25
@@ -106,6 +120,9 @@ def list_users() -> str:
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")
 def create_user() -> str:
+    """
+    Funcionalidad que permite crear un nuevo usuario.
+    """
     if request.method == "POST":
         try:
             data = validate_user_data(request.form.to_dict())
@@ -119,8 +136,14 @@ def create_user() -> str:
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
-def edit_user(id):
-    print(id)
+def edit_user(id: int) -> str:
+    """
+    Edita un usuario de la base de datos con los datos recibidos del
+    front-end.
+
+    Args:
+        id (int): El id del usuario que se quiere editar.
+    """
     if request.method == "POST":
         data, error = validate_edit_request_data(request.form.to_dict())
         if not error:
@@ -137,10 +160,21 @@ def edit_user(id):
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
 def del_user(id: int):
+    """
+    Elimina un usuario de la base de datos.
+    """
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
 
-def validate_edit_request_data(form_data):
+def validate_edit_request_data(form_data: dict):
+    """
+    Helper que valida los datos recibidos en una peticion de edicion
+    de usuario, de manera que tenga sentido con lo que espera la funcion
+    del modelo.
+
+    Args:
+        form_data (dict): Los datos con los que se va a actualizar el usuario.
+    """
     ret_data = {}
     ret_data["email"] = form_data["email"] if "email" in form_data else None
     ret_data["name"] = form_data["name"] if "name" in form_data else None

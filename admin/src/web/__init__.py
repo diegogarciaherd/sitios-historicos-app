@@ -1,8 +1,6 @@
 # admin/src/web/__init__.py
 from flask import Flask, render_template, jsonify, url_for, redirect, request, g
-
 from web.handlers import error
-
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
 from web.controllers.adminpanel import adminpanel_bp

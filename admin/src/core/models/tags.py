@@ -1,9 +1,9 @@
 from core.database import Base
-from sqlalchemy import String, Integer, Table, Column, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from core.database import db
 from slugify import slugify
-from sqlalchemy import func, asc, desc, DateTime
+from sqlalchemy import func, DateTime
 from datetime import datetime
 
 

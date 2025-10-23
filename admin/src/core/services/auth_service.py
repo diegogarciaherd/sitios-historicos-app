@@ -5,7 +5,6 @@ from core.models.feature_flags import FeatureFlag
 from core.services.bcrypt import bcrypt
 from flask import session, g
 from core.services.auth_roles import has_role
-# from werkzeug.security import check_password_hash  # para después hashear
 
 def authenticate(email: str, password: str) -> User | None:
     user = db.session.query(User).filter_by(email=email).first()
