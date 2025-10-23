@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for
 from core.models.userrole import UserRole
 from core.models.user import create_user as create, read_user_by_email, read_users_by
-from core.models.user import update_user, delete_user, list_all_users
+from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
 from web.decorators.loginrequired import login_required
 from web.decorators.permissionrequired import role_required
@@ -64,10 +64,9 @@ def list_users() -> str:
             "next_num": next_num
         }
         return render_template("searchuser.html", users=users if users else None)
-    else: #request.method == POST
+    else:
         users = []
         search_option = request.form.keys()
-        print(search_option)
         if "email" in search_option:
             email = request.form.get("email")
             result = read_user_by_email(email)
@@ -120,19 +119,17 @@ def create_user() -> str:
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
-def edit_user(id):    
+def edit_user(id):
+    print(id)
     if request.method == "POST":
-        try:
-            data, error = validate_edit_request_data(request.form.to_dict())
-            if not error:
-                error = update_user(id, **data)
-            if not error:
-                flash("Usuario editado correctamente.", "success")
-            else:
-                flash(error, "error")
-            return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
-        except ValueError as e:
-            flash(str(e), "error")
+        data, error = validate_edit_request_data(request.form.to_dict())
+        if not error:
+            error = update_user(id, **data)
+        if not error:
+            flash("Usuario editado correctamente.", "success")
+        else:
+            flash(error, "error")
+        return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
     else:
         user_to_edit = get_user_by_id(id)
         return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
