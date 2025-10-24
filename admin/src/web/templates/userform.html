@@ -39,9 +39,9 @@
             <label for="role">Rol</label>
             <div class="custom-select">
                 <select id="role" name="role" required>
-                    <option value="public" {% if user.role.value == "public" %}selected{% endif %}>Usuario publico</option>
-                    <option value="editor" {% if user.role.value == "editor" %}selected{% endif %}>Usuario editor</option>
-                    <option value="admin" {% if user.role.value == "admin" %}selected{% endif %}>Administrador</option>
+                        <option value="4" {% if edit and user.role_id == 4 %}selected{% endif %}>Usuario publico</option>
+                        <option value="3" {% if edit and user.role_id == 3 %}selected{% endif %}>Usuario editor</option>
+                        <option value="2" {% if edit and user.role_id == 2 %}selected{% endif %}>Administrador</option>
                 </select><br>
             </div>
         </div>

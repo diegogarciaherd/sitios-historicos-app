@@ -1,5 +1,4 @@
-from flask import Blueprint, request, render_template, flash, redirect, url_for
-from core.models.auth import UserRole
+from flask import Blueprint, request, render_template, flash, redirect, url_for, abort
 from core.models.user import create_user as create, read_user_by_email, read_users_by
 from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
@@ -15,38 +14,32 @@ def admin_panel() -> str:
     """
     return render_template("adminpanel.html")
 
-def validate_user_data(form_data: dict) -> dict:
+def validate_user_data(form_data: dict) -> dict | str:
     """
-    Sanitiza los datos recibidos del front-end, quitandoles los espacios
-    en blanco y asegurandose de que los requeridos estan.
+    Sanitiza los datos recibidos del front-end, especificamente cuando
+    se recibe una peticion de creacion de usuario.
 
     Args:
         form_data (dict): Los datos a validar.
 
     Returns:
         dict: Los datos validados.
+
+        str: Mensaje de error
     """
-    form_data["active"] = True
-    errors = []
     data = {}
 
     required_fields = ["email", "name", "last_name", "password", "role"]
     for field in required_fields:
         if not form_data.get(field):
-            errors.append(f"El campo {field} es obligatorio")
-    
-    if errors:
-        raise Exception("; ".join(errors))
+            return f"El campo {field} es requerido."
 
-    try:
-        data["email"] = form_data["email"].strip()
-        data["name"] = form_data["name"].strip()
-        data["last_name"] = form_data["last_name"].strip()
-        data["password"] = form_data["password"]
-        data["active"] = form_data["active"]
-        data["role"] = form_data["role"]
-    except Exception as e:
-        raise Exception(f"Error en el formato de los datos: {str(e)}")
+    data["email"] = form_data["email"].strip()
+    data["name"] = form_data["name"].strip()
+    data["last_name"] = form_data["last_name"].strip()
+    data["password"] = form_data["password"]
+    data["active"] = True
+    data["role"] = int(form_data["role"])
     
     return data
 
@@ -59,24 +52,8 @@ def list_users() -> str:
     if request.method == "GET":
         page = request.args.get("page", 1, type=int)
         per_page = 25
-        users, total = list_all_users(page=page, per_page=per_page)
+        users = list_all_users(page=page, per_page=per_page)
 
-        total_pages = (total + per_page - 1) // per_page
-        has_prev = page > 1
-        has_next = page < total_pages
-        prev_num = page - 1 if has_prev else None
-        next_num = page + 1 if has_next else None
-        
-        pagination = {
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "pages": total_pages,
-            "has_prev": has_prev,
-            "has_next": has_next,
-            "prev_num": prev_num,
-            "next_num": next_num
-        }
         return render_template("searchuser.html", users=users if users else None)
     else:
         users = []
@@ -123,15 +100,21 @@ def list_users() -> str:
 @require_permission("users.manage")
 def create_user() -> str:
     """
-    Funcionalidad que permite crear un nuevo usuario.
+    Crea un nuevo usuario.
     """
     if request.method == "POST":
         data = validate_user_data(request.form.to_dict())
-        create(**data)
-        flash("El usuario fue creado correctamente", "success")
-        return redirect(url_for("adminpanel.list_users"))
+        if not isinstance(data, str):
+            error = create(**data)
+            if not error:
+                flash("El usuario fue creado correctamente", "success")
+                return redirect(url_for("adminpanel.list_users"))
+            else:
+                flash(error, "error")
+        else:
+            flash(data, "error")
 
-    return render_template("createuser.html")
+    return render_template("createuser.html", logged_user=session["user_id"] if "user_id" in session else None)
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
@@ -143,6 +126,7 @@ def edit_user(id: int) -> str:
     Args:
         id (int): El id del usuario que se quiere editar.
     """
+    check_for_sysadmin(id)
     if request.method == "POST":
         data, error = validate_edit_request_data(request.form.to_dict())
         if not error:
@@ -154,8 +138,7 @@ def edit_user(id: int) -> str:
         return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
     else:
         user_to_edit = get_user_by_id(id)
-        user_role_id = UserRole.get_user_role(id)
-        return render_template("edituser.html", user=user_to_edit, user_role_id=user_role_id, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
+        return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
@@ -163,12 +146,13 @@ def del_user(id: int):
     """
     Elimina un usuario de la base de datos.
     """
+    check_for_sysadmin(id)
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
 
 def validate_edit_request_data(form_data: dict):
     """
-    Helper que valida los datos recibidos en una peticion de edicion
+    Valida los datos recibidos en una peticion de edicion
     de usuario, de manera que tenga sentido con lo que espera la funcion
     del modelo.
 
@@ -180,16 +164,7 @@ def validate_edit_request_data(form_data: dict):
     ret_data["name"] = form_data["name"] if "name" in form_data else None
     ret_data["last_name"] = form_data["last_name"] if "last_name" in form_data else None
     ret_data["active"] = True if "active" in form_data else False
-    
-    match (form_data["role"]):
-        case ("public"):
-            ret_data["role"] = 4
-        case ("editor"):
-            ret_data["role"] = 3
-        case ("admin"):
-            ret_data["role"] = 2
-        case ("sysadmin"):
-            ret_data["role"] = 1
+    ret_data["role"] = int(form_data["role"])
 
     if "password" in form_data:
         if form_data["password"] != form_data["repeat-password"]:
@@ -197,3 +172,16 @@ def validate_edit_request_data(form_data: dict):
         ret_data["password"] = form_data["password"]
         
     return ret_data, ""
+
+def check_for_sysadmin(id: int):
+    """
+    Realiza un chequeo preventivo para ver si la id corresponde
+    a la de un sysadmin, los cuales deben ser inmunes a la edicion
+    y eliminacion.
+
+    Args:
+        id (int): El id a evaluar
+    """
+    possible_sysadmin = get_user_by_id(id)
+    if possible_sysadmin.role_id == 1:
+        abort(401)

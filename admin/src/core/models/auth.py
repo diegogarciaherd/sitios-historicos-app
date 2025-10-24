@@ -63,19 +63,27 @@ class UserRole(Base):
 
     __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_role"),)
 
+    def __repr__(self):
+        return f"<UserRole {self.id}: {self.user_id}, {self.role_id}>"
+
     def create_entry(uid: int, role_id: int):
         new_entry = UserRole(user_id=uid, role_id=role_id)
         db.session.add(new_entry)
         db.session.commit()
 
+    def get_all_relations():
+        return db.session.query(UserRole).all()
+
     def get_user_role(id: int):
         return db.session.query(UserRole).filter_by(id=id).first()
 
     def modify_user_role(uid: int, new_role_id: int):
-        pass
+        db.session.query(UserRole).filter_by(user_id=uid).update({"role_id": new_role_id})
+        db.session.commit()
 
     def delete_user_role(uid: int):
-        pass
+        db.session.query(UserRole).filter_by(user_id=uid).delete()
+        db.session.commit()
 
 class BlockedUser(Base):
     """

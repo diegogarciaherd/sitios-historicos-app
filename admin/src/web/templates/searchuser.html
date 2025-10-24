@@ -53,26 +53,35 @@ content %}
         <br />
         <p>Rol:</p>
         <p>
-            {% if user.role.value == "public" %} Usuario publico {% elif
-            user.role.value == "editor" %} Usuario editor {% elif
-            user.role.value == "admin" %} Administrador {% else %} Desconocido
+            {% if user.role_id == 4 %} 
+                Usuario publico
+            {% elif user.role_id == 3 %}
+                Usuario editor 
+            {% elif user.role_id == 2 %}
+                Administrador
+            {% elif user.role_id == 1 %}
+                Administrador del sistema
+            {% else %}
+                Desconocido
             {% endif %}
         </p>
         <br />
         <div class="user-actions">
-            <a
-					href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
-					class="btn edit-btn"
-					>Editar</a
-				>
-            <form
-                method="POST"
-                action="{{ url_for('adminpanel.del_user', id=user.id) }}"
-                style="display: inline"
-                onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
-            >
-                <button type="submit" class="btn delete-btn">Eliminar</button>
-            </form>
+            {% if user.role_id != 1 %}
+                <a
+                        href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
+                        class="btn edit-btn"
+                        >Editar</a
+                    >
+                <form
+                    method="POST"
+                    action="{{ url_for('adminpanel.del_user', id=user.id) }}"
+                    style="display: inline"
+                    onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
+                >
+                    <button type="submit" class="btn delete-btn">Eliminar</button>
+                </form>
+            {% endif %}
         </div>
     </div>
     {% endfor %}

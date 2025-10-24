@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import db
 from core.services.bcrypt import bcrypt
 from core.database import Base
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 from core.models.auth import UserRole
 
 if TYPE_CHECKING:
@@ -28,7 +28,8 @@ class User(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    active: Mapped[bool] = mapped_column(nullable=True, default=True)    
+    active: Mapped[bool] = mapped_column(nullable=True, default=True)
+    role_id: ClassVar[int]
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="user",
@@ -37,9 +38,9 @@ class User(Base):
 
     def __repr__(self):
         '''Representación en string del Usuario'''
-        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, {self.role}, {self.sys_admin}>"
+        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, ROLE_ID: {self.role_id}>"
 
-def create_user(**kwargs: dict) -> User | None:
+def create_user(**kwargs: dict) -> str:
     """
     Crea un nuevo usuario a partir de los datos recibidos y lo persiste
     en la base de datos.
@@ -48,15 +49,12 @@ def create_user(**kwargs: dict) -> User | None:
         kwargs (dict): Los datos del usuario a ser creado.
     
     Returns:
-        None: Si se produjo un error. En este caso, el error puede ser querer
-        cargar un correo electronico ya existente.
-
-        User: Si la creacion fue exitosa, retorna el usuario creado.
+        str: Describiendo el error (si hubo).
     """
     email = kwargs["email"]
     existente = db.session.query(User).filter_by(email=email).first()
     if existente:
-        return None
+        return "El correo electronico ingresado ya se encuentra en uso."
     else:
         if "role" in kwargs:
             role_id = kwargs.pop("role")
@@ -71,7 +69,7 @@ def create_user(**kwargs: dict) -> User | None:
         new_user_id = read_user_by_email(kwargs["email"]).id
         UserRole.create_entry(new_user_id, role_id)
 
-        return user
+        return ""
     
 def get_user_by_id(id: int) -> User | None:
     """
@@ -86,7 +84,10 @@ def get_user_by_id(id: int) -> User | None:
 
         None: Si no pudo encontrar un usuario con id.
     """
-    return db.session.query(User).filter_by(id=id).first()
+    user = db.session.query(User).filter_by(id=id).first()
+    if user:
+        user.role_id = UserRole.get_user_role(user.id).role_id
+    return user
 
 def read_user_by_email(email: str) -> User | None:
     """
@@ -100,7 +101,10 @@ def read_user_by_email(email: str) -> User | None:
 
         None: Si no pudo encontrarse un usuario con ese email.
     """
-    return db.session.query(User).filter_by(email=email).first()
+    user = db.session.query(User).filter_by(email=email).first()
+    if user:
+        user.role_id = UserRole.get_user_role(user.id)
+    return user
 
 def read_users_by_activeness(active: bool, page: int=1, per_page: int=10) -> list[User] | None:
     """
@@ -121,10 +125,12 @@ def read_users_by_activeness(active: bool, page: int=1, per_page: int=10) -> lis
         La lista de usuarios que cumplen con el criterio, y el numero
         de tuplas devueltas en la consulta, o None si no hay resultados.
     """
-    query = db.session.query(User).filter_by(active=active)
-    total = query.count()
-    users = query.offset((page - 1) * per_page).limit(per_page).all()
-    return users, total
+    query = db.session.query(User).filter_by(active=active).all()
+    roles = UserRole.get_all_relations()
+    for u in query:
+        u.role_id = roles[u.id].role_id
+
+    return query
 
 def read_users_by_role(role: str, page: int=1, per_page: int=10) -> list[User] | None:
     """
@@ -141,10 +147,12 @@ def read_users_by_role(role: str, page: int=1, per_page: int=10) -> list[User] |
         La lista de usuarios que cumplen con el criterio, y el numero
         de tuplas devueltas en la consulta o None si no hay resultados.
     """
-    query = db.session.query(User).filter_by(role=role)
-    total = query.count()
-    users = query.offset((page - 1) * per_page).limit(per_page).all()
-    return users, total
+    query = db.session.query(User).filter_by(role=role).all()
+    roles = UserRole.get_all_relations()
+    for u in query:
+        u.role_id = roles[u.id-1].role_id
+
+    return query
 
 def read_users_by(role: str | None, active: bool | None) -> list[User]:
     """
@@ -168,6 +176,9 @@ def read_users_by(role: str | None, active: bool | None) -> list[User]:
         query = db.session.query(User).filter_by(active=active).all()
     if (role is not None and active is not None):
         query = db.session.query(User).filter_by(role=role).filter_by(active=active).all()
+    roles = UserRole.get_all_relations()
+    for u in query:
+        u.role_id = roles[u.id-1].role_id
     return query
 
 def update_user(id: int, **kwargs: dict) -> str:
@@ -188,8 +199,11 @@ def update_user(id: int, **kwargs: dict) -> str:
         exists = db.session.query(User).filter_by(email=new_email).first()
         if exists:
             return "El correo electronico ingresado ya se encuentra en uso."
-    kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
+    if kwargs["password"]:
+        kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
+    new_role = kwargs.pop("role")
     db.session.query(User).filter_by(id=id).update(kwargs)
+    UserRole.modify_user_role(id, new_role)
     db.session.commit()
     return ""
 
@@ -203,6 +217,7 @@ def delete_user(id: int):
     ((Hace un borrado fisico. Cambiar para que sea logico en su lugar))
     """
     db.session.query(User).filter_by(id=id).delete()
+    UserRole.delete_user_role(id)
     db.session.commit()
 
 def list_all_users(page: int=1, per_page: int=10) -> list[User]:
@@ -218,7 +233,8 @@ def list_all_users(page: int=1, per_page: int=10) -> list[User]:
         Una lista con todos los usuarios existentes, y el total de la
         busqueda.
     """
-    query = db.session.query(User)
-    total = query.count()
-    users = query.offset((page - 1) * per_page).limit(per_page).all()
-    return users, total
+    query = db.session.query(User).all()
+    roles = UserRole.get_all_relations()
+    for u in query:
+        u.role_id = roles[u.id-1].role_id
+    return query
