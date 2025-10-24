@@ -24,6 +24,7 @@ def authenticate(email: str, password: str) -> User | None:
     return None
 
 def check_flags(user: User | None):
+    '''Verifica si el sistema administrativo está activado mediante feature flag.'''
     flag = db.session.query(FeatureFlag).filter_by(name="Sistema administrativo").first()
     activated = flag.activated if flag else False
     if not activated:

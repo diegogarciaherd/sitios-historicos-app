@@ -48,12 +48,14 @@ sites_bp = Blueprint(
 @sites_bp.route("/")
 @require_permission("sites.view")
 def home():
+    '''Renderiza la página de inicio de sitios históricos'''
     return render_template("sites_home.html")
 
 
 @sites_bp.route("/listar")
 @require_permission("sites.view")
 def list_all_sites():
+    '''Lista todos los sitios históricos con paginación y filtros'''
     query_params = request.args.to_dict()
 
     # Si en los query params estan los filtros de startDate y endDate (ambos), verificar que
@@ -121,6 +123,7 @@ def list_all_sites():
 @sites_bp.route("/crear_sitio", methods=["GET", "POST"])
 @require_permission("sites.create")
 def create_site():
+    '''Crea un nuevo sitio histórico'''
     all_tags = db.session.query(Tag).all()
     
     if request.method == "POST":
@@ -180,6 +183,7 @@ def create_site():
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.create")
 def edit_site(id):
+    '''Edita un sitio histórico existente'''
     site = get_site(id)
     if not site:
         abort(404)
@@ -188,15 +192,16 @@ def edit_site(id):
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
-        data = request.form.to_dict() 
+        data = request.form.to_dict()
         data["visible"] = "visible" in request.form
+        data["latitud"] = request.form.get("lat")
+        data["longitud"] = request.form.get("lng")
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
         update_site(id, **data)
 
-        # Actualizar tags
         selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
         tags.assign_tags(site, selected_tags)
 
@@ -211,6 +216,7 @@ def edit_site(id):
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
 @require_permission("sites.create")
 def delete_site(id):
+    '''Elimina un sitio histórico existente'''
     try:
         # Llama a la función existente
         delete_site_by_id(id)
@@ -227,6 +233,7 @@ def delete_site(id):
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
 @require_permission("sites.view")
 def view_site(id):
+    '''Muestra los detalles de un sitio histórico'''
     site = get_site(id)
     site_lat = site.lat
     site_lng = site.lng

@@ -3,6 +3,13 @@ from core.database import db
 from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
 
 def _get_or_create(model, defaults=None, **kwargs):
+    '''Helper para obtener o crear una instancia de un modelo
+    params:
+        model: clase del modelo
+        defaults: diccionario con valores por defecto para crear
+        **kwargs: atributos para buscar la instancia
+        returns: instancia del modelo
+    '''
     inst = db.session.query(model).filter_by(**kwargs).first()
     if inst:
         return inst
@@ -15,6 +22,7 @@ def _get_or_create(model, defaults=None, **kwargs):
     return inst
 
 def run():
+    '''Ejecuta el seed de roles, permisos, role-permissions, usuarios, user-roles y bloqueados.'''
     print("🌱 Seeding roles, permissions, role-permissions, users, user-roles, blocked ...")
 
     # imports tardíos para evitar import circular cuando se ejecuta directamente
@@ -40,18 +48,22 @@ def run():
 
     # Role -> Permisos (idempotente)
     def grant(r, p):
+        '''Asigna un permiso a un rol de forma idempotente'''
         _get_or_create(RolePermission, role_id=r.id, permission_id=p.id)
 
     # sys_admin: todos los permisos
     for p in (p_view, p_create, p_edit, p_delete, p_users, p_flags, p_tags):
+        '''Asigna todos los permisos al rol sys_admin'''
         grant(sys_admin, p)
 
     # admin: todos
     for p in (p_view, p_create, p_edit, p_delete, p_users, p_tags, p_export):
+        '''Asigna todos los permisos al rol admin'''
         grant(admin, p)
 
     # editor: view, create, edit
     for p in (p_view, p_create, p_edit, p_tags):
+        '''Asigna permisos de edición al rol editor'''
         grant(editor, p)
 
     # viewer: solo view
@@ -59,6 +71,7 @@ def run():
     db.session.commit()
 
     # Usuarios
+    '''Crea usuarios de prueba y les asigna roles'''
     u_sys_admin = create_user(email="sysadmin@fiorella.com",
                                name="System", last_name="Admin", password="sysadmin123", active=True, role=1)
     if not u_sys_admin:
@@ -93,6 +106,7 @@ def run():
 
     # Asignación de roles
     def assign(user, role):
+        '''Asigna un rol a un usuario de forma idempotente'''
         _get_or_create(UserRole, user_id=user.id, role_id=role.id)
 
     assign(u_sys_admin, sys_admin)

@@ -10,9 +10,18 @@ if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
 
 class User(Base):
-    """
-    Modelo base que representa al usuario.
-    """
+    '''Modelo de usuario
+    atributos:
+    - id: Identificador único del usuario
+    - email: Email del usuario
+    - name: Nombre del usuario
+    - last_name: Apellido del usuario
+    - password: Contraseña hasheada del usuario
+    - active: Estado del usuario (activo/inactivo)
+    - role: Rol del usuario (admin, editor, public)
+    - sys_admin: Indica si el usuario es administrador del sistema
+    feature_flags_history: Relación con el historial de cambios de feature flags realizados por el usuario
+    '''
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(nullable=False)
@@ -27,6 +36,7 @@ class User(Base):
     )
 
     def __repr__(self):
+        '''Representación en string del Usuario'''
         return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, {self.role}, {self.sys_admin}>"
 
 def create_user(**kwargs: dict) -> User | None:
