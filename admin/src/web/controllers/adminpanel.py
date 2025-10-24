@@ -1,22 +1,31 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for
 from core.models.userrole import UserRole
 from core.models.user import create_user as create, read_user_by_email, read_users_by
-from core.models.user import update_user, delete_user, list_all_users
+from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
-from web.decorators.loginrequired import login_required
-from web.decorators.permissionrequired import role_required
 from flask import session
 
 adminpanel_bp = Blueprint("adminpanel", "adminpanel", url_prefix="/panel-de-admin", template_folder="../templates")
 
 @adminpanel_bp.route("/", methods=["GET"])
 @require_permission("users.manage")
-def admin_panel():
-    '''Renderiza la página principal del panel de administración'''
+def admin_panel() -> str:
+    """
+    Puerta de entrada al panel de administrador.
+    """
     return render_template("adminpanel.html")
 
-def validate_user_data(form_data: dict, is_update=False) -> dict:
-    '''Valida y procesa los datos del formulario para crear o actualizar un usuario'''
+def validate_user_data(form_data: dict) -> dict:
+    """
+    Sanitiza los datos recibidos del front-end, quitandoles los espacios
+    en blanco y asegurandose de que los requeridos estan.
+
+    Args:
+        form_data (dict): Los datos a validar.
+
+    Returns:
+        dict: Los datos validados.
+    """
     form_data["active"] = True
     errors = []
     data = {}
@@ -44,7 +53,9 @@ def validate_user_data(form_data: dict, is_update=False) -> dict:
 @adminpanel_bp.route("/buscar-usuarios", methods=["GET", "POST"])
 @require_permission("users.manage")
 def list_users() -> str:
-    '''Lista y busca usuarios en el panel de administración'''
+    """
+    Lista los usuarios existentes.
+    """
     if request.method == "GET":
         page = request.args.get("page", 1, type=int)
         per_page = 25
@@ -67,10 +78,9 @@ def list_users() -> str:
             "next_num": next_num
         }
         return render_template("searchuser.html", users=users if users else None)
-    else: #request.method == POST
+    else:
         users = []
         search_option = request.form.keys()
-        print(search_option)
         if "email" in search_option:
             email = request.form.get("email")
             result = read_user_by_email(email)
@@ -110,7 +120,9 @@ def list_users() -> str:
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")
 def create_user() -> str:
-    '''Crea un nuevo usuario desde el panel de administración'''
+    """
+    Funcionalidad que permite crear un nuevo usuario.
+    """
     if request.method == "POST":
         try:
             data = validate_user_data(request.form.to_dict())
@@ -124,22 +136,62 @@ def create_user() -> str:
 
 @adminpanel_bp.route("/editar-usuario/<int:id>", methods=["GET", "POST"])
 @require_permission("users.manage")
-def edit_user(id):    
-    '''Edita un usuario existente desde el panel de administración'''
-    if request.method == "POST":
-        try:
-            data = validate_user_data(request.form)
-            updated_user = update_user(id, **data)
-            flash("Usuario editado correctamente.", "success")
-            return redirect(url_for("panel-de-admin"))
-        except ValueError as e:
-            flash(str(e), "error")
+def edit_user(id: int) -> str:
+    """
+    Edita un usuario de la base de datos con los datos recibidos del
+    front-end.
 
-    return render_template("edituser.html", logged_user=session['user_id'] if 'user_id' in session else None)
+    Args:
+        id (int): El id del usuario que se quiere editar.
+    """
+    if request.method == "POST":
+        data, error = validate_edit_request_data(request.form.to_dict())
+        if not error:
+            error = update_user(id, **data)
+        if not error:
+            flash("Usuario editado correctamente.", "success")
+        else:
+            flash(error, "error")
+        return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
+    else:
+        user_to_edit = get_user_by_id(id)
+        return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
 def del_user(id: int):
-    '''Elimina un usuario desde el panel de administración'''
+    """
+    Elimina un usuario de la base de datos.
+    """
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
+
+def validate_edit_request_data(form_data: dict):
+    """
+    Helper que valida los datos recibidos en una peticion de edicion
+    de usuario, de manera que tenga sentido con lo que espera la funcion
+    del modelo.
+
+    Args:
+        form_data (dict): Los datos con los que se va a actualizar el usuario.
+    """
+    ret_data = {}
+    ret_data["email"] = form_data["email"] if "email" in form_data else None
+    ret_data["name"] = form_data["name"] if "name" in form_data else None
+    ret_data["last_name"] = form_data["last_name"] if "last_name" in form_data else None
+    ret_data["active"] = True if "active" in form_data else False
+    
+    match (form_data["role"]):
+        case ("public"):
+            ret_data["role"] = UserRole.PUBLIC
+        case ("editor"):
+            ret_data["role"] = UserRole.EDITOR
+        case ("admin"):
+            ret_data["role"] = UserRole.ADMIN
+
+    if "password" in form_data:
+        if form_data["password"] != form_data["repeat-password"]:
+            return ret_data, "Las contraseñas deben coincidir en ambos campos."
+        ret_data["password"] = form_data["password"]
+        
+    return ret_data, ""

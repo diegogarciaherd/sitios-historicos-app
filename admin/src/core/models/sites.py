@@ -1,15 +1,13 @@
 from core.database import Base, db
 import enum
 from datetime import datetime
-from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum
+from sqlalchemy import String, Text, Integer, DateTime, Boolean, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from core.models.tags import Tag
-from sqlalchemy import func
-from sqlalchemy.dialects import postgresql
 
 # Tabla de asociación
 ''' Tabla de asociación entre sitios históricos y tags ''' 

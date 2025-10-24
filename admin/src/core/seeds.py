@@ -1,13 +1,10 @@
-from core.models import sites, feature_flags, feature_flags_history
+from core.models import feature_flags
 from core.database import db
 from core.models.sites import SitioHistorico, EstadoConservacion
-from core.models import tags
 from core.models.tags import Tag
 from core.database import db
 from geoalchemy2.elements import WKTElement
-from core.models import user, userrole
 from sqlalchemy import text
-from datetime import datetime
 
 
 def run():

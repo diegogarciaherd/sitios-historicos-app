@@ -1,9 +1,7 @@
-from flask import render_template, Blueprint, request, jsonify, session
+from flask import render_template, Blueprint, request, jsonify
 from core.models.tags import Tag
 from core.models.sites import SitioHistorico
 from core.database import db
-from sqlalchemy import func
-from slugify import slugify
 from flask import flash, redirect, url_for
 from core.models import tags
 from core.services.auth_roles import require_permission

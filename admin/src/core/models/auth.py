@@ -1,6 +1,6 @@
 # src/core/models/auth.py
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, UniqueConstraint, text
-from sqlalchemy.orm import relationship, Mapped, mapped_column
+from sqlalchemy import Integer, String, DateTime, ForeignKey, UniqueConstraint, text
+from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
 
 from core.database import Base  # usa DeclarativeBase

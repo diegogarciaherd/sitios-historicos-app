@@ -6,7 +6,9 @@ login_bp = Blueprint("login", __name__)
 
 @login_bp.route("/login", methods=["GET", "POST"])
 def login():
-    '''Maneja el inicio de sesión de usuarios'''
+    """
+    Controlador que maneja la logica de inicio de sesion.
+    """
     if request.method == "GET":
         return render_template("login.html")
     else:
