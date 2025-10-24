@@ -1,10 +1,10 @@
 from core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from core.models.userrole import UserRole as Role
 from core.database import db
 from core.services.bcrypt import bcrypt
 from core.database import Base
 from typing import TYPE_CHECKING
+from core.models.auth import UserRole
 
 if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
@@ -19,9 +19,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
-    active: Mapped[bool] = mapped_column(nullable=True, default=True)
-    role: Mapped[Role] = mapped_column(nullable=True, default=Role.PUBLIC)
-    sys_admin: Mapped[bool] = mapped_column(nullable=True, default=False)    
+    active: Mapped[bool] = mapped_column(nullable=True, default=True)    
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="user",
@@ -33,8 +31,8 @@ class User(Base):
 
 def create_user(**kwargs: dict) -> User | None:
     """
-    Crea un nuevo usuario y lo persiste en la
-    base de datos a partir de los kwargs.
+    Crea un nuevo usuario a partir de los datos recibidos y lo persiste
+    en la base de datos.
 
     Args:
         kwargs (dict): Los datos del usuario a ser creado.
@@ -50,10 +48,19 @@ def create_user(**kwargs: dict) -> User | None:
     if existente:
         return None
     else:
+        if "role" in kwargs:
+            role_id = kwargs.pop("role")
         kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
         user = User(**kwargs)
         db.session.add(user)
         db.session.commit()
+        
+        # Hago .pop() de role para que el constructor de User no reciba un parametro inesperado
+        # y despues estas dos lineas magicas obtienen el id del usuario recien creado, para
+        # utilizarlo en crear una nueva entrada en la tabla user_role.
+        new_user_id = read_user_by_email(kwargs["email"]).id
+        UserRole.create_entry(new_user_id, role_id)
+
         return user
     
 def get_user_by_id(id: int) -> User | None:

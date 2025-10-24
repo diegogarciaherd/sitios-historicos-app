@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for
-from core.models.userrole import UserRole
+from core.models.auth import UserRole
 from core.models.user import create_user as create, read_user_by_email, read_users_by
 from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
@@ -44,7 +44,7 @@ def validate_user_data(form_data: dict) -> dict:
         data["last_name"] = form_data["last_name"].strip()
         data["password"] = form_data["password"]
         data["active"] = form_data["active"]
-        data["role"] = UserRole[form_data["role"]]
+        data["role"] = form_data["role"]
     except Exception as e:
         raise Exception(f"Error en el formato de los datos: {str(e)}")
     
@@ -100,11 +100,13 @@ def list_users() -> str:
             role = request.form.get("rol")
             match role:
                 case "public":
-                    role = UserRole.PUBLIC
+                    role = 4
                 case "editor":
-                    role = UserRole.EDITOR
+                    role = 3
                 case "admin":
-                    role = UserRole.ADMIN
+                    role = 2
+                case "sysadmin":
+                    role = 1
                 case "any":
                     role = None
             if (act is None and role is None):
@@ -124,13 +126,10 @@ def create_user() -> str:
     Funcionalidad que permite crear un nuevo usuario.
     """
     if request.method == "POST":
-        try:
-            data = validate_user_data(request.form.to_dict())
-            create(**data)
-            print("El usuario fue creado correctamente", "success")
-            return redirect(url_for("adminpanel.list_users"))
-        except Exception as e:
-            print(f"Error al crear el usuario: {str(e)}", "error")
+        data = validate_user_data(request.form.to_dict())
+        create(**data)
+        flash("El usuario fue creado correctamente", "success")
+        return redirect(url_for("adminpanel.list_users"))
 
     return render_template("createuser.html")
 
@@ -155,7 +154,8 @@ def edit_user(id: int) -> str:
         return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
     else:
         user_to_edit = get_user_by_id(id)
-        return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
+        user_role_id = UserRole.get_user_role(id)
+        return render_template("edituser.html", user=user_to_edit, user_role_id=user_role_id, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
@@ -183,11 +183,13 @@ def validate_edit_request_data(form_data: dict):
     
     match (form_data["role"]):
         case ("public"):
-            ret_data["role"] = UserRole.PUBLIC
+            ret_data["role"] = 4
         case ("editor"):
-            ret_data["role"] = UserRole.EDITOR
+            ret_data["role"] = 3
         case ("admin"):
-            ret_data["role"] = UserRole.ADMIN
+            ret_data["role"] = 2
+        case ("sysadmin"):
+            ret_data["role"] = 1
 
     if "password" in form_data:
         if form_data["password"] != form_data["repeat-password"]:

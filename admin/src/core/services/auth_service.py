@@ -7,6 +7,17 @@ from flask import session, g
 from core.services.auth_roles import has_role
 
 def authenticate(email: str, password: str) -> User | None:
+    """
+    Compara las credenciales recibidas con las guardadas en la base de datos.
+
+    Args:
+        email (str): El correo electronico del usuario.
+
+        password (str): La clave del usuario en texto plano.
+
+    Returns:
+        User: Aquel usuario que coincida con las credenciales.
+    """
     user = db.session.query(User).filter_by(email=email).first()
     if user and bcrypt.check_password_hash(user.password, password):
         return user

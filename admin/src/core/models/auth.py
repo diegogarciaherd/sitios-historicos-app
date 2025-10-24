@@ -2,7 +2,7 @@
 from sqlalchemy import Integer, String, DateTime, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-
+from core.database import db
 from core.database import Base  # usa DeclarativeBase
 # IMPORTANTE: la tabla users ya existe en otro módulo.
 # Solo la referenciamos por FK sin definir el modelo acá.
@@ -38,6 +38,20 @@ class UserRole(Base):
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), nullable=False)
 
     __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_role"),)
+
+    def create_entry(uid: int, role_id: int):
+        new_entry = UserRole(user_id=uid, role_id=role_id)
+        db.session.add(new_entry)
+        db.session.commit()
+
+    def get_user_role(id: int):
+        return db.session.query(UserRole).filter_by(id=id).first()
+
+    def modify_user_role(uid: int, new_role_id: int):
+        pass
+
+    def delete_user_role(uid: int):
+        pass
 
 class BlockedUser(Base):
     """
