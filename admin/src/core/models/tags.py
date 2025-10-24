@@ -1,9 +1,9 @@
 from core.database import Base
-from sqlalchemy import String, Integer, Table, Column, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 from core.database import db
 from slugify import slugify
-from sqlalchemy import func, asc, desc, DateTime
+from sqlalchemy import func, DateTime
 from datetime import datetime
 
 
@@ -92,6 +92,11 @@ def list_tags(search=None, page=1, per_page=25):
     ''' params: page: número de página
         per_page: cantidad de tags por página
         search: cadena de búsqueda para filtrar por nombre
+        returns: (tags, total, total_pages)
+        tags: lista de Tag
+        total: cantidad total de Tag
+        total_pages: cantidad total de páginas
+        
     '''
     query = db.session.query(Tag)
 

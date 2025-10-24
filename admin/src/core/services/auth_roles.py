@@ -68,13 +68,18 @@ def load_user():
 
 # ---------- Helpers para usar en Jinja y código ----------
 def has_role(role: str) -> bool:
+    '''Verifica si el usuario logueado tiene un rol específico
+    '''
     return role in getattr(g, "roles", set())
 
 def has_perm(code: str) -> bool:
+    '''Verifica si el usuario logueado tiene un permiso específico
+    '''
     return code in getattr(g, "perms", set())
 
 # Alias común para plantillas
 def can(code: str) -> bool:
+    '''Alias para has_perm en plantillas'''
     return has_perm(code)
 
 def inject_template_helpers():

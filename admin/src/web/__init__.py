@@ -1,8 +1,6 @@
 # admin/src/web/__init__.py
 from flask import Flask, render_template, jsonify, url_for, redirect, request, g
-
 from web.handlers import error
-
 from web.controllers.login import login_bp
 from web.controllers.logout import logout_bp
 from web.controllers.adminpanel import adminpanel_bp
@@ -21,6 +19,7 @@ from core.seeds_roles import run as seed_roles_run
 from core.services.auth_roles import load_user, inject_template_helpers
 
 def create_app(env="development", static_folder="../../static"):
+    ''' Crea y configura la aplicación Flask '''
     app = Flask(__name__, static_folder=static_folder)
     app.config.from_object(config[env])
     Session(app)

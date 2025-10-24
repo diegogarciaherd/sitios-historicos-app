@@ -1,9 +1,7 @@
-from flask import render_template, Blueprint, request, jsonify, session
+from flask import render_template, Blueprint, request, jsonify
 from core.models.tags import Tag
 from core.models.sites import SitioHistorico
 from core.database import db
-from sqlalchemy import func
-from slugify import slugify
 from flask import flash, redirect, url_for
 from core.models import tags
 from core.services.auth_roles import require_permission
@@ -14,6 +12,7 @@ tags_bp = Blueprint("tags", __name__, url_prefix="/tags", template_folder="../te
 @tags_bp.route("/", methods=["GET"])
 @require_permission("tags.manage")
 def tags_list():
+    '''Lista todos los tags con paginación, búsqueda y ordenamiento'''
     search = request.args.get("search", "")
     order_by = request.args.get("order_by", "name_asc")
     page = request.args.get("page", 1, type=int)
@@ -34,6 +33,7 @@ def tags_list():
 @tags_bp.route("/api", methods=["GET"])
 @require_permission("tags.manage")
 def get_tags():
+    '''API para obtener tags con paginación y búsqueda'''
     search = request.args.get("search", "").strip()
     page = int(request.args.get("page", 1))
     per_page = 25
@@ -53,6 +53,7 @@ def get_tags():
 @tags_bp.route("/create", methods=["GET", "POST"])
 @require_permission("tags.manage")
 def create_tag():
+    '''Crea un nuevo tag'''
     if request.method == "POST":
         try:
             tags.create_tag(request.form["name"])
@@ -68,6 +69,7 @@ def create_tag():
 @tags_bp.route("/edit/<int:tag_id>", methods=["GET", "POST"])
 @require_permission("tags.manage")
 def edit_tag_view(tag_id):
+    '''Edita un tag existente'''
     tag = db.session.query(Tag).get(tag_id)
     if not tag:
         flash("Tag no encontrado.", "error")
@@ -88,6 +90,7 @@ def edit_tag_view(tag_id):
 @tags_bp.route("/delete/<int:tag_id>", methods=["POST"])
 @require_permission("tags.manage")
 def delete_tag_view(tag_id):
+    '''Elimina un tag existente'''
     tag = db.session.query(Tag).get(tag_id)
     if not tag:
         flash("Tag no encontrado.", "error")

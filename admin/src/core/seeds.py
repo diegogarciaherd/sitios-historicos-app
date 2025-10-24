@@ -1,19 +1,18 @@
-from core.models import sites, feature_flags, feature_flags_history
+from core.models import feature_flags
 from core.database import db
 from core.models.sites import SitioHistorico, EstadoConservacion
-from core.models import tags
 from core.models.tags import Tag
 from core.database import db
 from geoalchemy2.elements import WKTElement
-from core.models import user, userrole
 from sqlalchemy import text
-from datetime import datetime
 
 
 def run():
+    '''Seeding sitios históricos y tags ...'''
     print("Seeding database...")
 
     # 🔹 Limpiar relaciones y tablas
+    '''Elimina todos los datos existentes en las tablas de sitios y tags'''
     db.session.execute(text("DELETE FROM sites_tags"))
     db.session.query(SitioHistorico).delete()
     db.session.query(Tag).delete()
@@ -31,9 +30,11 @@ def run():
 
     # 🔹 Función helper para coordenadas
     def make_point(lat, lon):
+        '''Crea un punto WKT a partir de latitud y longitud'''
         return WKTElement(f"POINT({lon} {lat})", srid=4326)
 
     # 🔹 Datos de sitios (todos en Buenos Aires)
+    '''Lista de diccionarios con datos de sitios históricos'''
     sitios_data = [
         {
             "nombre": "Catedral de La Plata",
@@ -144,6 +145,7 @@ def run():
 
     # 🔹 Crear sitios y asociar tags
     for s in sitios_data:
+        '''Crear sitio histórico y asociar tags'''
         sitio = SitioHistorico(
             nombre=s["nombre"],
             descripcionBreve=s["descripcionBreve"],
@@ -158,7 +160,8 @@ def run():
 
     print(f"Seed completed: {len(sitios_data)} {len(tags_objs)} ")
 
-    # Feature Flags
+    # Feature 
+    '''Crea flags de características predeterminadas'''
     feature_flags.create_feature_flag(
         user_id=1,
         name="Sistema administrativo",
