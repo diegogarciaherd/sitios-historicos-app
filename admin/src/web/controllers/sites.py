@@ -192,15 +192,16 @@ def edit_site(id):
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
-        data = request.form.to_dict() 
+        data = request.form.to_dict()
         data["visible"] = "visible" in request.form
+        data["latitud"] = request.form.get("lat")
+        data["longitud"] = request.form.get("lng")
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
         update_site(id, **data)
 
-        # Actualizar tags
         selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
         tags.assign_tags(site, selected_tags)
 

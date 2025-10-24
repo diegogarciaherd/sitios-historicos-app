@@ -284,12 +284,10 @@
     }).addTo(map);
 
     var marker;
-    {% if (form_data and form_data.lat and form_data.lng) or (site and site.latitud and site.longitud) %}
-        var initialLat = {{ form_data.lat if form_data else site.latitud }};
-        var initialLng = {{ form_data.lng if form_data else site.longitud }};
-        map.setView([initialLat, initialLng], 15);
-        marker = L.marker([initialLat, initialLng]).addTo(map);
-    {% endif %}
+   {% if site.lat and site.lng %}
+      var marker = L.marker([{{ site.lat }}, {{ site.lng }}]).addTo(map);
+      map.setView([{{ site.lat }}, {{ site.lng }}], 15);
+        {% endif %}
 
     map.on('click', function(e) {
         var lat = e.latlng.lat.toFixed(6);
