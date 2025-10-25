@@ -19,9 +19,14 @@ def authenticate(email: str, password: str) -> User | None:
         User: Aquel usuario que coincida con las credenciales.
     """
     user = db.session.query(User).filter_by(email=email).first()
-    if user and bcrypt.check_password_hash(user.password, password):
-        return user
-    return None
+    error = ""
+    
+    if not (user and bcrypt.check_password_hash(user.password, password)):
+        error = "Correo electronico o clave incorrectos."
+    if user and (not user.active):
+        error = "Tu cuenta ha sido desactivada por un administrador.\nSi crees que se trata de un error, contacta uno."
+    
+    return user, error
 
 def check_flags(user: User | None):
     '''Verifica si el sistema administrativo está activado mediante feature flag.'''
