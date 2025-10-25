@@ -109,3 +109,10 @@ class LogicallyDeletedUser(Base):
         user = LogicallyDeletedUser(id)
         db.session.add(user)
         db.session.commit()
+
+    def remove_user(id: int):
+        db.session.query(LogicallyDeletedUser).filter_by(user_id=id).remove()
+        db.session.commit()
+
+    def get_all():
+        return db.session.query(LogicallyDeletedUser).all()
