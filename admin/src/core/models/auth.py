@@ -100,3 +100,12 @@ class BlockedUser(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     reason: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
+
+class LogicallyDeletedUser(Base):
+    __tablename__ = "deleted_users"
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    def add_new_user(id: int):
+        user = LogicallyDeletedUser(id)
+        db.session.add(user)
+        db.session.commit()

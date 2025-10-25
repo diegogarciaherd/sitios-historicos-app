@@ -4,7 +4,7 @@ from core.database import db
 from core.services.bcrypt import bcrypt
 from core.database import Base
 from typing import TYPE_CHECKING, ClassVar
-from core.models.auth import UserRole
+from core.models.auth import UserRole, LogicallyDeletedUser
 
 if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
@@ -216,9 +216,7 @@ def delete_user(id: int):
 
     ((Hace un borrado fisico. Cambiar para que sea logico en su lugar))
     """
-    db.session.query(User).filter_by(id=id).delete()
-    UserRole.delete_user_role(id)
-    db.session.commit()
+    LogicallyDeletedUser.add_new_user(id)
 
 def list_all_users(page: int=1, per_page: int=10) -> list[User]:
     """
