@@ -48,12 +48,14 @@ sites_bp = Blueprint(
 @sites_bp.route("/")
 @require_permission("sites.view")
 def home():
+    '''Renderiza la página de inicio de sitios históricos'''
     return render_template("sites_home.html")
 
 
 @sites_bp.route("/listar")
 @require_permission("sites.view")
 def list_all_sites():
+    '''Lista todos los sitios históricos con paginación y filtros'''
     query_params = request.args.to_dict()
 
     # Si en los query params estan los filtros de startDate y endDate (ambos), verificar que
@@ -121,34 +123,67 @@ def list_all_sites():
 @sites_bp.route("/crear_sitio", methods=["GET", "POST"])
 @require_permission("sites.create")
 def create_site():
+    '''Crea un nuevo sitio histórico'''
     all_tags = db.session.query(Tag).all()
-    selected_tag_ids = []
-
+    
     if request.method == "POST":
         data = request.form.to_dict()
         # Manejar checkbox visible
         data["visible"] = "visible" in request.form
 
-        tag_ids = request.form.getlist("tags[]")  # Lista de ids seleccionados
+        tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
+        
+        # Validar datos
+        errors = validate_site_data(data)
+        
+        # Si hay errores, mostrar el formulario con los errores
+        if errors:
+            # Mostrar cada error individualmente
+            for error in errors:
+                flash(error, "error")
+            return render_template(
+                "form.html", 
+                site=None, 
+                tags=all_tags, 
+                selected_tag_ids=tag_ids,
+                form_data=data  # Mantener datos del formulario
+            )
+        
+        # SOLO crear el sitio si NO hay errores
+        try:
+            site = create_sites(**data)
 
-        site = create_sites(**data)
+            if tag_ids:
+                selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+                tags.assign_tags(site, selected_tags)
 
-        if tag_ids:
-            selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
-            tags.assign_tags(site, selected_tags)
+            # IMPORTANTE: Flash ANTES de redirect
+            flash("Sitio creado correctamente", "success")
+            return redirect(url_for("sites.list_all_sites"))  # ← Redirigir a la lista
+            
+        except Exception as e:
+            flash(f"Error al crear el sitio: {str(e)}", "error")
+            return render_template(
+                "form.html", 
+                site=None, 
+                tags=all_tags, 
+                selected_tag_ids=tag_ids,
+                form_data=data
+            )
 
-        flash("Sitio creado correctamente", "success")
-        return redirect(url_for("sites.list_all_sites"))
-
+    # GET request
     return render_template(
-        "form.html", site=None, tags=all_tags, selected_tag_ids=selected_tag_ids
+        "form.html", 
+        site=None, 
+        tags=all_tags, 
+        selected_tag_ids=[]
     )
-
 
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.create")
 def edit_site(id):
+    '''Edita un sitio histórico existente'''
     site = get_site(id)
     if not site:
         abort(404)
@@ -159,13 +194,14 @@ def edit_site(id):
     if request.method == "POST":
         data = request.form.to_dict()
         data["visible"] = "visible" in request.form
+        data["latitud"] = request.form.get("lat")
+        data["longitud"] = request.form.get("lng")
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
         update_site(id, **data)
 
-        # Actualizar tags
         selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
         tags.assign_tags(site, selected_tags)
 
@@ -180,6 +216,7 @@ def edit_site(id):
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
 @require_permission("sites.create")
 def delete_site(id):
+    '''Elimina un sitio histórico existente'''
     try:
         # Llama a la función existente
         delete_site_by_id(id)
@@ -196,8 +233,12 @@ def delete_site(id):
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
 @require_permission("sites.view")
 def view_site(id):
+    '''Muestra los detalles de un sitio histórico'''
     site = get_site(id)
-    return render_template("show_site.html", site=site)
+    site_lat = site.lat
+    site_lng = site.lng
+    return render_template("show_site.html", site=site, site_lat=site_lat, site_lng=site_lng)
+
 
 
 @sites_bp.route("/exportar_csv", methods=["POST"])

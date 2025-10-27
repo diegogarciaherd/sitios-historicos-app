@@ -1,17 +1,21 @@
 from core.database import Base, db
 import enum
 from datetime import datetime
-from sqlalchemy import String, Text, Float, Integer, DateTime, Boolean, Enum
+from sqlalchemy import String, Text, Integer, DateTime, Boolean, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from core.models.tags import Tag
-from sqlalchemy import func
-from sqlalchemy.dialects import postgresql
 
 # Tabla de asociación
+''' Tabla de asociación entre sitios históricos y tags ''' 
+''' atributos: 
+     id: Identificador único de la asociación
+     site_id: Identificador del sitio histórico
+     tag_id: Identificador del tag asociado
+     '''
 sites_tags = Table(
     "sites_tags",
     Base.metadata,
@@ -21,12 +25,15 @@ sites_tags = Table(
 
 
 class EstadoConservacion(enum.Enum):
+    '''Enum para el estado de conservación de un sitio histórico'''
     BUENO = "Bueno"
     REGULAR = "Regular"
     MALO = "Malo"
 
 
 class SitioHistorico(Base):
+    '''Modelo de Sitio Histórico'''
+  
     __tablename__ = "sitios_historicos"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -58,7 +65,8 @@ class SitioHistorico(Base):
 
     @property
     def lat(self) -> float:
-        "Devuelve la latitud del sitio"
+        '''Devuelve la latitud del sitio
+        '''
         if self.localizacion:
             punto = to_shape(self.localizacion)
             return punto.y  # Latitud
@@ -97,6 +105,7 @@ class SitioHistorico(Base):
 
 
 def list_sites(page=1, per_page=10):
+    '''Lista todos los sitios históricos con paginación.'''
     query = db.session.query(SitioHistorico)
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
@@ -124,6 +133,10 @@ def get_all_cities():
 
 
 def create_sites(**kwargs):
+    '''Crea un nuevo sitio historico'''
+    ''' params : kwargs: diccionario con los atributos del sitio historico'''
+
+
     # Extraer y convertir coordenadas
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
@@ -144,8 +157,12 @@ def create_sites(**kwargs):
     db.session.commit()
     return site
 
-
 def update_site(id, **kwargs):
+    '''Actualiza un sitio historico existente'''
+    ''' params : id: id del sitio a actualizar
+        kwargs: diccionario con los atributos a actualizar
+    '''
+    
     site = get_site(id)
     if not site:
         raise ValueError(f"Sitio con id {id} no encontrado")
@@ -189,10 +206,12 @@ def update_site(id, **kwargs):
 
 
 def get_site(id):
+    '''Obtiene un sitio historico por su id'''
     return db.session.query(SitioHistorico).filter(SitioHistorico.id == id).first()
 
 
 def delete_site_by_id(id):
+    '''Elimina un sitio historico por su id'''
     site = get_site(id)
     db.session.delete(site)
     db.session.commit()

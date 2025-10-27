@@ -1,53 +1,62 @@
+
 def validate_site_data(data):
-    errors = {}
+    '''Valida los datos del sitio histórico proporcionados en el formulario.
+    Devuelve una lista de mensajes de error si hay problemas, o una lista vacía si
+    todo es correcto.'''
+    errors = []
 
-    # Validar campos obligatorios
-    required_fields = ['nombre', 'ciudad', 'provincia', 'categoria', 'estado']
-    for field in required_fields:
-        value = data.get(field, '').strip()
-    if not value:
-        errors[field] = f"El campo {field} es obligatorio"
-
-    # Validar coordenadas 
-    lat = data.get('lat', '').strip()
-    lng = data.get('lng', '').strip()
-
-    if not lat or not lng:
-        errors['localizacion'] = "Se debe seleccionar una ubicación en el mapa"
-
-    # Validar longitud mínima del nombre
-    nombre = data.get("nombre", "").strip()
-    if nombre and len(nombre) < 3:
-        errors["nombre"] = "Debe tener al menos 3 caracteres"
-
-    # Validar año
-    año_str = data.get("añoInauguracion", "").strip()
-    if año_str:  # Es opcional, pero si se ingresa debe ser válido
-        try:
-            año = int(año_str)
-            if año < 1500 or año > 2025:
-                errors["añoInauguracion"] = "El año debe estar entre 1500 y 2025"
-        except (ValueError, TypeError):
-            errors["añoInauguracion"] = "El año debe ser un número válido"
-
-    # Validar coordenadas
-    lat_str = data.get("lat", "").strip()
-    lng_str = data.get("lng", "").strip()
+    # Validar nombre 
+    if not data.get("nombre"):
+        errors.append("El nombre del sitio es obligatorio.")
+    elif len(data["nombre"]) > 100:
+        errors.append("El nombre del sitio no puede exceder los 100 caracteres.")
+    elif len(data["nombre"].strip()) == 0:
+        errors.append("El nombre del sitio no puede estar vacío o contener solo espacios.")
+    elif len(data["nombre"].strip()) < 3:
+        errors.append("El nombre del sitio debe tener al menos 3 caracteres.")
     
-    if lat_str:
-        try:
-            lat = float(lat_str)
-            if lat < -90 or lat > 90:
-                errors["lat"] = "Latitud fuera de rango (-90 a 90)"
-        except (ValueError, TypeError):
-            errors["lat"] = "La latitud debe ser un número válido"
 
-    if lng_str:
+
+    # Validar la descripción breve
+    if not data.get("descripcionBreve"):
+        errors.append("La descripción breve es obligatoria.")
+    elif len(data["descripcionBreve"]) > 255:
+        errors.append("La descripción breve no puede exceder los 255 caracteres.")
+    elif len(data["descripcionBreve"].strip()) == 0:
+        errors.append("La descripción breve no puede estar vacía o contener solo espacios.")
+
+    # Validar estado de conservación
+    
+    if not data.get("estado"):
+        errors.append("El estado de conservación es obligatorio.")
+    elif data["estado"] not in ["EXCELENTE", "BUENO", "REGULAR", "MALO"]:
+        errors.append("El estado de conservación no es válido.")
+    
+    # Validar coordenadas
+
+    if not data.get("lat") or not data.get("lng"):
+        errors.append("Las coordenadas (latitud y longitud) son obligatorias.")
+    
+    # Validar categoria
+    if not data.get("categoria"):
+        errors.append("La categoría es obligatoria.")
+    elif len(data["categoria"].strip()) == 0:
+        errors.append("La categoría no puede estar vacía o contener solo espacios.")
+    elif len(data["categoria"]) > 50:
+        errors.append("La categoría no puede exceder los 50 caracteres.")
+
+    # Validar año de inauguración
+    if not data.get("añoInauguracion"):
+        errors.append("El año de inauguración es obligatorio.")
+    else:
         try:
-            lng = float(lng_str)
-            if lng < -180 or lng > 180:
-                errors["lng"] = "Longitud fuera de rango (-180 a 180)"
-        except (ValueError, TypeError):
-            errors["lng"] = "La longitud debe ser un número válido"
+            año = int(data["añoInauguracion"])
+            if año < 1000 or año > 2030:
+                errors.append("El año de inauguración debe estar entre 1000 y 2100.")
+        except ValueError:
+            errors.append("El año de inauguración debe ser un número entero válido.")
 
     return errors
+        
+    
+    

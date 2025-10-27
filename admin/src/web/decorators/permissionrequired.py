@@ -2,6 +2,7 @@ from functools import wraps
 from flask import abort, session
 
 def role_required(*roles):
+    '''Decorator que verifica si el usuario tiene uno de los roles especificados'''
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):

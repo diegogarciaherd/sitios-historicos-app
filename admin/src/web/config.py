@@ -3,16 +3,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
+    '''Configuración base para la aplicación Flask.'''
     TESTING = False
     SECRET_KEY = "your-secret-key"
     SESSION_TYPE = "filesystem"
 
 class ProductionConfig(Config):
+    '''Configuración para entorno de producción'''
     SQLALCHEMY_ENGINES = {
         'default': environ.get('DATABASE_URL')
     }
 
 class DevelopmentConfig(Config):
+    '''Configuración para entorno de desarrollo'''
     DEBUG = True 
     
     # Configuración PostgreSQL para datos geoespaciales
@@ -28,6 +31,7 @@ class DevelopmentConfig(Config):
 
 
 class TestingConfig(Config):
+    '''Configuración para entorno de testing'''
     TESTING = True
 
 config = { 
