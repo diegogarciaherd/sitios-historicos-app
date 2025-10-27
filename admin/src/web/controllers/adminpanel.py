@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for, abort
-from core.models.user import create_user as create, read_user_by_email, read_users_by
+from core.models.user import create_user as create, read_users_by
 from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
 from flask import session
@@ -54,7 +54,7 @@ def list_users() -> str:
         per_page = 25
         users = list_all_users(page=page, per_page=per_page)
 
-        return render_template("searchuser.html", previous_search = None, users=users if users else None)
+        return render_template("searchuser.html", previous_search = None, users=users if users else None, active_user_id = session["user_id"])
     else:
         users = []
         search_params = request.form.to_dict()
@@ -63,7 +63,7 @@ def list_users() -> str:
         if not users:
             users = None
 
-        return render_template("searchuser.html", users=users, previous_search = search_params)
+        return render_template("searchuser.html", users=users, previous_search = search_params, active_user_id = session["user_id"])
 
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")

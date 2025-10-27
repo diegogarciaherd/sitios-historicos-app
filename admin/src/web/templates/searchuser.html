@@ -76,7 +76,7 @@ content %}
                 </p>
                 <br />
                 <div class="user-actions" style="margin-top: 20px; margin-bottom: 20px;">
-                    {% if user.role_id != 1 %}
+                    {% if user.role_id != 1 and user.id != active_user_id %}
                         <a
                                 href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
                                 class="btn edit-btn"
