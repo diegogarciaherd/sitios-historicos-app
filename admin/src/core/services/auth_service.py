@@ -25,7 +25,7 @@ def authenticate(email: str, password: str) -> User | None:
     if not (user and bcrypt.check_password_hash(user.password, password)):
         error = "Correo electronico o clave incorrectos."
     if user and (not user.active):
-        error = "Tu cuenta se encuentra inactiva.\nContacta a un administrador para reactivarla."
+        error = "Tu cuenta se encuentra desactivada.\nContacta a un administrador para reactivarla."
     if user:
         is_deleted = db.session.query(LogicallyDeletedUser).filter_by(user_id=user.id).first()
         if is_deleted:

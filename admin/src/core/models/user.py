@@ -30,6 +30,7 @@ class User(Base):
     password: Mapped[str] = mapped_column(nullable=False)
     active: Mapped[bool] = mapped_column(nullable=True, default=True)
     role_id: ClassVar[int]
+    deleted: ClassVar[bool]
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="user",
@@ -38,7 +39,7 @@ class User(Base):
 
     def __repr__(self):
         '''Representación en string del Usuario'''
-        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}>"
+        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, DELETED: {self.deleted}>"
 
 def create_user(**kwargs: dict) -> str:
     """
@@ -177,8 +178,11 @@ def read_users_by(params: dict) -> list[User]:
     query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(*query_conditions).all()
 
     roles = UserRole.get_all_relations()
+    is_deleted = LogicallyDeletedUser.get_all()
+    deleted_ids = {u.user_id for u in is_deleted}
     for u in query:
         u.role_id = roles[u.id-1].role_id
+        u.deleted = u.id in deleted_ids
 
     return query
 
@@ -236,6 +240,10 @@ def list_all_users(page: int=1, per_page: int=10) -> list[User]:
     """
     query = db.session.query(User).all()
     roles = UserRole.get_all_relations()
+    is_deleted = LogicallyDeletedUser.get_all()
+    deleted_ids = {u.user_id for u in is_deleted}
     for u in query:
         u.role_id = roles[u.id-1].role_id
+        u.deleted = u.id in deleted_ids
+
     return query

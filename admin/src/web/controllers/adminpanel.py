@@ -53,7 +53,6 @@ def list_users() -> str:
         page = request.args.get("page", 1, type=int)
         per_page = 25
         users = list_all_users(page=page, per_page=per_page)
-
         return render_template("searchuser.html", previous_search = None, users=users if users else None, active_user_id = session["user_id"])
     else:
         users = []
