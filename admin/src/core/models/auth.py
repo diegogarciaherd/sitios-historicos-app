@@ -106,7 +106,7 @@ class LogicallyDeletedUser(Base):
     user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     def add_new_user(id: int):
-        user = LogicallyDeletedUser(id)
+        user = LogicallyDeletedUser(user_id = id)
         db.session.add(user)
         db.session.commit()
 

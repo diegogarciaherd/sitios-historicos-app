@@ -5,6 +5,7 @@ from core.models.feature_flags import FeatureFlag
 from core.services.bcrypt import bcrypt
 from flask import session, g
 from core.services.auth_roles import has_role
+from core.models.auth import LogicallyDeletedUser
 
 def authenticate(email: str, password: str) -> User | None:
     """
@@ -24,7 +25,11 @@ def authenticate(email: str, password: str) -> User | None:
     if not (user and bcrypt.check_password_hash(user.password, password)):
         error = "Correo electronico o clave incorrectos."
     if user and (not user.active):
-        error = "Tu cuenta ha sido desactivada por un administrador.\nSi crees que se trata de un error, contacta uno."
+        error = "Tu cuenta se encuentra inactiva.\nContacta a un administrador para reactivarla."
+    if user:
+        is_deleted = db.session.query(LogicallyDeletedUser).filter_by(user_id=user.id).first()
+        if is_deleted:
+            error = "Tu cuenta ha sido eliminada.\nContacta a un administrador para mas informacion."
     
     return user, error
 
