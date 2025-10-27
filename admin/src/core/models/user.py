@@ -38,7 +38,7 @@ class User(Base):
 
     def __repr__(self):
         '''Representación en string del Usuario'''
-        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, ROLE_ID: {self.role_id}>"
+        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}>"
 
 def create_user(**kwargs: dict) -> str:
     """
@@ -132,7 +132,7 @@ def read_users_by_activeness(active: bool, page: int=1, per_page: int=10) -> lis
 
     return query
 
-def read_users_by_role(role: str, page: int=1, per_page: int=10) -> list[User] | None:
+def read_users_by_role(role: int, page: int=1, per_page: int=10) -> list[User] | None:
     """
     Busca todos los usuarios que cumplan con el criterio dado por "role".
 
@@ -147,14 +147,15 @@ def read_users_by_role(role: str, page: int=1, per_page: int=10) -> list[User] |
         La lista de usuarios que cumplen con el criterio, y el numero
         de tuplas devueltas en la consulta o None si no hay resultados.
     """
-    query = db.session.query(User).filter_by(role=role).all()
-    roles = UserRole.get_all_relations()
-    for u in query:
-        u.role_id = roles[u.id-1].role_id
+    query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(UserRole.role_id == role).all()
+    #query = db.session.query(User).filter_by(role=role).all()
+    #roles = UserRole.get_all_relations()
+    #for u in query:
+    #    u.role_id = roles[u.id-1].role_id
 
     return query
 
-def read_users_by(role: str | None, active: bool | None) -> list[User]:
+def read_users_by(role: int | None, active: bool | None) -> list[User]:
     """
     Realiza la consulta en base a los argumentos. Puede ser filtrar por
     rol y actividad, solo por rol, o solo por actividad.
@@ -171,11 +172,11 @@ def read_users_by(role: str | None, active: bool | None) -> list[User]:
     """
     query = None
     if (role is not None and active is None):
-        query = db.session.query(User).filter_by(role=role).all()
+        query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(UserRole.role_id == role).all()
     if (active is not None and role is None):
         query = db.session.query(User).filter_by(active=active).all()
     if (role is not None and active is not None):
-        query = db.session.query(User).filter_by(role_id=role).filter_by(active=active).all()
+        query = db.session.query(User).filter_by(active=active).join(UserRole, User.id == UserRole.id).filter(UserRole.role_id == role).all()
     roles = UserRole.get_all_relations()
     for u in query:
         u.role_id = roles[u.id-1].role_id

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for, abort
-from core.models.user import create_user as create, read_user_by_email, read_users_by
+from core.models.user import create_user as create, read_user_by_email, read_users_by, read_users_by_role
 from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
 from flask import session
@@ -50,6 +50,7 @@ def list_users() -> str:
     Lista los usuarios existentes.
     """
     if request.method == "GET":
+        print(read_users_by_role(1))
         page = request.args.get("page", 1, type=int)
         per_page = 25
         users = list_all_users(page=page, per_page=per_page)
@@ -87,7 +88,7 @@ def list_users() -> str:
                 case "any":
                     role = None
             if (act is None and role is None):
-                users = list_all_users()[0]
+                users = list_all_users()
             else:
                 users = read_users_by(role, act)
 
