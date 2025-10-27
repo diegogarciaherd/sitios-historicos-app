@@ -45,21 +45,26 @@
                 </select><br>
             </div>
         </div>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="msg"
-                    {% if category == "success" %}
-                        style="color: green;"
-                    {% else %}
-                        style="color: red;"
-                    {% endif %}
-                    >
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+        {% if edit %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="msg"
+                        {% if category == "success" %}
+                            style="color: green; margin: 25px;"
+                        {% else %}
+                            style="color: red; margin: 25px;"
+                        {% endif %}
+                        >
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        {% endif %}
         <button type="submit">{% if edit %}Guardar cambios{% else %}Crear{% endif %}</button>
+        {% if edit %}
+            <a href="/panel-de-admin/buscar-usuarios" style="margin-left: 30px;">Cancelar</a>
+        {% endif %}
     </form>
 </div>

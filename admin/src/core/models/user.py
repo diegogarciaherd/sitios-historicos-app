@@ -175,7 +175,7 @@ def read_users_by(role: str | None, active: bool | None) -> list[User]:
     if (active is not None and role is None):
         query = db.session.query(User).filter_by(active=active).all()
     if (role is not None and active is not None):
-        query = db.session.query(User).filter_by(role=role).filter_by(active=active).all()
+        query = db.session.query(User).filter_by(role_id=role).filter_by(active=active).all()
     roles = UserRole.get_all_relations()
     for u in query:
         u.role_id = roles[u.id-1].role_id
@@ -201,6 +201,8 @@ def update_user(id: int, **kwargs: dict) -> str:
             return "El correo electronico ingresado ya se encuentra en uso."
     if kwargs["password"]:
         kwargs["password"] = bcrypt.generate_password_hash(kwargs["password"]).decode("utf-8")
+    else:
+        kwargs.pop("password")
     new_role = kwargs.pop("role")
     db.session.query(User).filter_by(id=id).update(kwargs)
     UserRole.modify_user_role(id, new_role)

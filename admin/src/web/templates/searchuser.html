@@ -66,20 +66,21 @@ content %}
             {% endif %}
         </p>
         <br />
-        <div class="user-actions">
+        <div class="user-actions" style="margin-top: 20px; margin-bottom: 20px;">
             {% if user.role_id != 1 %}
                 <a
                         href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
                         class="btn edit-btn"
+                        style="margin-bottom: 20px;"
                         >Editar</a
                     >
                 <form
                     method="POST"
                     action="{{ url_for('adminpanel.del_user', id=user.id) }}"
-                    style="display: inline"
+                    style="margin: 0px; padding: 0px;"
                     onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
                 >
-                    <button type="submit" class="btn delete-btn">Eliminar</button>
+                    <button type="submit" class="btn delete-btn" style="margin-top: 20px;">Eliminar</button>
                 </form>
             {% endif %}
         </div>

@@ -130,6 +130,7 @@ def edit_user(id: int) -> str:
     if request.method == "POST":
         data, error = validate_edit_request_data(request.form.to_dict())
         if not error:
+            print(data)
             error = update_user(id, **data)
         if not error:
             flash("Usuario editado correctamente.", "success")
