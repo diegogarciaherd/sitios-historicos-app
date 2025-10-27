@@ -1,5 +1,5 @@
 from flask import Blueprint, request, render_template, flash, redirect, url_for, abort
-from core.models.user import create_user as create, read_user_by_email, read_users_by, read_users_by_role
+from core.models.user import create_user as create, read_user_by_email, read_users_by
 from core.models.user import update_user, delete_user, list_all_users, get_user_by_id
 from core.services.auth_roles import require_permission
 from flask import session
@@ -50,52 +50,20 @@ def list_users() -> str:
     Lista los usuarios existentes.
     """
     if request.method == "GET":
-        print(read_users_by_role(1))
         page = request.args.get("page", 1, type=int)
         per_page = 25
         users = list_all_users(page=page, per_page=per_page)
 
-        return render_template("searchuser.html", users=users if users else None)
+        return render_template("searchuser.html", previous_search = None, users=users if users else None)
     else:
         users = []
-        search_option = request.form.keys()
-        if "email" in search_option:
-            email = request.form.get("email")
-            result = read_user_by_email(email)
-            if result:
-                users.append(result)
-
-        elif "actividad" or "rol" in search_option:
-            act = request.form.get("actividad")
-            match act:
-                case "activo":
-                    act = True
-                case "inactivo":
-                    act = False
-                case "any":
-                    act = None
-
-            role = request.form.get("rol")
-            match role:
-                case "public":
-                    role = 4
-                case "editor":
-                    role = 3
-                case "admin":
-                    role = 2
-                case "sysadmin":
-                    role = 1
-                case "any":
-                    role = None
-            if (act is None and role is None):
-                users = list_all_users()
-            else:
-                users = read_users_by(role, act)
-
+        search_params = request.form.to_dict()
+        parse_search_request_data(search_params)
+        users = read_users_by(search_params)
         if not users:
             users = None
 
-        return render_template("searchuser.html", users=users)
+        return render_template("searchuser.html", users=users, previous_search = search_params)
 
 @adminpanel_bp.route("/crear-usuario", methods=["GET", "POST"])
 @require_permission("users.manage")
@@ -152,7 +120,31 @@ def del_user(id: int):
     delete_user(id)
     return redirect(url_for("adminpanel.list_users"))
 
-def validate_edit_request_data(form_data: dict):
+def parse_search_request_data(search_params: dict):
+        if search_params["email"]:
+            search_params["email"] = search_params["email"].strip()
+
+        match search_params["activity"]:
+            case "active":
+                search_params["activity"] = True
+            case "inactive":
+                search_params["activity"] = False
+            case "any":
+                search_params["activity"] = None
+
+        match search_params["role"]:
+            case "public":
+                search_params["role"] = 4
+            case "editor":
+                search_params["role"] = 3
+            case "admin":
+                search_params["role"] = 2
+            case "sysadmin":
+                search_params["role"] = 1
+            case "any":
+                search_params["role"] = None
+
+def validate_edit_request_data(form_data: dict) -> dict:
     """
     Valida los datos recibidos en una peticion de edicion
     de usuario, de manera que tenga sentido con lo que espera la funcion

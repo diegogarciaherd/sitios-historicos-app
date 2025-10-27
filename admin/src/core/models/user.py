@@ -155,31 +155,31 @@ def read_users_by_role(role: int, page: int=1, per_page: int=10) -> list[User] |
 
     return query
 
-def read_users_by(role: int | None, active: bool | None) -> list[User]:
+def read_users_by(params: dict) -> list[User]:
     """
-    Realiza la consulta en base a los argumentos. Puede ser filtrar por
-    rol y actividad, solo por rol, o solo por actividad.
+    Realiza una consulta filtrada en base a los params.
 
     Args:
-        role (str): El rol, si quiere incluirse como criterio. Puede ser
-        None.
-
-        active (bool): Si esta activo o no. Tambien puede ser None.
+        params (dict): Los filtros de busqueda.
 
     Returns:
         La lista de usuarios que cumplan con los criterios dados por
         los argumentos, o None si no hay resultados.
     """
-    query = None
-    if (role is not None and active is None):
-        query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(UserRole.role_id == role).all()
-    if (active is not None and role is None):
-        query = db.session.query(User).filter_by(active=active).all()
-    if (role is not None and active is not None):
-        query = db.session.query(User).filter_by(active=active).join(UserRole, User.id == UserRole.id).filter(UserRole.role_id == role).all()
+    query_conditions = []
+    if params["email"]:
+        query_conditions.append(User.email.ilike(f"%{params['email']}%"))
+    if params["activity"] is not None:
+        query_conditions.append(User.active == params["activity"])
+    if params["role"] is not None:
+        query_conditions.append(UserRole.role_id == params["role"])
+
+    query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(*query_conditions).all()
+
     roles = UserRole.get_all_relations()
     for u in query:
         u.role_id = roles[u.id-1].role_id
+
     return query
 
 def update_user(id: int, **kwargs: dict) -> str:
