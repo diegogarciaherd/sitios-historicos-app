@@ -102,17 +102,38 @@ class BlockedUser(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
 
 class LogicallyDeletedUser(Base):
+    """
+    Modelo para persistir usuarios que han sido eliminados por un administrador.
+    """
     __tablename__ = "deleted_users"
     user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     def add_new_user(id: int):
+        """
+        Agrega el id de un usuario que fue eliminado.
+
+        Args:
+            id (int): El id del usuario eliminado.
+        """
         user = LogicallyDeletedUser(user_id = id)
         db.session.add(user)
         db.session.commit()
 
     def remove_user(id: int):
+        """
+        Remueve un usuario y lo vuelve a activar (en caso de que se pueda).
+
+        Args:
+            id (int): El id del usuario a recuperar.
+        """
         db.session.query(LogicallyDeletedUser).filter_by(user_id=id).remove()
         db.session.commit()
 
-    def get_all():
+    def get_all() -> list:
+        """
+        Devuelve todos los id de usuarios eliminados.
+
+        Returns:
+            Una lista que contiene todos los id de usuarios eliminados.
+        """
         return db.session.query(LogicallyDeletedUser).all()

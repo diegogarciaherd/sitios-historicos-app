@@ -39,7 +39,7 @@ class User(Base):
 
     def __repr__(self):
         '''Representación en string del Usuario'''
-        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}, DELETED: {self.deleted}>"
+        return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}>"
 
 def create_user(**kwargs: dict) -> str:
     """
@@ -74,8 +74,7 @@ def create_user(**kwargs: dict) -> str:
     
 def get_user_by_id(id: int) -> User | None:
     """
-    Busca un usuario en la base de datos a partir de su ID, el cual es
-    manejado por la misma base de datos.
+    Busca un usuario en la base de datos a partir de su id.
 
     Args:
         id (int): El numero que identifica univocamente al usuario.
@@ -106,55 +105,6 @@ def read_user_by_email(email: str) -> User | None:
     if user:
         user.role_id = UserRole.get_user_role(user.id)
     return user
-
-def read_users_by_activeness(active: bool, page: int=1, per_page: int=10) -> list[User] | None:
-    """
-    Busca todos aquellos usuarios que cumplan con el criterio dado
-    por "active". Si active=True, seran todos los usuarios que
-    se encuentren activos en el sistema, en caso contrario, todos
-    aquellos que se encuentren inactivos/bloqueados.
-
-    Args:
-        active (bool): True para usuarios activos, False para usuarios
-        inactivos.
-
-        page (int): TBD
-
-        per_page (int): TBD
-
-    Returns:
-        La lista de usuarios que cumplen con el criterio, y el numero
-        de tuplas devueltas en la consulta, o None si no hay resultados.
-    """
-    query = db.session.query(User).filter_by(active=active).all()
-    roles = UserRole.get_all_relations()
-    for u in query:
-        u.role_id = roles[u.id].role_id
-
-    return query
-
-def read_users_by_role(role: int, page: int=1, per_page: int=10) -> list[User] | None:
-    """
-    Busca todos los usuarios que cumplan con el criterio dado por "role".
-
-    Args:
-        role (str): El rol por el que se quiere filtrar (public, editor, admin).
-
-        page (int): TBD
-
-        per_page (int): TBD
-
-    Returns:
-        La lista de usuarios que cumplen con el criterio, y el numero
-        de tuplas devueltas en la consulta o None si no hay resultados.
-    """
-    query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(UserRole.role_id == role).all()
-    #query = db.session.query(User).filter_by(role=role).all()
-    #roles = UserRole.get_all_relations()
-    #for u in query:
-    #    u.role_id = roles[u.id-1].role_id
-
-    return query
 
 def read_users_by(params: dict) -> list[User]:
     """
@@ -209,6 +159,8 @@ def update_user(id: int, **kwargs: dict) -> str:
     else:
         kwargs.pop("password")
     new_role = kwargs.pop("role")
+    if "deleted" in kwargs:
+        kwargs.pop["deleted"]
     db.session.query(User).filter_by(id=id).update(kwargs)
     UserRole.modify_user_role(id, new_role)
     db.session.commit()
@@ -216,12 +168,13 @@ def update_user(id: int, **kwargs: dict) -> str:
 
 def delete_user(id: int):
     """
-    Elimina un usuario de la base de datos.
+    Elimina un usuario de la base de datos, no literalmente, sino que
+    lo agrega a una tabla que contiene los id de usuarios eliminados
+    logicamente.
 
     Args:
         id (int): El id del usuario que se quiere eliminar.
 
-    ((Hace un borrado fisico. Cambiar para que sea logico en su lugar))
     """
     LogicallyDeletedUser.add_new_user(id)
 
