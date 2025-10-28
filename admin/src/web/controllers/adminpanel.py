@@ -50,13 +50,12 @@ def list_users() -> str:
     Lista los usuarios existentes.
     """
     if request.method == "GET":
-        page = request.args.get("page", 1, type=int)
-        per_page = 25
-        users = list_all_users(page=page, per_page=per_page)
+        users = list_all_users()
         return render_template("searchuser.html", previous_search = None, users=users if users else None, active_user_id = session["user_id"])
     else:
         users = []
         search_params = request.form.to_dict()
+        print(search_params)
         parse_search_request_data(search_params)
         users = read_users_by(search_params)
         if not users:

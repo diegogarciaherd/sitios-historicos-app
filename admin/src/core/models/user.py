@@ -5,6 +5,8 @@ from core.services.bcrypt import bcrypt
 from core.database import Base
 from typing import TYPE_CHECKING, ClassVar
 from core.models.auth import UserRole, LogicallyDeletedUser
+from datetime import datetime
+from sqlalchemy import DateTime
 
 if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
@@ -29,6 +31,9 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
     active: Mapped[bool] = mapped_column(nullable=True, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
     role_id: ClassVar[int]
     deleted: ClassVar[bool]
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
@@ -125,7 +130,10 @@ def read_users_by(params: dict) -> list[User]:
     if params["role"] is not None:
         query_conditions.append(UserRole.role_id == params["role"])
 
-    query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(*query_conditions).all()
+    if params["order-by"] == "newest-first":
+        query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(*query_conditions).order_by(User.created_at.desc()).all()
+    elif params["order-by"] == "oldest-first":
+        query = db.session.query(User).join(UserRole, User.id == UserRole.id).filter(*query_conditions).order_by(User.created_at.asc()).all()
 
     roles = UserRole.get_all_relations()
     is_deleted = LogicallyDeletedUser.get_all()
@@ -174,11 +182,10 @@ def delete_user(id: int):
 
     Args:
         id (int): El id del usuario que se quiere eliminar.
-
     """
     LogicallyDeletedUser.add_new_user(id)
 
-def list_all_users(page: int=1, per_page: int=10) -> list[User]:
+def list_all_users() -> list[User]:
     """
     Busca todos los usuarios de la base de datos sin discriminacion alguna.
 
@@ -191,7 +198,7 @@ def list_all_users(page: int=1, per_page: int=10) -> list[User]:
         Una lista con todos los usuarios existentes, y el total de la
         busqueda.
     """
-    query = db.session.query(User).all()
+    query = db.session.query(User).order_by(User.created_at.asc()).all()
     roles = UserRole.get_all_relations()
     is_deleted = LogicallyDeletedUser.get_all()
     deleted_ids = {u.user_id for u in is_deleted}

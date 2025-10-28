@@ -30,7 +30,7 @@ content %}
         />Cualquiera</label>
     </div>
     <label>Rol:</label>
-    <div class="radio-group">
+    <div class="radio-group" style="margin-bottom: 20px;">
         <label><input type="radio" name="role" value="public" 
         {% if previous_search['role'] == 4 %}checked{% endif %}
         />Público</label>
@@ -46,7 +46,16 @@ content %}
         <label><input type="radio" name="role" value="any"
         {% if not previous_search or previous_search['role'] == None %}checked{% endif %}  
         />Cualquiera</label>
-    </div>    
+    </div>
+    <label>Ordenar por:</label>
+    <div class="radio-group">
+        <label><input type="radio" name="order-by" value="oldest-first"
+        {% if previous_search['order-by'] == 'oldest-first' %}checked{% endif %}
+        />Mas antiguos primero</label>
+        <label><input type="radio" name="order-by" value="newest-first"
+        {% if not previous_search or previous_search['order-by'] == 'newest-first' or previous_search['order-by'] == None %}checked{% endif %}
+        />Mas recientes primero</label>
+    </div>   
     <button type="submit" style="margin-top: 1rem; margin-bottom: 20px;">Buscar</button>
 </form>
 
