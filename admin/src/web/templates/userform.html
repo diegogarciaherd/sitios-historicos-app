@@ -39,27 +39,30 @@
             <label for="role">Rol</label>
             <div class="custom-select">
                 <select id="role" name="role" required>
-                    <option value="public" {% if user.role.value == "public" %}selected{% endif %}>Usuario publico</option>
-                    <option value="editor" {% if user.role.value == "editor" %}selected{% endif %}>Usuario editor</option>
-                    <option value="admin" {% if user.role.value == "admin" %}selected{% endif %}>Administrador</option>
+                        <option value="4" {% if edit and user.role_id == 4 %}selected{% endif %}>Usuario publico</option>
+                        <option value="3" {% if edit and user.role_id == 3 %}selected{% endif %}>Usuario editor</option>
+                        <option value="2" {% if edit and user.role_id == 2 %}selected{% endif %}>Administrador</option>
                 </select><br>
             </div>
         </div>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="msg"
-                    {% if category == "success" %}
-                        style="color: green;"
-                    {% else %}
-                        style="color: red;"
-                    {% endif %}
-                    >
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="msg"
+                        {% if edit and category == "success" %}
+                            style="color: green; margin: 25px;"
+                        {% else %}
+                            style="color: red; margin: 25px;"
+                        {% endif %}
+                        >
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
         <button type="submit">{% if edit %}Guardar cambios{% else %}Crear{% endif %}</button>
+        {% if edit %}
+            <a href="/panel-de-admin/buscar-usuarios" style="margin-left: 30px;">Cancelar</a>
+        {% endif %}
     </form>
 </div>

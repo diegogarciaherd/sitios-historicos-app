@@ -22,8 +22,7 @@ def reset_db():
     from core.models.user import User
     from core.models.feature_flags import FeatureFlag
     from core.models.feature_flags_history import FeatureFlagHistory
-    from core.models.userrole import UserRole
-    from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser
+    from core.models.auth import Role, Permission, RolePermission, UserRole, BlockedUser, LogicallyDeletedUser
     from core.models.tags import Tag
 
     print("Resetting database...")
