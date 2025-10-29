@@ -94,19 +94,17 @@ def edit_user(id: int) -> str:
         id (int): El id del usuario que se quiere editar.
     """
     check_for_sysadmin(id)
+    user_to_edit = get_user_by_id(id)
     if request.method == "POST":
         data, error = validate_edit_request_data(request.form.to_dict())
         if not error:
-            print(data)
             error = update_user(id, **data)
         if not error:
             flash("Usuario editado correctamente.", "success")
         else:
             flash(error, "error")
-        return render_template("edituser.html", user=data, edit=True, logged_user=session["user_id"] if "user_id" in session else None)
-    else:
-        user_to_edit = get_user_by_id(id)
-        return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
+    
+    return render_template("edituser.html", user=user_to_edit, edit=True, logged_user=session['user_id'] if 'user_id' in session else None)
 
 @adminpanel_bp.route("/eliminar-usuario/<int:id>", methods=["POST"])
 @require_permission("users.manage")
