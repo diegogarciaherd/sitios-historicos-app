@@ -1,13 +1,9 @@
 # admin/src/web/controllers/sites.py
 from __future__ import annotations
-
-from core.services.auth_roles import require_permission  # (tu cambio)
-
-from core.database import db
+from core.services.auth_roles import require_permission  
 from flask import (
     abort,
     flash,
-    jsonify,
     request,
     redirect,
     send_file,
@@ -17,7 +13,7 @@ from flask import (
 from .validators.site_validator import validate_site_data
 import tempfile
 
-# Importá helpers/modelos que ya existían en development
+# Importá helpers/modelos de sitios
 from core.models.sites import (
     list_sites,
     create_sites,
@@ -28,13 +24,7 @@ from core.models.sites import (
     get_all_cities,
     get_all_provinces,
 )
-from core.database import db
-from flask import request, redirect, url_for
-from .validators.site_validator import validate_site_data
 from core.models import tags
-from core.models.tags import Tag
-from core.models.tags import get_all_tags  # ya estaba en development
-
 from datetime import datetime
 from flask import Blueprint
 import json
@@ -103,7 +93,7 @@ def list_all_sites():
 
     cities = [c[0] for c in get_all_cities()]
     provinces = [p[0] for p in get_all_provinces()]
-    tags = [t.name for t in get_all_tags()]
+    tags_list = [t.name for t in tags.get_all_tags()]
 
     sitesJson = [
         site.to_dict() for site in sites
@@ -116,7 +106,7 @@ def list_all_sites():
         sitesJson=json.dumps(sitesJson),
         cities=cities,
         provinces=provinces,
-        tags=tags,
+        tags=tags_list,
     )
 
 
@@ -124,7 +114,7 @@ def list_all_sites():
 @require_permission("sites.create")
 def create_site():
     '''Crea un nuevo sitio histórico'''
-    all_tags = db.session.query(Tag).all()
+    all_tags = tags.get_all_tags();
     
     if request.method == "POST":
         data = request.form.to_dict()
@@ -155,7 +145,7 @@ def create_site():
             site = create_sites(**data)
 
             if tag_ids:
-                selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+                selected_tags = tags.get_tags_by_ids(tag_ids)
                 tags.assign_tags(site, selected_tags)
 
             # IMPORTANTE: Flash ANTES de redirect
@@ -188,7 +178,7 @@ def edit_site(id):
     if not site:
         abort(404)
 
-    all_tags = db.session.query(Tag).all()
+    all_tags = tags.get_all_tags()
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
@@ -202,7 +192,7 @@ def edit_site(id):
 
         update_site(id, **data)
 
-        selected_tags = db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+        selected_tags = tags.get_tags_by_ids(tag_ids)
         tags.assign_tags(site, selected_tags)
 
         flash("Sitio actualizado correctamente", "success")
