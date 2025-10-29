@@ -70,7 +70,7 @@ def list_all_sites():
             return "Formato de fecha inválido. Use YYYY-MM-DD.", 400
 
     page = request.args.get("page", 1, type=int)
-    per_page = 25
+    per_page = 10
     # sites, total = list_sites(page=page, per_page=per_page)
     sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
