@@ -1,47 +1,193 @@
-{% extends "sites_layout.html" %} {% block title %}Editar Tag{% endblock %} {%
-block head_styles %} {% endblock %} {% block content %}
+{% extends "sites_layout.html" %} 
+{% block title %}Editar Tag{% endblock %} 
+
+{% block head_styles %}
+<style>
+    .alert {
+        padding: 12px 16px;
+        margin: 16px 0;
+        border-radius: 6px;
+        border: 1px solid;
+        font-weight: 500;
+    }
+
+    .alert-success {
+        color: #0f5132;
+        background-color: #d1e7dd;
+        border-color: #a3cfbb;
+    }
+
+    .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f1aeb5;
+    }
+
+    .alert-dismissible {
+        position: relative;
+        padding-right: 40px;
+    }
+
+    .btn-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: none;
+        border: none;
+        font-size: 18px;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="container mt-4">
     <h1>Editar Tag</h1>
 
-    <!-- Mensajes flash -->
-    {% with messages = get_flashed_messages(with_categories=true) %} {% if
-    messages %} {% for category, message in messages %}
-    <div
-        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
-        role="alert"
-    >
-        {{ message }}
-        <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-        ></button>
-    </div>
-    {% endfor %} {% endif %} {% endwith %}
-
-    <form
-        method="post"
-        action="{{ url_for('tags.edit_tag_view', tag_id=tag.id) }}"
-    >
+   {% with messages = get_flashed_messages(with_categories=true) %} 
+    {% if messages %} 
+        {% for category, message in messages %}
+            
+            <div style="background: yellow; padding: 10px; margin: 10px 0;">
+                Categoría: "{{ category }}" | Mensaje: "{{ message }}"
+            </div>
+            
+            {% if category == 'success' %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                ✅ {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% else %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                ❌ {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+        {% endfor %} 
+    {% endif %} 
+{% endwith %}
+    <form method="post" action="{{ url_for('tags.edit_tag_view', tag_id=tag.id) }}" id="tagForm">
         <div class="mb-3">
-            <label for="name" class="form-label">Nombre</label>
-            <input
-                type="text"
-                class="form-control"
-                id="name"
-                name="name"
-                value="{{ tag.name }}"
-                required
-                minlength="3"
-                maxlength="50"
-            />
+            <label for="name" class="form-label">Nombre *</label>
+            <input type="text" class="form-control" id="name" name="name" 
+                   value="{{ tag.name }}" 
+                   required minlength="3" maxlength="50"
+                   pattern="[A-Za-zÁáÉéÍíÓóÚúÑñ\s\-_]+"
+                   title="Solo letras, espacios, guiones y guiones bajos">
+            <div class="error-message" id="name-error"></div>
+            <div class="form-text">
+                Mínimo 3 caracteres, máximo 50. Solo letras, espacios, guiones (-) y guiones bajos (_). No se permiten números.
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary">Guardar</button>
-        <a href="{{ url_for('tags.tags_list') }}" class="btn btn-secondary"
-            >Cancelar</a
-        >
+        <a href="{{ url_for('tags.tags_list') }}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
+
+<script>
+    
+    document.getElementById('tagForm').addEventListener('submit', function(e) {
+        clearErrors();
+        let isValid = true;
+
+        const nameInput = document.getElementById('name');
+        const nameValue = nameInput.value.trim();
+
+        if (!nameValue) {
+            showError('name', 'El nombre del tag es obligatorio');
+            isValid = false;
+        } else if (nameValue.length < 3) {
+            showError('name', 'El nombre debe tener al menos 3 caracteres');
+            isValid = false;
+        } else if (nameValue.length > 50) {
+            showError('name', 'El nombre no puede exceder los 50 caracteres');
+            isValid = false;
+        } else if (!/^[A-Za-zÁáÉéÍíÓóÚúÑñ\s\-_]+$/.test(nameValue)) {
+            showError('name', 'Solo se permiten letras, espacios, guiones (-) y guiones bajos (_). No se permiten números.');
+            isValid = false;
+        } else if (nameValue !== nameValue.trim()) {
+            showError('name', 'El nombre no puede empezar o terminar con espacios');
+            isValid = false;
+        } else if (/\s{2,}/.test(nameValue)) {
+            showError('name', 'No se permiten múltiples espacios consecutivos');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            nameInput.focus();
+        }
+    });
+
+    document.getElementById('name').addEventListener('input', function() {
+        validateNameField();
+    });
+
+    document.getElementById('name').addEventListener('blur', function() {
+        validateNameField();
+    });
+
+    function validateNameField() {
+        const nameInput = document.getElementById('name');
+        const nameValue = nameInput.value.trim();
+        
+        if (!nameValue) {
+            clearError('name');
+            return;
+        }
+
+        if (nameValue.length < 3) {
+            showError('name', 'El nombre debe tener al menos 3 caracteres');
+        } else if (nameValue.length > 50) {
+            showError('name', 'El nombre no puede exceder los 50 caracteres');
+        } else if (!/^[A-Za-zÁáÉéÍíÓóÚúÑñ\s\-_]+$/.test(nameValue)) {
+            showError('name', 'Solo se permiten letras, espacios, guiones y guiones bajos. No se permiten números.');
+        } else if (nameValue !== nameValue.trim()) {
+            showError('name', 'El nombre no puede empezar o terminar con espacios');
+        } else if (/\s{2,}/.test(nameValue)) {
+            showError('name', 'No se permiten múltiples espacios consecutivos');
+        } else {
+            clearError('name');
+        }
+    }
+
+    function showError(fieldId, message) {
+        const errorElement = document.getElementById(fieldId + '-error');
+        const inputElement = document.getElementById(fieldId);
+        
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.add('active');
+        }
+        
+        if (inputElement) {
+            inputElement.classList.add('error');
+        }
+    }
+
+    function clearError(fieldId) {
+        const errorElement = document.getElementById(fieldId + '-error');
+        const inputElement = document.getElementById(fieldId);
+        
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.classList.remove('active');
+        }
+        
+        if (inputElement) {
+            inputElement.classList.remove('error');
+        }
+    }
+
+    function clearErrors() {
+        clearError('name');
+    }
+</script>
 {% endblock %}
