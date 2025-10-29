@@ -200,7 +200,14 @@ def get_tags(search="", order_by="name_asc", page=1, per_page=10):
 
     return tags, total, total_pages
 
-
 def get_all_tags():
     '''Obtiene todos los tags sin paginación ordenados por nombre ascendente'''
     return db.session.query(Tag).order_by(Tag.name.asc()).all()
+
+def get_tags_by_ids(tag_ids):
+    '''Obtiene una lista de tags dado una lista de IDs'''
+    return db.session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+
+def get_tag_by_id(tag_id):
+    '''Obtiene un tag por su ID'''
+    return db.session.query(Tag).get(tag_id)
