@@ -5,13 +5,33 @@ from core.models.feature_flags import FeatureFlag
 from core.services.bcrypt import bcrypt
 from flask import session, g
 from core.services.auth_roles import has_role
+from core.models.auth import LogicallyDeletedUser
 
 def authenticate(email: str, password: str) -> User | None:
-    '''Autentica un usuario por email y contraseña.'''
+    """
+    Compara las credenciales recibidas con las guardadas en la base de datos.
+
+    Args:
+        email (str): El correo electronico del usuario.
+
+        password (str): La clave del usuario en texto plano.
+
+    Returns:
+        User: Aquel usuario que coincida con las credenciales.
+    """
     user = db.session.query(User).filter_by(email=email).first()
-    if user and bcrypt.check_password_hash(user.password, password):
-        return user
-    return None
+    error = ""
+    
+    if not (user and bcrypt.check_password_hash(user.password, password)):
+        error = "Correo electronico o clave incorrectos."
+    if user and (not user.active):
+        error = "Tu cuenta se encuentra desactivada.\nContacta a un administrador para reactivarla."
+    if user:
+        is_deleted = db.session.query(LogicallyDeletedUser).filter_by(user_id=user.id).first()
+        if is_deleted:
+            error = "Tu cuenta ha sido eliminada.\nContacta a un administrador para mas informacion."
+    
+    return user, error
 
 def check_flags(user: User | None):
     '''Verifica si el sistema administrativo está activado mediante feature flag.'''

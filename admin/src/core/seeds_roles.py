@@ -73,39 +73,34 @@ def run():
     # Usuarios
     '''Crea usuarios de prueba y les asigna roles'''
     u_sys_admin = create_user(email="sysadmin@fiorella.com",
-                               name="System", last_name="Admin", password="sysadmin123", active=True)
+                               name="System", last_name="Admin", password="sysadmin123", active=True, role=1)
     if not u_sys_admin:
         u_sys_admin = db.session.query(User).filter_by(email="sysadmin@fiorella.com").first()
 
     u_admin  = create_user(email="admin@fiorella.com",
-                              name="Admin", last_name="Root", password="admin123", active=True)
+                              name="Admin", last_name="Root", password="admin123", active=True, role=2)
     if not u_admin:
         u_admin = db.session.query(User).filter_by(email="admin@fiorella.com").first()
 
     u_edit1  = create_user(email="editor1@fiorella.com",
-                              name="Elena", last_name="Editor", password="editor123", active=True)
+                              name="Elena", last_name="Editor", password="editor123", active=True, role=3)
     if not u_edit1:
         u_edit1 = db.session.query(User).filter_by(email="editor1@fiorella.com").first()
 
     u_edit2  = create_user(email="editor2@fiorella.com",
-                              name="Eduardo", last_name="Bloq", password="editor123", active=True)
+                              name="Eduardo", last_name="Bloq", password="editor123", active=True, role=3)
     if not u_edit2:
         u_edit2 = db.session.query(User).filter_by(email="editor2@fiorella.com").first()
 
     u_view1  = create_user(email="viewer1@fiorella.com",
-                              name="Violeta", last_name="View", password="viewer123", active=True)
+                              name="Violeta", last_name="View", password="viewer123", active=True, role=4)
     if not u_view1:
         u_view1 = db.session.query(User).filter_by(email="viewer1@fiorella.com").first()
 
     u_view2  = create_user(email="viewer2@fiorella.com",
-                              name="Victor", last_name="View", password="viewer123", active=True)
+                              name="Victor", last_name="View", password="viewer123", active=True, role=4)
     if not u_view2:
         u_view2 = db.session.query(User).filter_by(email="viewer2@fiorella.com").first()
-
-    u_norole = create_user(email="norole@fiorella.com",
-                              name="Nora", last_name="NoRole", password="norole123", active=True)
-    if not u_norole:
-        u_norole = db.session.query(User).filter_by(email="norole@fiorella.com").first()
 
     db.session.commit()
 

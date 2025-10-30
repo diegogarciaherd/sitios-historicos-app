@@ -1,102 +1,114 @@
-{% extends "adminpanel.html" %} {% block title %}Inicio{% endblock %} {% block
+{% extends "adminpanel.html" %} {% block title %}Buscar usuario(s){% endblock %} {% block
 content %}
 <h1>Buscar usuario(s)</h1>
-<select id="search-option" required style="margin-bottom: 1rem">
-    <option value="by-email">Por correo electronico</option>
-    <option value="by-activeness-and-role">Por actividad y/o rol</option>
-</select>
-
-<form method="post" id="option-email">
-    <label for="email">Email:</label>
+<form method="post" id="search-params">
+    <label for="email">Email o patron:</label>
     <input
         type="text"
         id="email"
         name="email"
-        required
-        placeholder="usuario@ejemplo.com"
+        placeholder="usuario@ejemplo.com o usuario..."
+        value="{{ previous_search['email'] or '' }}"
         style="
             box-sizing: border-box;
             padding: 8px;
             border: 1px solid #ccc;
             border-radius: 6px;
+            margin-bottom: 20px;
         "
-    />
-    <button type="submit" style="margin-top: 1rem">Buscar</button>
-</form>
-
-<form method="post" id="option-activeness-and-role" class="hidden">
+    /><br>
     <label>Actividad:</label>
-    <div class="radio-group">
-        <label><input type="radio" name="actividad" value="activo" />Activo</label>
-        <label><input type="radio" name="actividad" value="inactivo"/>Inactivo</label>
-        <label><input type="radio" name="actividad" value="any" checked/>Cualquiera</label>
+    <div class="radio-group" style="margin-bottom: 20px;">
+        <label><input type="radio" name="activity" value="active" 
+        {% if previous_search['activity'] == True %}checked{% endif %}
+        />Activo</label>
+        <label><input type="radio" name="activity" value="inactive" 
+        {% if previous_search['activity'] == False %}checked{% endif %}
+        />Inactivo</label>
+        <label><input type="radio" name="activity" value="any" 
+        {% if not previous_search or previous_search['activity'] == None %}checked{% endif %}
+        />Cualquiera</label>
     </div>
     <label>Rol:</label>
+    <div class="radio-group" style="margin-bottom: 20px;">
+        <label><input type="radio" name="role" value="public" 
+        {% if previous_search['role'] == 4 %}checked{% endif %}
+        />Público</label>
+        <label><input type="radio" name="role" value="editor"
+        {% if previous_search['role'] == 3 %}checked{% endif %} 
+        />Editor</label>
+        <label><input type="radio" name="role" value="admin"
+        {% if previous_search['role'] == 2 %}checked{% endif %}  
+        />Admin</label>
+        <label><input type="radio" name="role" value="sysadmin"
+        {% if previous_search['role'] == 1 %}checked{% endif %} 
+        />Superadmin</label>
+        <label><input type="radio" name="role" value="any"
+        {% if not previous_search or previous_search['role'] == None %}checked{% endif %}  
+        />Cualquiera</label>
+    </div>
+    <label>Ordenar por:</label>
     <div class="radio-group">
-        <label><input type="radio" name="rol" value="public" />Público</label>
-        <label><input type="radio" name="rol" value="editor" />Editor</label>
-        <label><input type="radio" name="rol" value="admin" />Admin</label>
-        <label><input type="radio" name="rol" value="any" checked>Cualquiera</label>
-    </div>    
-    <button type="submit" style="margin-top: 1rem">Buscar</button>
+        <label><input type="radio" name="order-by" value="oldest-first"
+        {% if previous_search['order-by'] == 'oldest-first' %}checked{% endif %}
+        />Mas antiguos primero</label>
+        <label><input type="radio" name="order-by" value="newest-first"
+        {% if not previous_search or previous_search['order-by'] == 'newest-first' or previous_search['order-by'] == None %}checked{% endif %}
+        />Mas recientes primero</label>
+    </div>   
+    <button type="submit" style="margin-top: 1rem; margin-bottom: 20px;">Buscar</button>
 </form>
 
 {% if users %}
-<div class="users-list">
-    {% for user in users %}
-    <div class="user-card">
-        <p>Email: {{ user.email }}</p>
-        <br />
-        <p>Nombre completo: {{ user.name }} {{ user.last_name }}</p>
-        <br />
-        <p>Activo: {{ "Si" if user.active else "No" }}</p>
-        <br />
-        <p>Rol:</p>
-        <p>
-            {% if user.role.value == "public" %} Usuario publico {% elif
-            user.role.value == "editor" %} Usuario editor {% elif
-            user.role.value == "admin" %} Administrador {% else %} Desconocido
-            {% endif %}
-        </p>
-        <br />
-        <div class="user-actions">
-            <a
-					href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
-					class="btn edit-btn"
-					>Editar</a
-				>
-            <form
-                method="POST"
-                action="{{ url_for('adminpanel.del_user', id=user.id) }}"
-                style="display: inline"
-                onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
-            >
-                <button type="submit" class="btn delete-btn">Eliminar</button>
-            </form>
-        </div>
+    <div class="users-list">
+        {% for user in users %}
+            <div class="user-card">
+                <p>Email: {{ user.email }}</p>
+                <br />
+                <p>Nombre completo: {{ user.name }} {{ user.last_name }}</p>
+                <br />
+                <p>Activo: {{ "Si" if user.active else "No" }}</p>
+                <br />
+                <p>Rol:</p>
+                <p>
+                    {% if user.role_id == 4 %} 
+                        Usuario publico
+                    {% elif user.role_id == 3 %}
+                        Usuario editor 
+                    {% elif user.role_id == 2 %}
+                        Administrador
+                    {% elif user.role_id == 1 %}
+                        Administrador del sistema
+                    {% else %}
+                        Desconocido
+                    {% endif %}
+                </p>
+                <br />
+                <div class="user-actions" style="margin-top: 20px; margin-bottom: 20px;">
+                    {% if user.role_id != 1 and user.id != active_user_id and user.deleted != True %}
+                        <a
+                                href="{{ url_for('adminpanel.edit_user', id=user.id) }}"
+                                class="btn edit-btn"
+                                style="margin-bottom: 20px;"
+                                >Editar</a
+                            >
+                        <form
+                            method="POST"
+                            action="{{ url_for('adminpanel.del_user', id=user.id) }}"
+                            style="margin: 0px; padding: 0px;"
+                            onsubmit="return confirm('¿Realmente queres eliminar este usuario?')"
+                        >
+                            <button type="submit" class="btn delete-btn" style="margin-top: 20px;">Eliminar</button>
+                        </form>
+                    {% endif %}
+                    {% if user.deleted %}
+                        <p>Usuario eliminado</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
 {% else %}
-<h1>No se encontraron resultados que cumplan con el criterio.</h1>
+    <h1>No se encontraron resultados que cumplan con el criterio.</h1>
 {% endif %}
-
-<script>
-    const select = document.getElementById("search-option");
-    const emailForm = document.getElementById("option-email");
-    const activenessAndRoleForm = document.getElementById("option-activeness-and-role");
-
-    select.addEventListener("change", function () {
-        const opcion = select.value;
-
-        emailForm.classList.add("hidden");
-        activenessAndRoleForm.classList.add("hidden");
-
-        if (opcion === "by-email") {
-            emailForm.classList.remove("hidden");
-        } else if (opcion === "by-activeness-and-role") {
-            activenessAndRoleForm.classList.remove("hidden");
-        }
-    });
-</script>
 {% endblock %}
