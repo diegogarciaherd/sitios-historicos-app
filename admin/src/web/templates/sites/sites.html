@@ -174,7 +174,15 @@
 					class="btn btn-sm btn-warning"
 					>Editar</a
 				>
-				{% endif %} {% if can('sites.delete') %}
+				{% endif %}
+                {# Acceso directo al historial (si tiene permiso)#}
+                {% if can('sites.history_view') %}
+                    <a
+                    href="{{ url_for('sites.view_history', id=site.id) }}"
+                    class="btn btn-sm btn-secondary"
+                    >Historial</a>
+                    {% endif %}
+                {% if can('sites.delete') %}
 				<form
 					method="POST"
 					action="{{ url_for('sites.delete_site', id=site.id) }}"

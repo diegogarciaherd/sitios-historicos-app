@@ -2,6 +2,7 @@
 from flask_sqlalchemy_lite import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
+from core.models.site_history import SiteChange
 
 '''Módulo de configuración e inicialización de la base de datos'''
 

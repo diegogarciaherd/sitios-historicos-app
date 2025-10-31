@@ -65,6 +65,14 @@
     border-color: #dc3545;
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
+
+/* --- NUEVO: barra de acciones en el encabezado del formulario --- */
+.form-header-actions{
+    display:flex;
+    gap:.5rem;
+    margin:.75rem 0 1rem;
+    justify-content:flex-end;
+}
 </style>
 {% endblock %}
 
@@ -79,6 +87,21 @@
 {% else %}
 <div class="form-container">
     <h1>{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}</h1>
+
+    
+
+    <div class="form-header-actions">
+        <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-outline">← Volver al listado</a>
+
+        {% if site and can('sites.view') %}
+            <a href="{{ url_for('sites.view_site', id=site.id) }}" class="btn btn-info btn-sm">Ver</a>
+        {% endif %}
+
+        {% if site and can('sites.history_view') %}
+            <a href="{{ url_for('sites.view_history', id=site.id) }}" class="btn btn-secondary btn-sm">Historial</a>
+        {% endif %}
+    </div>
+
 
     <!-- Mensajes flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
