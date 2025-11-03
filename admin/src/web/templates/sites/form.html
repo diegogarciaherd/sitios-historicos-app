@@ -184,7 +184,7 @@
         <!-- Localización -->
         <div class="form-group">
             <label>Localización (obligatorio)</label>
-            <div id="map" class="{{ 'error' if errors and 'localizacion' in errors|map(attribute='field') }}"></div>
+            <div id="map" style="z-index: 0;" class="{{ 'error' if errors and 'localizacion' in errors|map(attribute='field') }}"></div>
             <input type="hidden" id="lat" name="lat" 
                 value="{{ form_data.lat if form_data else (site.lat if site and site.lat else '') }}">
             <input type="hidden" id="lng" name="lng" 
