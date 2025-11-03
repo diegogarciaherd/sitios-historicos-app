@@ -276,3 +276,7 @@ def apply_filters(query, filters):
         query = query.filter(SitioHistorico.tags.any(Tag.name.in_(filters["tags"])))
 
     return query
+
+def get_sites_by_tag(tag_id: int):
+    """Devuelve todos los sitios asociados a un tag dado."""
+    return db.session.query(SitioHistorico).filter(SitioHistorico.tags.any(id=tag_id)).all()

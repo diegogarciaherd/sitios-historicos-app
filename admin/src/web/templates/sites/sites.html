@@ -174,7 +174,15 @@
 					class="btn btn-sm btn-warning"
 					>Editar</a
 				>
-				{% endif %} {% if can('sites.delete') %}
+				{% endif %}
+                {# Acceso directo al historial (si tiene permiso)#}
+                {% if can('sites.history_view') %}
+                    <a
+                    href="{{ url_for('sites.view_history', id=site.id) }}"
+                    class="btn btn-sm btn-secondary"
+                    >Historial</a>
+                    {% endif %}
+                {% if can('sites.delete') %}
 				<form
 					method="POST"
 					action="{{ url_for('sites.delete_site', id=site.id) }}"
@@ -189,74 +197,63 @@
 		{% endfor %}
 	</div>
 
-    <!-- Paginación -->
-    {% if pagination.pages > 1 %}
-    <div class="pagination-container">
-        <div class="pagination-info">
-            Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a
-            {{ pagination.page * pagination.per_page if pagination.page *
-            pagination.per_page < pagination.total else pagination.total }} de
-            {{ pagination.total }} sitios
-        </div>
-
-        <nav class="pagination">
-            <!-- Botón Primera página -->
-            {% if pagination.has_prev %}
-            <a href="?page=1" class="pagination-btn pagination-first"
-                >« Primera</a
-            >
-            {% endif %}
-
-            <!-- Botón Página anterior -->
-            {% if pagination.has_prev %}
-            <a
-                href="?page={{ pagination.prev_num }}"
-                class="pagination-btn pagination-prev"
-                >‹ Anterior</a
-            >
-            {% endif %}
-
-            <!-- Números de página -->
-            {% set start_page = [1, pagination.page - 2] | max %} {% set
-            end_page = [pagination.pages, pagination.page + 2] | min %} {% if
-            start_page > 1%}
-            <span class="pagination-ellipsis">...</span>
-            {% endif %} {% for page_num in range(start_page, end_page + 1) %} {%
-            if page_num == pagination.page %}
-            <span class="pagination-btn pagination-current"
-                >{{ page_num }}</span
-            >
-            {% else %}
-            <a
-                href="?page={{ page_num }}"
-                class="pagination-btn pagination-number"
-                >{{ page_num }}</a
-            >
-            {% endif %} {% endfor %} {% if end_page < pagination.pages %}<span
-                class="pagination-ellipsis"
-                >...</span
-            >
-            {% endif %}
-
-            <!-- Botón Página siguiente -->
-            {% if pagination.has_next %}
-            <a
-                href="?page={{ pagination.next_num }}"
-                class="pagination-btn pagination-next"
-                >Siguiente ›</a
-            >
-            {% endif %}
-
-            <!-- Botón Última página -->
-            {% if pagination.has_next %}
-            <a
-                href="?page={{ pagination.pages }}"
-                class="pagination-btn pagination-last"
-                >Última »</a
-            >{% endif %}
-        </nav>
+   <!-- Paginación -->
+{% if pagination.total > 0 %}
+<div class="pagination-container">
+    <!-- Información de resultados -->
+    <div class="pagination-info">
+        Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a
+        {{ [pagination.page * pagination.per_page, pagination.total] | min }} de
+        {{ pagination.total }} sitios
     </div>
-    {% endif %} {% else %}
+
+    <nav class="pagination">
+        <!-- Botones izquierda -->
+        {% if pagination.has_prev %}
+            <a href="?page=1" class="pagination-btn">« Primera</a>
+            <a href="?page={{ pagination.prev_num }}" class="pagination-btn">‹ Anterior</a>
+        {% endif %}
+
+        <!-- Números de página - SIEMPRE VISIBLES -->
+        {% if pagination.pages > 1 %}
+            {% set start_page = [1, pagination.page - 2] | max %} 
+            {% set end_page = [pagination.pages, pagination.page + 2] | min %} 
+            
+            {% if start_page > 1 %}
+            <span class="pagination-ellipsis">...</span>
+            {% endif %} 
+            
+            {% for page_num in range(start_page, end_page + 1) %} 
+                {% if page_num == pagination.page %}
+                <span class="pagination-btn pagination-current">{{ page_num }}</span>
+                {% else %}
+                <a href="?page={{ page_num }}" class="pagination-btn">{{ page_num }}</a>
+                {% endif %} 
+            {% endfor %} 
+            
+            {% if end_page < pagination.pages %}
+            <span class="pagination-ellipsis">...</span>
+            {% endif %}
+        {% else %}
+            <!-- Cuando solo hay UNA página, mostrar igual pero deshabilitado -->
+            <span class="pagination-btn pagination-current">1</span>
+        {% endif %}
+
+        <!-- Botones derecha -->
+        {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}" class="pagination-btn">Siguiente ›</a>
+            <a href="?page={{ pagination.pages }}" class="pagination-btn">Última »</a>
+        {% endif %}
+    </nav>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>Sin resultados.</p>
+    {% if can('sites.create') %}
+    <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">Crear un sitio</a>
+    {% endif %}
+</div>
+{% endif %} {% else %}
     <div class="empty-state">
         <p>Sin resultados.</p>
         {% if can('sites.create') %}

@@ -1,9 +1,7 @@
 from flask import render_template, Blueprint, request, jsonify
-from core.models.tags import Tag
-from core.models.sites import SitioHistorico
-from core.database import db
 from flask import flash, redirect, url_for
 from core.models import tags
+from core.models import sites
 from core.services.auth_roles import require_permission
 
 tags_bp = Blueprint("tags", __name__, url_prefix="/tags", template_folder="../templates/tags")
@@ -70,7 +68,7 @@ def create_tag():
 @require_permission("tags.manage")
 def edit_tag_view(tag_id):
     '''Edita un tag existente'''
-    tag = db.session.query(Tag).get(tag_id)
+    tag = tags.get_tag_by_id(tag_id)
     if not tag:
         flash("Tag no encontrado.", "error")
         return redirect(url_for("tags.tags_list"))
@@ -91,16 +89,15 @@ def edit_tag_view(tag_id):
 @require_permission("tags.manage")
 def delete_tag_view(tag_id):
     '''Elimina un tag existente'''
-    tag = db.session.query(Tag).get(tag_id)
+    tag = tags.get_tag_by_id(tag_id)
     if not tag:
         flash("Tag no encontrado.", "error")
         return redirect(url_for("tags.tags_list"))
 
     # Validación de sitios asociados en la vista
-    sitios_asociados = db.session.query(SitioHistorico).filter(
-        SitioHistorico.tags.any(id=tag.id)
-    ).all()
-    if sitios_asociados:
+    sites_with_tag = sites.get_sites_by_tag(tag_id)
+
+    if sites_with_tag:
         flash("No se puede eliminar un tag asignado a algún sitio.", "error")
         return redirect(url_for("tags.tags_list"))
 

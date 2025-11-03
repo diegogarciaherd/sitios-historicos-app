@@ -2,7 +2,7 @@
 from sqlalchemy import Integer, String, DateTime, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-
+from core.database import db
 from core.database import Base  # usa DeclarativeBase
 # IMPORTANTE: la tabla users ya existe en otro módulo.
 # Solo la referenciamos por FK sin definir el modelo acá.
@@ -63,6 +63,28 @@ class UserRole(Base):
 
     __table_args__ = (UniqueConstraint("user_id", "role_id", name="uq_user_role"),)
 
+    def __repr__(self):
+        return f"<UserRole {self.id}: {self.user_id}, {self.role_id}>"
+
+    def create_entry(uid: int, role_id: int):
+        new_entry = UserRole(user_id=uid, role_id=role_id)
+        db.session.add(new_entry)
+        db.session.commit()
+
+    def get_all_relations():
+        return db.session.query(UserRole).all()
+
+    def get_user_role(id: int):
+        return db.session.query(UserRole).filter_by(id=id).first()
+
+    def modify_user_role(uid: int, new_role_id: int):
+        db.session.query(UserRole).filter_by(user_id=uid).update({"role_id": new_role_id})
+        db.session.commit()
+
+    def delete_user_role(uid: int):
+        db.session.query(UserRole).filter_by(user_id=uid).delete()
+        db.session.commit()
+
 class BlockedUser(Base):
     """
     En lugar de agregar un campo a users, usamos una tabla auxiliar.
@@ -78,3 +100,40 @@ class BlockedUser(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     reason: Mapped[str] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
+
+class LogicallyDeletedUser(Base):
+    """
+    Modelo para persistir usuarios que han sido eliminados por un administrador.
+    """
+    __tablename__ = "deleted_users"
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    def add_new_user(id: int):
+        """
+        Agrega el id de un usuario que fue eliminado.
+
+        Args:
+            id (int): El id del usuario eliminado.
+        """
+        user = LogicallyDeletedUser(user_id = id)
+        db.session.add(user)
+        db.session.commit()
+
+    def remove_user(id: int):
+        """
+        Remueve un usuario y lo vuelve a activar (en caso de que se pueda).
+
+        Args:
+            id (int): El id del usuario a recuperar.
+        """
+        db.session.query(LogicallyDeletedUser).filter_by(user_id=id).remove()
+        db.session.commit()
+
+    def get_all() -> list:
+        """
+        Devuelve todos los id de usuarios eliminados.
+
+        Returns:
+            Una lista que contiene todos los id de usuarios eliminados.
+        """
+        return db.session.query(LogicallyDeletedUser).all()

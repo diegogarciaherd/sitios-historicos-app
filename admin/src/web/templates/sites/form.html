@@ -65,6 +65,14 @@
     border-color: #dc3545;
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
+
+/* --- NUEVO: barra de acciones en el encabezado del formulario --- */
+.form-header-actions{
+    display:flex;
+    gap:.5rem;
+    margin:.75rem 0 1rem;
+    justify-content:flex-end;
+}
 </style>
 {% endblock %}
 
@@ -79,6 +87,21 @@
 {% else %}
 <div class="form-container">
     <h1>{% if site %}Editar sitio histórico{% else %}Crear sitio histórico{% endif %}</h1>
+
+    
+
+    <div class="form-header-actions">
+        <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-outline">← Volver al listado</a>
+
+        {% if site and can('sites.view') %}
+            <a href="{{ url_for('sites.view_site', id=site.id) }}" class="btn btn-info btn-sm">Ver</a>
+        {% endif %}
+
+        {% if site and can('sites.history_view') %}
+            <a href="{{ url_for('sites.view_history', id=site.id) }}" class="btn btn-secondary btn-sm">Historial</a>
+        {% endif %}
+    </div>
+
 
     <!-- Mensajes flash -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -163,9 +186,10 @@
             <label>Localización (obligatorio)</label>
             <div id="map" class="{{ 'error' if errors and 'localizacion' in errors|map(attribute='field') }}"></div>
             <input type="hidden" id="lat" name="lat" 
-                   value="{{ form_data.lat if form_data else (site.latitud if site else '') }}">
+                value="{{ form_data.lat if form_data else (site.lat if site and site.lat else '') }}">
             <input type="hidden" id="lng" name="lng" 
-                   value="{{ form_data.lng if form_data else (site.longitud if site else '') }}">
+                value="{{ form_data.lng if form_data else (site.lng if site and site.lng else '') }}">
+
             <div class="error-message" id="localizacion-error">
                 {% if errors %}
                     {% for error in errors %}
@@ -206,9 +230,9 @@
 
             <div class="form-group">
                 <label for="añoInauguracion">Año de inauguración (obligatorio)</label>
-                <input type="number" id="añoInauguracion" name="añoInauguracion" min="1000" max="2030"
-                       value="{{ form_data.añoInauguracion if form_data else (site.añoInauguracion if site and site.añoInauguracion else '') }}"
-                       class="{{ 'error' if errors and 'añoInauguracion' in errors|map(attribute='field') }}">
+                <input type="number" id="añoInauguracion" name="añoInauguracion"
+                    value="{{ form_data.añoInauguracion if form_data else (site.añoInauguracion if site and site.añoInauguracion else '') }}"
+                    class="{{ 'error' if errors and 'añoInauguracion' in errors|map(attribute='field') }}">
                 <div class="error-message" id="añoInauguracion-error">
                     {% if errors %}
                         {% for error in errors %}
@@ -222,8 +246,8 @@
         <!-- Categoría -->
         <div class="form-group">
             <label for="categoria">Categoría </label>
-            <input type="text" id="categoria" name="categoria" 
-                   value="{{ form_data.categoria if form_data else (site.categoria if site else '') }}"
+            <input type="text" id="categoria" name="categoria"
+       value="{{ form_data.categoria if form_data else (site.categoria if site and site.categoria else '') }}"
                    class="{{ 'error' if errors and 'categoria' in errors|map(attribute='field') }}">
             <div class="error-message" id="categoria-error">
                 {% if errors %}
@@ -273,38 +297,28 @@
 </div>
 
 <script>
-    // Configuración del mapa
-    var map = L.map('map').setView([-34.9333, -57.95], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 18,
-        minZoom: 3,
-        tileSize: 512,
-        zoomOffset: -1
-    }).addTo(map);
+    const map = L.map('map').setView([-34.921, -57.954], 13);
 
-    var marker;
-   {% if site.lat and site.lng %}
-      var marker = L.marker([{{ site.lat }}, {{ site.lng }}]).addTo(map);
-      map.setView([{{ site.lat }}, {{ site.lng }}], 15);
-        {% endif %}
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-    map.on('click', function(e) {
-        var lat = e.latlng.lat.toFixed(6);
-        var lng = e.latlng.lng.toFixed(6);
-        document.getElementById('lat').value = lat;
-        document.getElementById('lng').value = lng;
-        
-        if(marker) {
-            marker.setLatLng(e.latlng);
-        } else {
-            marker = L.marker(e.latlng).addTo(map);
-        }
-        
-        // Limpiar error de localización al seleccionar
-        clearError('localizacion');
-    });
+  let marker;
 
+  // Si ya hay un sitio con coordenadas (modo edición)
+  {% if site and site.lat and site.lng %}
+    marker = L.marker([{{ site.lat }}, {{ site.lng }}]).addTo(map);
+    map.setView([{{ site.lat }}, {{ site.lng }}], 15);
+  {% endif %}
+
+  // Capturar clic en el mapa
+  map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      if (marker) map.removeLayer(marker);
+      marker = L.marker([lat, lng]).addTo(map);
+      document.getElementById('lat').value = lat;
+      document.getElementById('lng').value = lng;
+  });
     // Validación completa del formulario
     document.getElementById('siteForm').addEventListener('submit', function(e) {
         clearAllErrors();
