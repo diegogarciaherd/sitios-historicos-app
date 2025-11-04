@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SiteCard from './SiteCard.vue'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
   images: {
@@ -152,9 +153,16 @@ onBeforeUnmount(() => {
             <img :src="img.src" :alt="img.alt || ''" draggable="false" />
           </div>
           <div v-if="img.caption" class="caption">
-            <div class="caption-inner">
-              <h1 class="caption-title">{{ img.caption.title.toUpperCase() }}</h1>
-              <p class="caption-subtitle">{{ img.caption.subtitle }}</p>
+            <div class="flex flex-col gap-8">
+              <div class="caption-inner">
+                <h1 class="caption-title">{{ img.caption.title.toUpperCase() }}</h1>
+                <p class="caption-subtitle">{{ img.caption.subtitle }}</p>
+              </div>
+              <div>
+                <RouterLink class="px-12 py-4 text-white bg-sky-950 rounded-lg" to="/"
+                  >Explorar →</RouterLink
+                >
+              </div>
             </div>
           </div>
         </div>
@@ -279,7 +287,7 @@ onBeforeUnmount(() => {
   height: 100%;
   user-select: none;
   opacity: 0;
-  transition: opacity 450ms ease-in;
+  transition: opacity 450ms ease-out;
   pointer-events: none;
 }
 .slide.active {
