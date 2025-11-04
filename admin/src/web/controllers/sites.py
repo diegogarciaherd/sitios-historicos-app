@@ -1,6 +1,6 @@
 # admin/src/web/controllers/sites.py
 from __future__ import annotations
-from core.services.auth_roles import require_permission  
+from core.services.auth_roles import require_permission
 from flask import (
     abort,
     flash,
@@ -26,9 +26,13 @@ from core.models.sites import (
 )
 from core.models import tags
 from datetime import datetime
-from flask import Blueprint
+from flask import Blueprint, session
 import json
 import csv
+from core.database import db
+from core.models.site_history import SiteChange
+from core.services.site_history import log_site_change, diff_site, diff_tags
+
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -114,8 +118,8 @@ def list_all_sites():
 @require_permission("sites.create")
 def create_site():
     '''Crea un nuevo sitio histórico'''
-    all_tags = tags.get_all_tags();
-    
+    all_tags = tags.get_all_tags()
+
     if request.method == "POST":
         data = request.form.to_dict()
         # Manejar checkbox visible
@@ -123,23 +127,23 @@ def create_site():
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
-        
+
         # Validar datos
         errors = validate_site_data(data)
-        
+
         # Si hay errores, mostrar el formulario con los errores
         if errors:
             # Mostrar cada error individualmente
             for error in errors:
                 flash(error, "error")
             return render_template(
-                "form.html", 
-                site=None, 
-                tags=all_tags, 
+                "form.html",
+                site=None,
+                tags=all_tags,
                 selected_tag_ids=tag_ids,
                 form_data=data  # Mantener datos del formulario
             )
-        
+
         # SOLO crear el sitio si NO hay errores
         try:
             site = create_sites(**data)
@@ -148,30 +152,35 @@ def create_site():
                 selected_tags = tags.get_tags_by_ids(tag_ids)
                 tags.assign_tags(site, selected_tags)
 
+            log_site_change(site_id=site.id, user_id=session.get("user_id"), action="create")
+            db.session.commit()  # persistimos el historial
+
             # IMPORTANTE: Flash ANTES de redirect
             flash("Sitio creado correctamente", "success")
             return redirect(url_for("sites.list_all_sites"))  # ← Redirigir a la lista
-            
+
         except Exception as e:
             flash(f"Error al crear el sitio: {str(e)}", "error")
             return render_template(
-                "form.html", 
-                site=None, 
-                tags=all_tags, 
+                "form.html",
+                site=None,
+                tags=all_tags,
                 selected_tag_ids=tag_ids,
                 form_data=data
             )
 
     # GET request
     return render_template(
-        "form.html", 
-        site=None, 
-        tags=all_tags, 
+        "form.html",
+        site=None,
+        tags=all_tags,
         selected_tag_ids=[]
     )
 
+
+# Editar
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
-@require_permission("sites.create")
+@require_permission("sites.edit")
 def edit_site(id):
     '''Edita un sitio histórico existente'''
     site = get_site(id)
@@ -182,18 +191,38 @@ def edit_site(id):
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
+        # --- SNAPSHOT ANTES (desvinculado para que el diff vea cambios reales) ---
+        before = get_site(id)
+        _ = list(getattr(before, "tags", []))   # (opcional) fuerza precarga de tags
+        db.session.expunge(before)              # clave para “congelar” el snapshot
+
         data = request.form.to_dict()
         data["visible"] = "visible" in request.form
+        # Los nombres de los campos permanecen como están en tu capa de modelos
         data["latitud"] = request.form.get("lat")
         data["longitud"] = request.form.get("lng")
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
+        # --- UPDATE CAMPOS ---
         update_site(id, **data)
 
+        # --- TAGS ---
         selected_tags = tags.get_tags_by_ids(tag_ids)
         tags.assign_tags(site, selected_tags)
+
+        # --- SNAPSHOT DESPUÉS ---
+        after = get_site(id)
+
+        # --- DIFFS ---
+        changes = diff_site(before, after)      # campos simples + coords + visible
+        tag_changes = diff_tags(before, after)  # cambios de set de tags
+        changes.update(tag_changes)
+
+        # --- HISTORIAL + COMMIT ---
+        log_site_change(site_id=id, user_id=session.get("user_id"), action="update", changes=changes)
+        db.session.commit()
 
         flash("Sitio actualizado correctamente", "success")
         return redirect(url_for("sites.list_all_sites"))
@@ -204,19 +233,26 @@ def edit_site(id):
 
 
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
-@require_permission("sites.create")
+@require_permission("sites.delete")
 def delete_site(id):
     '''Elimina un sitio histórico existente'''
     try:
-        # Llama a la función existente
+        # registrar el historial ANTES de eliminar, para guardar quién lo borró
+        log_site_change(site_id=id, user_id=session.get("user_id"), action="delete")
+        db.session.commit()  # confirma el registro en la tabla sites_history
+
+        # Llama a la función existente que elimina el sitio
         delete_site_by_id(id)
         site = get_site(id)  # Verifica si el sitio aún existe
+
         if not site:
             flash("Sitio eliminado correctamente", "success")
         else:
             flash("Sitio no encontrado", "error")
+
     except Exception as e:
         flash(f"Error al eliminar el sitio: {str(e)}", "error")
+
     return redirect(url_for("sites.list_all_sites"))
 
 
@@ -228,7 +264,6 @@ def view_site(id):
     site_lat = site.lat
     site_lng = site.lng
     return render_template("show_site.html", site=site, site_lat=site_lat, site_lng=site_lng)
-
 
 
 @sites_bp.route("/exportar_csv", methods=["POST"])
@@ -267,9 +302,7 @@ def export_csv():
                     site["estado"],
                     fechaRegistro,
                     f"{site['lat']}, {site['lng']}",
-                    ", ".join(
-                        tag["name"] for tag in site["tags"]
-                    ),  # Esto crea una cadena con los nombres de los tags separados por comas
+                    ", ".join(tag["name"] for tag in site["tags"]),
                 ]
             )
         file.flush()
@@ -280,8 +313,125 @@ def export_csv():
     filename = f"sitios_{timestamp}.csv"
 
     return send_file(
-        file.name,  # Ruta absoluta del archivo que creamos antes con tempfile
-        as_attachment=True,  # Indica al navegador que lo descargue
+        file.name,
+        as_attachment=True,
         download_name=filename,
         mimetype="text/csv",
     )
+
+
+@sites_bp.route("/ver_historial/<int:id>", methods=["GET"])
+@require_permission("sites.history_view")
+def view_history(id):
+    """
+    Lista el historial con filtros y paginación (25 por página).
+    Filtros:
+      - user: texto a buscar en nombre o apellido (icontains)
+      - action: create|update|delete
+      - from: YYYY-MM-DD
+      - to:   YYYY-MM-DD
+    """
+    from core.models.user import User  # import local para evitar circulares
+    q = db.session.query(SiteChange, User).outerjoin(User, User.id == SiteChange.user_id)\
+        .filter(SiteChange.site_id == id)
+
+    # --- Filtros ---
+    user_txt = request.args.get("user", "", type=str).strip()
+    if user_txt:
+        like = f"%{user_txt.lower()}%"
+        q = q.filter(
+            db.or_(
+                db.func.lower(User.name).like(like),
+                db.func.lower(User.last_name).like(like),
+            )
+        )
+
+    action = request.args.get("action", "", type=str).strip()
+    if action in ("create", "update", "delete"):
+        q = q.filter(SiteChange.action == action)
+
+    def _parse_date(s):
+        try:
+            return datetime.strptime(s, "%Y-%m-%d")
+        except Exception:
+            return None
+
+    d_from = _parse_date(request.args.get("from", request.args.get("start", "")))
+    d_to   = _parse_date(request.args.get("to",   request.args.get("end",   "")))
+    if d_from:
+        q = q.filter(SiteChange.changed_at >= d_from)
+    if d_to:
+        # inclusive hasta fin de día
+        q = q.filter(SiteChange.changed_at < (d_to.replace(hour=23, minute=59, second=59)))
+
+    # --- Orden + paginación ---
+    q = q.order_by(SiteChange.changed_at.desc())
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = 25
+    total = q.count()
+    rows = q.limit(per_page).offset((page - 1) * per_page).all()
+
+    # Adaptamos a estructura simple para el template
+    cambios = []
+    for schange, u in rows:
+        cambios.append({
+            "changed_at": schange.changed_at,
+            "user_name": (f"{u.name} {u.last_name} ({u.email})".strip() if u else "—"),
+            "action": schange.action,
+            "field": schange.field or "—",
+            "old_value": schange.old_value or "—",
+            "new_value": schange.new_value or "—",
+        })
+
+    total_pages = (total + per_page - 1) // per_page
+    pagination = {
+        "page": page,
+        "per_page": per_page,
+        "total": total,
+        "pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_num": page - 1 if page > 1 else None,
+        "next_num": page + 1 if page < total_pages else None,
+    }
+
+    # Para conservar filtros en los links de paginación
+    current_filters = {
+        "user": user_txt,
+        "action": action,
+        "from": request.args.get("from", ""),
+        "to": request.args.get("to", ""),
+    }
+
+    return render_template(
+        "sites/sites_history.html",
+        site_id=id,
+        cambios=cambios,
+        pagination=pagination,
+        current_filters=current_filters,
+    )
+
+
+@sites_bp.route("/api/historial/<int:id>", methods=["GET"])
+@require_permission("sites.history_view")
+def api_history(id):
+    cambios = (
+        db.session.query(SiteChange)
+        .filter_by(site_id=id)
+        .order_by(SiteChange.changed_at.desc())
+        .all()
+    )
+    data = [
+        {
+            "id": c.id,
+            "site_id": c.site_id,
+            "user_id": c.user_id,
+            "action": c.action,
+            "field": c.field,
+            "old_value": c.old_value,
+            "new_value": c.new_value,
+            "changed_at": c.changed_at.isoformat(),
+        }
+        for c in cambios
+    ]
+    return json.dumps(data), 200, {"Content-Type": "application/json"}

@@ -1,0 +1,244 @@
+{% extends "sites_layout.html" %}
+{% block title %}Historial del sitio #{{ site_id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="header-section">
+    <h1>Historial del sitio #{{ site_id }}</h1>
+    <div class="history-actions">
+      <form method="get" class="filters">
+        <input type="text" name="user" value="{{ current_filters.user }}" placeholder="Usuario…">
+        <select name="action">
+          <option value="">Todas las acciones</option>
+          <option value="create" {{ 'selected' if current_filters.action == 'create' }}>Creación</option>
+          <option value="update" {{ 'selected' if current_filters.action == 'update' }}>Edición</option>
+          <option value="delete" {{ 'selected' if current_filters.action == 'delete' }}>Eliminación</option>
+        </select>
+        <input type="date" name="from" value="{{ current_filters.from }}">
+        <input type="date" name="to"   value="{{ current_filters.to }}">
+        <button class="btn btn-primary">Filtrar</button>
+        <a href="{{ url_for('sites.view_history', id=site_id) }}" class="btn btn-outline">Limpiar</a>
+      </form>
+      <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-outline">Volver</a>
+    </div>
+  </div>
+
+  {% if cambios %}
+  <div class="history-wrapper">
+    <table class="table history-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Usuario</th>
+          <th>Acción</th>
+          <th>Campo modificado</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cambios %}
+        <tr>
+          <td>{{ c.changed_at.strftime("%d/%m/%Y %H:%M") }}</td>
+          <td>{{ c.user_name }}</td>
+          <td>
+            <span class="badge badge-{{ 'green' if c.action=='create' else 'blue' if c.action=='update' else 'red' }}">{{ c.action }}</span>
+          </td>
+          <td>
+            {% if c.field == 'tags' %}
+              <span class="chip">tags</span>
+            {% else %}
+              {{ c.field }}
+            {% endif %}
+          </td>
+          <td>
+            {% if c.field != '—' %}
+            <button
+              type="button"
+              class="btn btn-sm btn-outline js-detail"
+              data-field="{{ c.field }}"
+              data-old="{{ c.old_value|e }}"
+              data-new="{{ c.new_value|e }}"
+            >Ver</button>
+            {% else %}
+            <button type="button" class="btn btn-sm btn-outline" disabled>—</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if pagination.pages > 1 %}
+    <nav class="pagination">
+      {% if pagination.has_prev %}
+        <a class="pagination-btn" href="{{ url_for('sites.view_history', id=site_id, page=1, **current_filters) }}">«</a>
+        <a class="pagination-btn" href="{{ url_for('sites.view_history', id=site_id, page=pagination.prev_num, **current_filters) }}">‹</a>
+      {% endif %}
+      <span class="pagination-current">Página {{ pagination.page }} / {{ pagination.pages }}</span>
+      {% if pagination.has_next %}
+        <a class="pagination-btn" href="{{ url_for('sites.view_history', id=site_id, page=pagination.next_num, **current_filters) }}">›</a>
+        <a class="pagination-btn" href="{{ url_for('sites.view_history', id=site_id, page=pagination.pages, **current_filters) }}">»</a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </div>
+  {% else %}
+    <div class="empty-state">
+      <p>Sin registros de historial.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Modal reutilizable -->
+<div id="detailModal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header">
+      <h3 id="modalTitle">Detalle de cambio</h3>
+      <button class="modal-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <strong>Campo:</strong>
+        <span id="mField"></span>
+      </div>
+      <div class="modal-cols">
+        <div class="modal-col">
+          <h4>Anterior</h4>
+          <pre id="mOld"></pre>
+        </div>
+        <div class="modal-col">
+          <h4>Nuevo</h4>
+          <pre id="mNew"></pre>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary modal-close">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const modal = document.getElementById('detailModal');
+    const mField = document.getElementById('mField');
+    const mOld = document.getElementById('mOld');
+    const mNew = document.getElementById('mNew');
+
+    function openModal(field, oldV, newV) {
+      mField.textContent = field || '—';
+      mOld.textContent = (oldV && oldV !== '—') ? oldV : '—';
+      mNew.textContent = (newV && newV !== '—') ? newV : '—';
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.js-detail');
+      if (btn) {
+        openModal(btn.dataset.field, btn.dataset.old, btn.dataset.new);
+      }
+      if (e.target.classList.contains('modal-close') || e.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('show')) closeModal();
+    });
+  })();
+</script>
+
+<style>
+/* Márgenes y ancho controlado (como versión anterior) */
+.history-wrapper { max-width: 1200px; margin: 1.5rem auto; }
+
+/* Encabezado / filtros */
+.history-actions { display:flex; gap:.75rem; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; }
+.filters { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+
+/* Tabla */
+.history-table { width:100%; background:#fff; border-radius:10px; border:1px solid #eee; }
+.history-table th, .history-table td { padding:.7rem .9rem; vertical-align: top; }
+
+/* Badges */
+.badge { padding:.15rem .5rem; border-radius:999px; font-size:.85rem; }
+.badge-green{ background:#e8f5e9; color:#2e7d32; }
+.badge-blue { background:#e3f2fd; color:#1565c0; }
+.badge-red  { background:#ffebee; color:#c62828; }
+.chip { display:inline-block; padding:.15rem .5rem; border:1px solid #ddd; border-radius:999px; font-size:.8rem; background:#f8f8f8; }
+
+/* Paginación */
+.pagination { display:flex; gap:.5rem; align-items:center; justify-content:center; margin-top:1rem; }
+.pagination-btn, .pagination-current { padding:.35rem .6rem; border-radius:6px; border:1px solid #ddd; background:#fff; }
+.pagination-current { background:#f6f6f6; border-color:#eee; }
+
+/* Modal */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.35);
+  display: none; align-items: center; justify-content: center;
+  padding: 1rem; z-index: 1000;
+}
+.modal-backdrop.show { display: flex; }
+.modal-card {
+  width: min(900px, 96vw);
+  background: #fff; border-radius: 12px;
+  box-shadow: 0 10px 35px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+.modal-header, .modal-footer {
+  padding: 1rem 1.25rem; background: #f6f7fb;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-body { padding: 1rem 1.25rem; }
+.modal-field { margin-bottom: .75rem; }
+.modal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.modal-col h4 { margin: 0 0 .5rem 0; font-size: .95rem; opacity: .8; }
+.modal-close { border: 1px solid #cfd7e3; background: #fff; border-radius: 8px; padding: .35rem .6rem; cursor: pointer; }
+.modal-close:hover { background: #f0f3f9; }
+.modal-body pre {
+  white-space: pre-wrap; word-break: break-word;
+  border: 1px solid #e5e8ef; border-radius: 8px; padding: .75rem; min-height: 3rem; background: #fafbff;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+  .modal-cols { grid-template-columns: 1fr; }
+}
+
+select {
+	padding: 0.5rem 1rem;
+	border: 1px solid #ddd;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	width: 200px;
+	background: white;
+
+	&:focus {
+		outline: none;
+	}
+}
+
+input {
+	padding: 0.5rem 1rem;
+	border: 1px solid #ddd;
+	border-radius: 0.5rem;
+	font-size: 1rem;
+	width: 200px;
+	background: white;
+
+	&:focus {
+		outline: none;
+	}
+}
+
+</style>
+{% endblock %}
