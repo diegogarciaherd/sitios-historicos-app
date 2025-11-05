@@ -153,7 +153,7 @@ onBeforeUnmount(() => {
             <img :src="img.src" :alt="img.alt || ''" draggable="false" />
           </div>
           <div v-if="img.caption" class="caption">
-            <div class="flex flex-col gap-8">
+            <div class="flex flex-col gap-14">
               <div class="caption-inner">
                 <h1 class="caption-title">{{ img.caption.title.toUpperCase() }}</h1>
                 <p class="caption-subtitle">{{ img.caption.subtitle }}</p>
