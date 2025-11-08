@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import SiteCard from './SiteCard.vue'
+import DetailedSiteCard from './DetailedSiteCard.vue'
 
 const props = defineProps({
   sites: {
@@ -182,7 +182,11 @@ onBeforeUnmount(() => {
           :aria-roledescription="'slide'"
           :aria-label="`${card.index + 1} de ${count}`"
         >
-          <SiteCard v-if="sites[card.index]" :site="sites[card.index]" @click="goTo(card.index)" />
+          <DetailedSiteCard
+            v-if="sites[card.index]"
+            :site="sites[card.index]"
+            @click="goTo(card.index)"
+          />
         </div>
 
         <div v-if="count === 0" class="card empty" role="presentation">
@@ -217,13 +221,10 @@ onBeforeUnmount(() => {
 .sites-carousel {
   position: relative;
   width: 100%;
-  padding: 3rem 0;
+  padding: 5rem 3rem;
   color: white;
   overflow: hidden;
   outline: none;
-}
-.sites-carousel:focus-visible {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.6);
 }
 
 .viewport {
@@ -348,7 +349,7 @@ onBeforeUnmount(() => {
 
 .indicators {
   position: absolute;
-  top: 1.25rem;
+  top: 0.4rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -361,7 +362,7 @@ onBeforeUnmount(() => {
   width: 0.75rem;
   height: 0.75rem;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.65);
+  border: 2px solid rgba(0, 0, 0, 0.65);
   background: transparent;
   display: grid;
   place-items: center;
@@ -375,9 +376,10 @@ onBeforeUnmount(() => {
 }
 
 .dot.active {
-  transform: scale(1.5);
-  background: rgba(255, 255, 255, 0.8);
-  color: #0f172a;
+  transform: scale(2);
+  font-size: 0.45rem;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
 }
 
 @media (max-width: 1024px) {

@@ -1,5 +1,8 @@
 <script setup>
 import SitesCarousel from './SitesCarousel.vue'
+import SiteCarouselButton from './SiteCarouselButton.vue'
+import { ref } from 'vue'
+
 const featuredSites = [
   {
     nombre: 'Casa Rosada',
@@ -36,6 +39,21 @@ const featuredSites = [
     ciudad: 'Buenos Aires',
   },
 ]
+
+const carouselOptions = [
+  {
+    id: 'top-rated',
+    label: 'Mejor puntuados',
+    sites: featuredSites,
+  },
+  {
+    id: 'most-visited',
+    label: 'Más visitados',
+    sites: featuredSites.slice().reverse(),
+  },
+]
+
+const selectedCarousel = ref(carouselOptions[0]?.id ?? null)
 </script>
 
 <template>
@@ -47,9 +65,31 @@ const featuredSites = [
       <p class="text-lg text-gray-700">
         Explora algunos de los sitios históricos más emblemáticos de Argentina.
       </p>
-      <SitesCarousel :sites="featuredSites" :autoplay="false" />
+      <div class="flex justify-center gap-3 mt-8">
+        <SiteCarouselButton
+          v-for="option in carouselOptions"
+          :key="option.id"
+          v-model="selectedCarousel"
+          :value="option.id"
+          :label="option.label"
+        />
+      </div>
+      <div class="carousel-stack">
+        <SitesCarousel
+          v-for="option in carouselOptions"
+          :key="`carousel-${option.id}`"
+          v-show="selectedCarousel === option.id"
+          :sites="option.sites"
+          :autoplay="false"
+        />
+      </div>
     </div>
   </section>
 </template>
 
-<style scoped></style>
+<style scoped>
+.carousel-stack {
+  position: relative;
+  margin-top: 3rem;
+}
+</style>
