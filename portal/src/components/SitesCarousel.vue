@@ -162,6 +162,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section
+    v-if="sites.length"
     class="sites-carousel"
     role="region"
     :aria-roledescription="'carousel'"
@@ -185,7 +186,11 @@ onBeforeUnmount(() => {
           <DetailedSiteCard
             v-if="sites[card.index]"
             :site="sites[card.index]"
-            @click="goTo(card.index)"
+            @click="
+              card.index === current
+                ? $router.push(`/sites/${sites[card.index]?.id || ''}`)
+                : goTo(card.index)
+            "
           />
         </div>
 
@@ -210,11 +215,19 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
+    <RouterLink
+      v-if="canNavigate"
+      :to="`/sites/${sites[current]?.id || ''}`"
+      class="px-12 py-4 text-white bg-sky-950 rounded-lg"
+      >Ver detalles</RouterLink
+    >
+
     <div v-if="showArrows && canNavigate" class="nav">
       <button type="button" class="arrow prev" aria-label="Anterior" @click="prev">‹</button>
       <button type="button" class="arrow next" aria-label="Siguiente" @click="next">›</button>
     </div>
   </section>
+  <div v-else class="text-center text-gray-500 py-16">No hay sitios para mostrar.</div>
 </template>
 
 <style scoped>
@@ -254,6 +267,7 @@ onBeforeUnmount(() => {
     filter 320ms ease;
   cursor: pointer;
   will-change: transform, opacity, filter;
+  overflow: hidden;
 }
 
 .card.empty {
@@ -282,7 +296,7 @@ onBeforeUnmount(() => {
 }
 
 .pos-1 {
-  transform: translate(-50%, -50%) translateX(260px) translateY(-20px) rotateY(-18deg)
+  transform: translate(-50%, -50%) translateX(260px) translateY(-20px) rotateY(-28deg)
     translateZ(-160px) scale(0.9);
   opacity: 0.88;
   filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.28));
@@ -290,7 +304,7 @@ onBeforeUnmount(() => {
 }
 
 .pos--1 {
-  transform: translate(-50%, -50%) translateX(-260px) translateY(-20px) rotateY(18deg)
+  transform: translate(-50%, -50%) translateX(-260px) translateY(-20px) rotateY(28deg)
     translateZ(-160px) scale(0.9);
   opacity: 0.88;
   filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.28));
@@ -298,7 +312,7 @@ onBeforeUnmount(() => {
 }
 
 .pos-2 {
-  transform: translate(-50%, -50%) translateX(460px) translateY(-40px) rotateY(-28deg)
+  transform: translate(-50%, -50%) translateX(460px) translateY(-40px) rotateY(-43deg)
     translateZ(-320px) scale(0.78);
   opacity: 0.68;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.22));
@@ -306,7 +320,7 @@ onBeforeUnmount(() => {
 }
 
 .pos--2 {
-  transform: translate(-50%, -50%) translateX(-460px) translateY(-40px) rotateY(28deg)
+  transform: translate(-50%, -50%) translateX(-460px) translateY(-40px) rotateY(43deg)
     translateZ(-320px) scale(0.78);
   opacity: 0.68;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.22));
@@ -315,7 +329,7 @@ onBeforeUnmount(() => {
 
 .nav {
   position: absolute;
-  bottom: 2rem;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
