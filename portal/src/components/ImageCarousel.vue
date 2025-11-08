@@ -73,7 +73,7 @@ function stopAutoplay() {
   }
 }
 
-// Swipe support
+// Soporte para touchscreens
 const touchStartX = ref(0)
 const touchStartY = ref(0)
 const touchActive = ref(false)
@@ -175,7 +175,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Capa de SiteCards: activo + siguiente(s) con transición de deslizamiento -->
     <div v-if="visibleIndices.length" class="sitecards" aria-hidden="false">
       <div
         v-for="(idx, pos) in visibleIndices"
