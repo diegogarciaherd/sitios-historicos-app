@@ -1,7 +1,6 @@
 <script setup>
 import ImageCarousel from './ImageCarousel.vue'
 
-// Ejemplo de uso con imágenes de muestra. Reemplaza con tus propias rutas/alt.
 const slides = [
   {
     src: 'https://www.argentina.gob.ar/sites/default/files/caba-puerto-madero.jpg',
@@ -66,6 +65,4 @@ const slides = [
   />
 </template>
 
-<style scoped>
-/* Contenedor opcional para ajustar márgenes/padding locales */
-</style>
+<style scoped></style>
