@@ -126,6 +126,16 @@ const carouselOptions = [
     label: 'Más visitados',
     sites: featuredSites.slice().reverse(),
   },
+  {
+    id: 'new-additions',
+    label: 'Nuevas incorporaciones',
+    sites: featuredSites.slice(0, 5),
+  },
+  {
+    id: 'favorites',
+    label: 'Favoritos',
+    sites: featuredSites.slice(3, 7).reverse(),
+  },
 ]
 
 const selectedCarousel = ref(carouselOptions[0]?.id ?? null)
@@ -150,7 +160,6 @@ const emptyArray = []
           :value="option.id"
           :label="option.label"
         />
-        <SiteCarouselButton :key="3" v-model="selectedCarousel" :value="3" :label="'Favoritos'" />
       </div>
       <div class="carousel-stack">
         <SitesCarousel
@@ -159,12 +168,6 @@ const emptyArray = []
           v-show="selectedCarousel === option.id"
           :sites="option.sites"
           :autoplay="false"
-        />
-        <SiteGrid
-          v-if="selectedCarousel === 3"
-          :sites="featuredSites"
-          :cols="4"
-          :items-per-page="8"
         />
       </div>
     </div>

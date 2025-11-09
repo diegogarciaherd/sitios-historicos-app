@@ -215,12 +215,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <RouterLink
-      v-if="canNavigate"
-      :to="`/sites/${sites[current]?.id || ''}`"
-      class="px-12 py-4 text-white bg-sky-950 rounded-lg"
-      >Ver detalles</RouterLink
-    >
+    <RouterLink class="px-12 py-4 text-white bg-sky-950 rounded-lg">Ver todos</RouterLink>
 
     <div v-if="showArrows && canNavigate" class="nav">
       <button type="button" class="arrow prev" aria-label="Anterior" @click="prev">‹</button>
