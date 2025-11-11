@@ -142,6 +142,8 @@ def create_sites(**kwargs):
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
 
+    kwargs["estado"] = kwargs["estado"].upper()
+
     # Convertir año si existe
     año_inauguracion = kwargs.get("añoInauguracion")
     if año_inauguracion:

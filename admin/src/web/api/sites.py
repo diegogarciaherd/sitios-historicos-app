@@ -1,11 +1,11 @@
 from flask import Blueprint, jsonify, request
-from core.models.sites import list_sites_with_filters, SitioHistorico as Site
-from core.models.sites import create_sites, EstadoConservacion
+from core.models.sites import list_sites_with_filters
+from core.models.sites import create_sites, get_site
 from flask_jwt_extended import jwt_required
+from core.models.tags import get_tags_by_ids, assign_tags
 
 sites_api_bp = Blueprint("sites_api", __name__, url_prefix="/api/sites")
 
-#filters: search, city, province, tags, order_by, lat, long, radius, page, per_page
 def check_filters(filters: dict):
     errors = {}
     if "order_by" in filters and filters["order_by"]:
@@ -40,14 +40,14 @@ def check_filters(filters: dict):
 
 def validate_post_data(data: dict):
     errors = []
-#nombre, descripcionbreve, desccompleta, ciudad, prov, yearinaugu
-#categoria, fechareg, tags, lat, longitud
-    if "id" in data and data["id"]:
-        data.pop("id", None)
-    if "visible" in data and data["visible"]:
-        data["visible"] = True
-    if "estado" in data and data["estado"]:
-        data["estado"].upper()
+    required_fields = ["nombre", "estado", "tags", "lat", "lng"]
+
+    for rf in required_fields:
+        value = data.get(rf)
+        if value is None or (isinstance(value, str)) and not value.strip():
+                errors.append(f"El campo {rf} es requerido.")
+
+    return errors
 
 
 @sites_api_bp.get("/")
@@ -80,11 +80,11 @@ def get_sites_by_criteria():
 def create_site():
     data = request.get_json()
     errors = validate_post_data(data)
-    l = data.pop("tags")
-    print(data)
-    return "a"
     if not errors:
-        create_sites(**data)
+        tags = data.pop("tags")
+        site = create_sites(**data)
+        selected_tags = get_tags_by_ids(tags)
+        assign_tags(site, selected_tags)
         return jsonify(data), 201
     elif errors:
         return jsonify({
@@ -94,6 +94,27 @@ def create_site():
                 "details": errors
             }
         }), 400
+    else:
+        return jsonify({
+            "error": {
+            "code": "server_error",
+            "message": "An unexpected error occurred"
+            }
+        }), 500
+
+@sites_api_bp.get("/<int:id>")
+def get_site_by_id(id):
+    site = get_site(id)
+    if site:
+        site_data = site.to_dict()
+        return jsonify(site_data), 200
+    elif not site:
+        return jsonify({
+            "error": {
+                "code": "not_found",
+                "message": "No existe un sitio con ese id."
+            }
+        }), 404
     else:
         return jsonify({
             "error": {
