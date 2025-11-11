@@ -38,6 +38,7 @@ def run():
     sitios_data = [
         {
             "nombre": "Catedral de La Plata",
+            "ciudad": "La Plata",
             "descripcionBreve": "Imponente catedral neogótica.",
             "lat": -34.9214,
             "lng": -57.9544,
@@ -66,6 +67,7 @@ def run():
         },
         {
             "nombre": "Museo Nacional de Bellas Artes",
+            "ciudad": "La Plata",
             "descripcionBreve": "Museo de arte argentino.",
             "lat": -34.5873,
             "lng": -58.3975,
@@ -97,6 +99,7 @@ def run():
             "descripcionBreve": "Edificio histórico y arquitectónico.",
             "lat": -34.6080,
             "lng": -58.3810,
+            "provincia": "Chubut",
             "tags": ["Histórico"],
         },
         {
@@ -149,8 +152,8 @@ def run():
         sitio = SitioHistorico(
             nombre=s["nombre"],
             descripcionBreve=s["descripcionBreve"],
-            ciudad="Buenos Aires",
-            provincia="Buenos Aires",
+            ciudad=s["ciudad"] if "ciudad" in s else "Buenos Aires",
+            provincia=s["provincia"] if "provincia" in s else "Buenos Aires",
             estado=EstadoConservacion.BUENO,
             localizacion=make_point(s["lat"], s["lng"]),
         )

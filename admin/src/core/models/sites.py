@@ -118,7 +118,8 @@ def list_sites_with_filters(filters, page=1, per_page=10):
     query = db.session.query(SitioHistorico)
     query = apply_filters(query, filters)
     total = query.count()
-    sites = query.offset((page - 1) * per_page).limit(per_page).all()
+    sites = query.offset((int(filters["page"]) - 1 if "page" in filters else page - 1) * per_page).limit(filters["per_page"] if "per_page" in filters else per_page).all()
+    #sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
 
 
@@ -140,6 +141,8 @@ def create_sites(**kwargs):
     # Extraer y convertir coordenadas
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
+
+    kwargs["estado"] = kwargs["estado"].upper()
 
     # Convertir año si existe
     año_inauguracion = kwargs.get("añoInauguracion")
@@ -274,6 +277,25 @@ def apply_filters(query, filters):
             filters["tags"] = [tag.strip() for tag in filters["tags"].split(",")]
 
         query = query.filter(SitioHistorico.tags.any(Tag.name.in_(filters["tags"])))
+
+    if "order_by" in filters and filters["order_by"]:
+        match filters["order_by"]:
+            #Todavia no hay una columna o tabla aparte de rating, cuando haya,
+            #se descomenta esto
+            #case "rating-5-1":
+            #    query = query.order_by(SitioHistorico.rating.desc())
+            #case "rating-1-5:":
+            #    query = query.order_by(SitioHistorico.rating.asc())
+            case "latest":
+                query = query.order_by(SitioHistorico.fechaRegistro.asc())
+            case "oldest":
+                query = query.order_by(SitioHistorico.fechaRegistro.desc())
+
+    if "lat" in filters and filters["lat"]:
+        query = query.filter(lat=filters["lat"])
+
+    if "long" in filters and filters["long"]:
+        query = query.filter(long=filters["long"])
 
     return query
 
