@@ -118,7 +118,7 @@ def list_sites_with_filters(filters, page=1, per_page=10):
     query = db.session.query(SitioHistorico)
     query = apply_filters(query, filters)
     total = query.count()
-    sites = query.offset((filters["page"] if "page" in filters else page - 1) * per_page).limit(filters["per_page"] if "per_page" in filters else per_page).all()
+    sites = query.offset((int(filters["page"]) - 1 if "page" in filters else page - 1) * per_page).limit(filters["per_page"] if "per_page" in filters else per_page).all()
     #sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
 
@@ -285,9 +285,9 @@ def apply_filters(query, filters):
             #case "rating-1-5:":
             #    query = query.order_by(SitioHistorico.rating.asc())
             case "latest":
-                query = query.order_by(SitioHistorico.añoInauguracion.asc())
+                query = query.order_by(SitioHistorico.fechaRegistro.asc())
             case "oldest":
-                query = query.order_by(SitioHistorico.añoInauguracion.desc())
+                query = query.order_by(SitioHistorico.fechaRegistro.desc())
 
     if "lat" in filters and filters["lat"]:
         query = query.filter(lat=filters["lat"])
