@@ -29,6 +29,8 @@ class DevelopmentConfig(Config):
         'default': f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     }
 
+    #JWT cfg
+    JWT_SECRET_KEY = environ.get("JWT_SECRET_KEY", "clave-re-ultra-secreta")
 
 class TestingConfig(Config):
     '''Configuración para entorno de testing'''
