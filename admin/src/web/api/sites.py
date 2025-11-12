@@ -76,7 +76,7 @@ def get_sites_by_criteria():
         }), 500
 
 @sites_api_bp.post("/")
-#@jwt_required()
+@jwt_required()
 def create_site():
     data = request.get_json()
     errors = validate_post_data(data)

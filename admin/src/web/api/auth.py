@@ -24,7 +24,7 @@ def login():
             auth_errors = authenticate(data["email"], data["password"])[1]
             if not auth_errors:
                 ttl = timedelta(seconds=3600)
-                token = create_access_token(identity=user.id, expires_delta=ttl)
+                token = create_access_token(identity=str(user.id), expires_delta=ttl)
                 return jsonify({
                     "token": token,
                     "expires_in": 3600
