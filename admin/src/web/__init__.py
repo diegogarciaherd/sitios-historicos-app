@@ -14,6 +14,9 @@ from web.config import config
 from core.services.auth_service import check_flags
 from core.models.feature_flags import FeatureFlag
 from core.seeds_roles import run as seed_roles_run
+from web.controllers.reviews import reviews_bp
+
+
 
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
@@ -40,6 +43,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(adminpanel_bp)
     app.register_blueprint(tags_bp)
     app.register_blueprint(feature_flags_bp)
+    app.register_blueprint(reviews_bp)
 
     # Rutas mínimas
     @app.route("/")
