@@ -56,9 +56,15 @@ def get_sites_by_criteria():
     errors = check_filters(filters)
 
     if not errors:
-        sites = list_sites_with_filters(filters)[0]
+        sites, total = list_sites_with_filters(filters, filters["page"] if "page" in filters else 1, filters["per_page"] if "per_page" in filters else 10)
         sites_data = [site.to_dict() for site in sites]
-        return jsonify(sites_data), 200
+        return jsonify(sites_data, {
+            "meta": {
+                "page": filters["page"] if "page" in filters else 1,
+                "per_page": filters["per_page"] if "per_page" in filters else total,
+                "total": total
+            }
+        }), 200
     elif errors:
         return jsonify({
             "error" : {
@@ -71,7 +77,7 @@ def get_sites_by_criteria():
         return jsonify({
             "error": {
             "code": "server_error",
-            "message": "An unexpected error occurred"
+            "message": "An unexpected error occurred."
             }
         }), 500
 
@@ -122,3 +128,21 @@ def get_site_by_id(id):
             "message": "An unexpected error occurred"
             }
         }), 500
+
+# --- Reviews ---
+
+@sites_api_bp.get("/<int:id>/reviews")
+def get_site_reviews(id: int):
+    pass
+
+@sites_api_bp.post("/<int:id>/reviews")
+def create_site_review(id: int):
+    pass
+
+@sites_api_bp.get('/<int:site_id>/reviews/<int:review_id>')
+def get_site_review_by_id(site_id: int, review_id: int):
+    pass
+
+@sites_api_bp.delete("/<int:site_id>/reviews/<int:review_id>")
+def delete_site_review_by_id(site_id: int, review_id: int):
+    pass
