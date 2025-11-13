@@ -49,8 +49,7 @@ def validate_post_data(data: dict):
 
     return errors
 
-
-@sites_api_bp.get("/")
+@sites_api_bp.get("")
 def get_sites_by_criteria():
     filters = request.args.to_dict()
     errors = check_filters(filters)
@@ -81,7 +80,7 @@ def get_sites_by_criteria():
             }
         }), 500
 
-@sites_api_bp.post("/")
+@sites_api_bp.post("")
 @jwt_required()
 def create_site():
     data = request.get_json()
