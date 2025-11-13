@@ -16,6 +16,7 @@ async function fetchSitios() {
     'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Casa_Rosada%2C_Buenos_Aires%2C_Argentina.jpg/1920px-Casa_Rosada%2C_Buenos_Aires%2C_Argentina.jpg'
 
   sitioSalta.value = await getSites({ province: 'Salta' })
+  console.log(sitioSalta.value)
   sitioSalta.value = sitioSalta.value[0]
   sitioSalta.value.image =
     'https://upload.wikimedia.org/wikipedia/commons/8/8e/Catedral_de_Salta_1.jpg'
