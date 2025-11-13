@@ -38,7 +38,7 @@ const stateColors = {
           v-for="(tag, index) in site.tags.slice(0, 5)"
           :key="index"
           class="rounded-full text-xs py-1 px-2 bg-gray-500"
-          >{{ tag }}</span
+          >{{ tag.name }}</span
         >
       </div>
     </div>

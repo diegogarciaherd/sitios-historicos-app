@@ -53,6 +53,7 @@ def validate_post_data(data: dict):
 @sites_api_bp.get("/")
 def get_sites_by_criteria():
     filters = request.args.to_dict()
+    print(filters)
     errors = check_filters(filters)
 
     if not errors:
