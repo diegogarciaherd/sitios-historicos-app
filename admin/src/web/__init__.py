@@ -17,6 +17,9 @@ from core.seeds_roles import run as seed_roles_run
 from web.api.sites import sites_api_bp
 from web.api.auth import auth_api_bp
 from flask_jwt_extended import JWTManager
+from web.controllers.reviews import reviews_bp
+
+
 
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
@@ -48,6 +51,7 @@ def create_app(env="development", static_folder="../../static"):
     # API blueprints
     app.register_blueprint(sites_api_bp)
     app.register_blueprint(auth_api_bp)
+    app.register_blueprint(reviews_bp)
 
     # Rutas mínimas
     @app.route("/")

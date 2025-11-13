@@ -9,6 +9,10 @@ from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from core.models.tags import Tag
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from core.models.reviews import Review  # solo para hints, no ejecuta en runtime ya que ponerlo arriba tira error de circular import
+
 # Tabla de asociación
 ''' Tabla de asociación entre sitios históricos y tags ''' 
 ''' atributos: 
@@ -33,7 +37,6 @@ class EstadoConservacion(enum.Enum):
 
 class SitioHistorico(Base):
     '''Modelo de Sitio Histórico'''
-  
     __tablename__ = "sitios_historicos"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -48,20 +51,27 @@ class SitioHistorico(Base):
     )
     añoInauguracion: Mapped[int] = mapped_column(Integer, nullable=True)
     categoria: Mapped[str] = mapped_column(Text, nullable=True)
-    fechaRegistro: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
-    )
+    fechaRegistro: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
+    # Tags 
     tags: Mapped[list["Tag"]] = relationship(
         "Tag",
         secondary=sites_tags,
-        backref="sitios_historicos",  # backref en lugar de back_populates
+        backref="sitios_historicos",
         lazy="select",
     )
-    visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    localizacion: Mapped[Geometry] = mapped_column(
-        Geometry(geometry_type="POINT", srid=4326), nullable=True
+
+    # Relación con reseñas
+    reviews: Mapped[list["Review"]] = relationship(
+        "Review",
+        back_populates="site",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
+
+    visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    localizacion: Mapped[Geometry] = mapped_column(Geometry(geometry_type="POINT", srid=4326), nullable=True)
+
 
     @property
     def lat(self) -> float:
@@ -301,3 +311,4 @@ def apply_filters(query, filters):
 def get_sites_by_tag(tag_id: int):
     """Devuelve todos los sitios asociados a un tag dado."""
     return db.session.query(SitioHistorico).filter(SitioHistorico.tags.any(id=tag_id)).all()
+

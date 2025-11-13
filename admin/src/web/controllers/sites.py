@@ -1,5 +1,7 @@
-# admin/src/web/controllers/sites.py
+#admin/src/web/controllers/sites.py
+
 from __future__ import annotations
+
 from core.services.auth_roles import require_permission
 from flask import (
     abort,
@@ -9,30 +11,32 @@ from flask import (
     send_file,
     url_for,
     render_template,
+    session,
 )
 from .validators.site_validator import validate_site_data
 import tempfile
+import json
+import csv
+from datetime import datetime
 
-# Importá helpers/modelos de sitios
+from flask import Blueprint
+
+from core.database import db
 from core.models.sites import (
     list_sites,
     create_sites,
     list_sites_with_filters,
     update_site,
     get_site,
-    delete_site_by_id,  # si existen
+    delete_site_by_id,
     get_all_cities,
     get_all_provinces,
 )
 from core.models import tags
-from datetime import datetime
-from flask import Blueprint, session
-import json
-import csv
-from core.database import db
 from core.models.site_history import SiteChange
 from core.services.site_history import log_site_change, diff_site, diff_tags
-
+from core.models.reviews import Review, ReviewStatus
+from sqlalchemy import func, or_
 
 sites_bp = Blueprint(
     "sites", __name__, url_prefix="/sitios", template_folder="../templates/sites"
@@ -42,18 +46,16 @@ sites_bp = Blueprint(
 @sites_bp.route("/")
 @require_permission("sites.view")
 def home():
-    '''Renderiza la página de inicio de sitios históricos'''
+    """Renderiza la página de inicio de sitios históricos"""
     return render_template("sites_home.html")
 
 
 @sites_bp.route("/listar")
 @require_permission("sites.view")
 def list_all_sites():
-    '''Lista todos los sitios históricos con paginación y filtros'''
+    """Lista todos los sitios históricos con paginación y filtros"""
     query_params = request.args.to_dict()
 
-    # Si en los query params estan los filtros de startDate y endDate (ambos), verificar que
-    # startDate <= endDate. Si no, devolver error 400.
     if "startDate" in query_params and "endDate" in query_params:
         try:
             start_date = datetime.strptime(query_params["startDate"], "%Y-%m-%d")
@@ -65,43 +67,31 @@ def list_all_sites():
 
     page = request.args.get("page", 1, type=int)
     per_page = 10
-    # sites, total = list_sites(page=page, per_page=per_page)
+
     sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
-    # Ordenar los resultaos por fecha de registro, nombre o ciudad (asc/desc).
-    # Primero por fecha de registro descendente (los más recientes primero)
-    # En caso de empate, por nombre ascendente (A-Z)
-    # En caso de nuevo empate, por ciudad ascendente (A-Z)
     sites.sort(
         key=lambda s: (s.fechaRegistro, s.nombre.lower(), s.ciudad.lower()),
         reverse=True,
     )
 
-    # Calcular información de paginación
     total_pages = (total + per_page - 1) // per_page
-    has_prev = page > 1
-    has_next = page < total_pages
-    prev_num = page - 1 if has_prev else None
-    next_num = page + 1 if has_next else None
-
     pagination = {
         "page": page,
         "per_page": per_page,
         "total": total,
         "pages": total_pages,
-        "has_prev": has_prev,
-        "has_next": has_next,
-        "prev_num": prev_num,
-        "next_num": next_num,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "prev_num": page - 1 if page > 1 else None,
+        "next_num": page + 1 if page < total_pages else None,
     }
 
     cities = [c[0] for c in get_all_cities()]
     provinces = [p[0] for p in get_all_provinces()]
     tags_list = [t.name for t in tags.get_all_tags()]
 
-    sitesJson = [
-        site.to_dict() for site in sites
-    ]  # Sitios en formato JSON para guardar en el frontend, para luego poder exportarlos a CSV
+    sitesJson = [site.to_dict() for site in sites]
 
     return render_template(
         "sites.html",
@@ -117,23 +107,19 @@ def list_all_sites():
 @sites_bp.route("/crear_sitio", methods=["GET", "POST"])
 @require_permission("sites.create")
 def create_site():
-    '''Crea un nuevo sitio histórico'''
+    """Crea un nuevo sitio histórico"""
     all_tags = tags.get_all_tags()
 
     if request.method == "POST":
         data = request.form.to_dict()
-        # Manejar checkbox visible
         data["visible"] = "visible" in request.form
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
-        # Validar datos
         errors = validate_site_data(data)
 
-        # Si hay errores, mostrar el formulario con los errores
         if errors:
-            # Mostrar cada error individualmente
             for error in errors:
                 flash(error, "error")
             return render_template(
@@ -141,10 +127,9 @@ def create_site():
                 site=None,
                 tags=all_tags,
                 selected_tag_ids=tag_ids,
-                form_data=data  # Mantener datos del formulario
+                form_data=data,
             )
 
-        # SOLO crear el sitio si NO hay errores
         try:
             site = create_sites(**data)
 
@@ -152,13 +137,15 @@ def create_site():
                 selected_tags = tags.get_tags_by_ids(tag_ids)
                 tags.assign_tags(site, selected_tags)
 
-            log_site_change(site_id=site.id, user_id=session.get("user_id"), action="create")
-            db.session.commit()  # persistimos el historial
+            log_site_change(
+                site_id=site.id,
+                user_id=session.get("user_id"),
+                action="create",
+            )
+            db.session.commit()
 
-            # IMPORTANTE: Flash ANTES de redirect
             flash("Sitio creado correctamente", "success")
-            return redirect(url_for("sites.list_all_sites"))  # ← Redirigir a la lista
-
+            return redirect(url_for("sites.list_all_sites"))
         except Exception as e:
             flash(f"Error al crear el sitio: {str(e)}", "error")
             return render_template(
@@ -166,23 +153,21 @@ def create_site():
                 site=None,
                 tags=all_tags,
                 selected_tag_ids=tag_ids,
-                form_data=data
+                form_data=data,
             )
 
-    # GET request
     return render_template(
         "form.html",
         site=None,
         tags=all_tags,
-        selected_tag_ids=[]
+        selected_tag_ids=[],
     )
 
 
-# Editar
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
 @require_permission("sites.edit")
 def edit_site(id):
-    '''Edita un sitio histórico existente'''
+    """Edita un sitio histórico existente"""
     site = get_site(id)
     if not site:
         abort(404)
@@ -191,65 +176,65 @@ def edit_site(id):
     selected_tag_ids = [str(tag.id) for tag in site.tags]
 
     if request.method == "POST":
-        # --- SNAPSHOT ANTES (desvinculado para que el diff vea cambios reales) ---
         before = get_site(id)
-        _ = list(getattr(before, "tags", []))   # (opcional) fuerza precarga de tags
-        db.session.expunge(before)              # clave para “congelar” el snapshot
 
         data = request.form.to_dict()
         data["visible"] = "visible" in request.form
-        # Los nombres de los campos permanecen como están en tu capa de modelos
-        data["latitud"] = request.form.get("lat")
-        data["longitud"] = request.form.get("lng")
+        data["lat"] = request.form.get("lat")
+        data["lng"] = request.form.get("lng")
 
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
-        # --- UPDATE CAMPOS ---
         update_site(id, **data)
 
-        # --- TAGS ---
         selected_tags = tags.get_tags_by_ids(tag_ids)
         tags.assign_tags(site, selected_tags)
 
-        # --- SNAPSHOT DESPUÉS ---
         after = get_site(id)
 
-        # --- DIFFS ---
-        changes = diff_site(before, after)      # campos simples + coords + visible
-        tag_changes = diff_tags(before, after)  # cambios de set de tags
+        changes = diff_site(before, after)
+        tag_changes = diff_tags(before, after)
         changes.update(tag_changes)
 
-        # --- HISTORIAL + COMMIT ---
-        log_site_change(site_id=id, user_id=session.get("user_id"), action="update", changes=changes)
+        log_site_change(
+            site_id=id,
+            user_id=session.get("user_id"),
+            action="update",
+            changes=changes,
+        )
         db.session.commit()
 
         flash("Sitio actualizado correctamente", "success")
         return redirect(url_for("sites.list_all_sites"))
 
     return render_template(
-        "form.html", site=site, tags=all_tags, selected_tag_ids=selected_tag_ids
+        "form.html",
+        site=site,
+        tags=all_tags,
+        selected_tag_ids=selected_tag_ids,
     )
 
 
 @sites_bp.route("/eliminar_sitio/<int:id>", methods=["POST"])
 @require_permission("sites.delete")
 def delete_site(id):
-    '''Elimina un sitio histórico existente'''
+    """Elimina un sitio histórico existente"""
     try:
-        # registrar el historial ANTES de eliminar, para guardar quién lo borró
-        log_site_change(site_id=id, user_id=session.get("user_id"), action="delete")
-        db.session.commit()  # confirma el registro en la tabla sites_history
+        log_site_change(
+            site_id=id,
+            user_id=session.get("user_id"),
+            action="delete",
+        )
+        db.session.commit()
 
-        # Llama a la función existente que elimina el sitio
         delete_site_by_id(id)
-        site = get_site(id)  # Verifica si el sitio aún existe
+        site = get_site(id)
 
         if not site:
             flash("Sitio eliminado correctamente", "success")
         else:
             flash("Sitio no encontrado", "error")
-
     except Exception as e:
         flash(f"Error al eliminar el sitio: {str(e)}", "error")
 
@@ -259,18 +244,42 @@ def delete_site(id):
 @sites_bp.route("/ver_sitio/<int:id>", methods=["GET"])
 @require_permission("sites.view")
 def view_site(id):
-    '''Muestra los detalles de un sitio histórico'''
+    """Muestra los detalles de un sitio histórico + reseñas aprobadas."""
     site = get_site(id)
-    site_lat = site.lat
-    site_lng = site.lng
-    return render_template("show_site.html", site=site, site_lat=site_lat, site_lng=site_lng)
+    if not site:
+        abort(404)
+
+    # Reseñas aprobadas del sitio
+    approved_reviews = (
+        db.session.query(Review)
+        .filter(Review.site_id == id, Review.status == ReviewStatus.APPROVED)
+        .order_by(Review.created_at.desc())
+        .all()
+    )
+
+    # Promedio de rating (solo aprobadas)
+    avg_rating, total_reviews = db.session.query(
+        func.coalesce(func.avg(Review.rating), 0), func.count(Review.id)
+    ).filter(
+        Review.site_id == id, Review.status == ReviewStatus.APPROVED
+    ).one()
+    avg_rating = round(float(avg_rating), 1)
+
+    return render_template(
+        "show_site.html",
+        site=site,
+        site_lat=site.lat,
+        site_lng=site.lng,
+        reviews=approved_reviews,
+        avg_rating=avg_rating,
+        total_reviews=total_reviews,
+    )
 
 
 @sites_bp.route("/exportar_csv", methods=["POST"])
 @require_permission("sites.export")
 def export_csv():
     """Función para exportar los sitios a un archivo CSV."""
-
     sitesToExport = request.get_json().get("sites", [])
 
     with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".csv") as file:
@@ -308,7 +317,6 @@ def export_csv():
         file.flush()
         file.seek(0)
 
-    # Nombre del archivo: sitios_<YYYYMMDD_HHMM>.csv
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
     filename = f"sitios_{timestamp}.csv"
 
@@ -324,25 +332,24 @@ def export_csv():
 @require_permission("sites.history_view")
 def view_history(id):
     """
-    Lista el historial con filtros y paginación (25 por página).
-    Filtros:
-      - user: texto a buscar en nombre o apellido (icontains)
-      - action: create|update|delete
-      - from: YYYY-MM-DD
-      - to:   YYYY-MM-DD
+    Historial de cambios de un sitio con filtros + paginación.
     """
-    from core.models.user import User  # import local para evitar circulares
-    q = db.session.query(SiteChange, User).outerjoin(User, User.id == SiteChange.user_id)\
-        .filter(SiteChange.site_id == id)
+    from core.models.user import User
 
-    # --- Filtros ---
+    q = (
+        db.session.query(SiteChange, User)
+        .outerjoin(User, User.id == SiteChange.user_id)
+        .filter(SiteChange.site_id == id)
+    )
+
     user_txt = request.args.get("user", "", type=str).strip()
     if user_txt:
         like = f"%{user_txt.lower()}%"
         q = q.filter(
-            db.or_(
-                db.func.lower(User.name).like(like),
-                db.func.lower(User.last_name).like(like),
+            or_(
+                func.lower(User.name).like(like),
+                func.lower(User.last_name).like(like),
+                func.lower(User.email).like(like),
             )
         )
 
@@ -350,52 +357,52 @@ def view_history(id):
     if action in ("create", "update", "delete"):
         q = q.filter(SiteChange.action == action)
 
-    def _parse_date(s):
+    def _parse_date(val: str):
         try:
-            return datetime.strptime(s, "%Y-%m-%d")
+            return datetime.strptime(val, "%Y-%m-%d")
         except Exception:
             return None
 
-    d_from = _parse_date(request.args.get("from", request.args.get("start", "")))
-    d_to   = _parse_date(request.args.get("to",   request.args.get("end",   "")))
+    d_from = _parse_date(request.args.get("from", "") or request.args.get("start", ""))
+    d_to = _parse_date(request.args.get("to", "") or request.args.get("end", ""))
+
     if d_from:
         q = q.filter(SiteChange.changed_at >= d_from)
     if d_to:
-        # inclusive hasta fin de día
-        q = q.filter(SiteChange.changed_at < (d_to.replace(hour=23, minute=59, second=59)))
+        q = q.filter(SiteChange.changed_at < d_to.replace(hour=23, minute=59, second=59))
 
-    # --- Orden + paginación ---
     q = q.order_by(SiteChange.changed_at.desc())
+
     page = max(1, request.args.get("page", 1, type=int))
     per_page = 25
     total = q.count()
     rows = q.limit(per_page).offset((page - 1) * per_page).all()
 
-    # Adaptamos a estructura simple para el template
     cambios = []
     for schange, u in rows:
-        cambios.append({
-            "changed_at": schange.changed_at,
-            "user_name": (f"{u.name} {u.last_name} ({u.email})".strip() if u else "—"),
-            "action": schange.action,
-            "field": schange.field or "—",
-            "old_value": schange.old_value or "—",
-            "new_value": schange.new_value or "—",
-        })
+        cambios.append(
+            {
+                "changed_at": schange.changed_at,
+                "user_name": f"{u.name} {u.last_name} ({u.email})" if u else "—",
+                "action": schange.action,
+                "field": schange.field or "—",
+                "old_value": schange.old_value or "—",
+                "new_value": schange.new_value or "—",
+            }
+        )
 
-    total_pages = (total + per_page - 1) // per_page
+    pages = (total + per_page - 1) // per_page
     pagination = {
         "page": page,
         "per_page": per_page,
         "total": total,
-        "pages": total_pages,
+        "pages": pages,
         "has_prev": page > 1,
-        "has_next": page < total_pages,
+        "has_next": page < pages,
         "prev_num": page - 1 if page > 1 else None,
-        "next_num": page + 1 if page < total_pages else None,
+        "next_num": page + 1 if page < pages else None,
     }
 
-    # Para conservar filtros en los links de paginación
     current_filters = {
         "user": user_txt,
         "action": action,
@@ -421,6 +428,7 @@ def api_history(id):
         .order_by(SiteChange.changed_at.desc())
         .all()
     )
+
     data = [
         {
             "id": c.id,
