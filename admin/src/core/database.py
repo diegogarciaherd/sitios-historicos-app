@@ -37,6 +37,7 @@ def reset_db():
     )
     from core.models.tags import Tag
     from core.models.site_history import SiteChange
+    from core.models.site_images import SiteImage
 
     print("Resetting database...")
     Base.metadata.drop_all(bind=db.engine)
