@@ -114,7 +114,7 @@
         {% endif %}
     {% endwith %}
 
-    <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post">
+    <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post" enctype="multipart/form-data">
         <!-- Nombre -->
         <div class="form-group">
             <label for="nombre">Nombre (obligatorio)</label>
@@ -284,6 +284,39 @@
                     {{ tag.name }}
                 </label>
                 {% endfor %}
+            </div>
+        </div>
+
+        <!-- Input de imagenes -->
+        <div>
+            <div>
+                <h3>Imagenes</h3>
+                <p>No hay imagenes disponibles.</p>
+            </div>
+
+            <!--  
+            Formatos permitidos: JPG, PNG, WEBP.
+            Tamaño máximo por archivo: 5 MB.
+            -->
+            <div class="image-upload-container">
+                <div class="image-upload">
+                    <label for="image-upload-input">Subir imágenes:</label>
+                    <input
+                        type="file"
+                        multiple
+                        id="image-upload-input"
+                        accept=".jpg, .jpeg, .png, .webp"
+                        name="images"
+                    />
+                </div>
+
+                <p>
+                    Formatos permitidos: JPG, PNG, WEBP. Tamaño máximo por archivo: 5 MB.
+                </p>
+
+                <div class="image-preview-container"></div>
+
+                <p class="error"></p>
             </div>
         </div>
 
@@ -511,6 +544,63 @@
             }
         }
     });
+
+    /*
+        Validaciones para la carga de imágenes
+    */
+    document.getElementById('image-upload-input').addEventListener('change', () => {
+        const input = document.getElementById('image-upload-input');
+        const files = input.files;
+        const errorMsg = document.querySelector('.image-upload-container .error');
+        errorMsg.style.display = 'none';
+        errorMsg.textContent = '';
+
+        const allowedFormats = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp'];
+        const maxSize = 5 * 1024 * 1024; // 5 MB
+        const maxImages = 10; // Máximo de imágenes permitidas
+
+        if (files.length > maxImages) {
+            errorMsg.textContent = `Error: No se pueden subir más de ${maxImages} imágenes.`;
+            input.value = '';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        for (f of files) {
+            // Validar el formato de los archivos
+            if (!allowedFormats.includes(f.type)) {
+                errorMsg.textContent = 'Error: Formato no permitido. Solo se permiten JPG, PNG y WEBP.';
+                input.value = '';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Validar el tamaño de los archivos
+            if (f.size > maxSize) {
+                errorMsg.textContent = 'Error: El tamaño del archivo excede los 5 MB.';
+                input.value = '';
+                errorMsg.style.display = 'block';
+                return;
+            }
+        }
+        // Falta validar la cantidad maxima de imagenes por sitio.
+
+        // En este punto, todas las validaciones pasaron, podemos proceder con la carga de las imágenes.
+
+        const previewContainer = document.querySelector('.image-preview-container');
+        previewContainer.innerHTML = ''; // Limpiar vistas previas anteriores
+        for (f of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.maxWidth = '150px';
+                img.style.maxHeight = '100px';
+                previewContainer.appendChild(img);
+            };
+            reader.readAsDataURL(f);
+        }
+    })
 </script>
 {% endif %}
 {% endblock %}

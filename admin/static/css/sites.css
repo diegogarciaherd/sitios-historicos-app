@@ -572,3 +572,32 @@
 	font-size: 1.1rem;
 	margin-top: 0.25rem;
 }
+
+.image-upload-container {
+	margin-bottom: 2rem;
+	text-align: start;
+
+	& p {
+		font-size: 0.8rem;
+		color: #666;
+		font-weight: normal;
+	}
+}
+
+.image-upload {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.image-upload-container .error {
+	display: none;
+	color: #dc3545;
+	font-size: 0.8rem;
+}
+
+.image-preview-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
