@@ -33,8 +33,8 @@ class DevelopmentConfig(Config):
 
     # Configuracion para Minio
     MINIO_SERVER = "localhost:9000"
-    MINIO_ACCESS_KEY = ""
-    MINIO_SECRET_KEY = ""
+    MINIO_ACCESS_KEY = "admin"
+    MINIO_SECRET_KEY = "admin12345"
     MINIO_SECURE = False
     MINIO_BUCKET = "grupo45"
 

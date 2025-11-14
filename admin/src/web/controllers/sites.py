@@ -32,6 +32,9 @@ import csv
 from core.database import db
 from core.models.site_history import SiteChange
 from core.services.site_history import log_site_change, diff_site, diff_tags
+from flask import current_app
+from os import fstat
+import uuid
 
 
 sites_bp = Blueprint(
@@ -203,11 +206,7 @@ def edit_site(id):
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
-        images = request.files.getlist("images")
-        # Ver si hay imágenes subidas
-        print(f"Imágenes subidas: {images}")
-        if images and len(images) > 0:
-            print("Hay imágenes subidas")
+        upload_images(request, id)
 
         # --- UPDATE CAMPOS ---
         update_site(id, **data)
@@ -453,3 +452,35 @@ def api_history(id):
         for c in cambios
     ]
     return json.dumps(data), 200, {"Content-Type": "application/json"}
+
+
+def upload_images(req, site_id):
+    """Función para manejar la subida de imágenes asociadas a un sitio histórico."""
+
+    images = req.files.getlist("images")
+
+    if images and len(images) > 0:
+        if images[0].filename != "":
+
+            client_storage = current_app.storage
+            bucket_name = current_app.config.get("MINIO_BUCKET")
+
+            for img in images:
+                size = fstat(img.fileno()).st_size
+                object_name = f"public/sites/{site_id}/{uuid.uuid4()}{img.filename}"
+
+                client_storage.put_object(
+                    bucket_name=bucket_name,
+                    object_name=object_name,
+                    data=img,
+                    length=size,
+                    content_type=img.content_type,
+                )
+
+                # Guardar el object_name en la base de datos, asociado al sitio
+
+                # Para acceder a una imagen despues, se crea la url:
+                # protocol = "https" if current_app.config.get("MINIO_SECURE") else "http"
+                # print(
+                #    f"{protocol}://{current_app.config.get("MINIO_SERVER")}/{current_app.config.get("MINIO_BUCKET")}/{object_name}"
+                # )
