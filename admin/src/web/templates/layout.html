@@ -1,90 +1,66 @@
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{% block title %}Mi App{% endblock %}</title>
-        <link
-            rel="stylesheet"
-            href="{{ url_for('static', filename='css/styles.css') }}"
-        />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Lexend:wght@100..900&display=swap"
-            rel="stylesheet"
-        />
-        {% block head_styles %} {% endblock %}
-    </head>
-    <body>
-        <header>
-            {% if logged_user %}
-            <div class="dropdown">
-                <button class="btn-outline">Cuenta</button>
-                <div class="dropdown-content">
-                    <p class="email">
-                        Cuenta: {{ logged_user.name }} {{ logged_user.last_name
-                        }} ({{ logged_user.email }})
-                    </p>
-                    <a>Ver perfil</a>
-                    <a href="/logout">Cerrar sesión</a>
-                </div>
-            </div>
-            {% else %}
-            <form action="/login" method="get">
-                <button class="btn-outline">Iniciar sesion</button>
-            </form>
-            {% endif %}
-        </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Mi App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Lexend:wght@100..900&display=swap" rel="stylesheet" />
+    {% block head_styles %}{% endblock %}
+  </head>
+  <body>
+    <header>
+      {% if logged_user %}
+      <div class="dropdown">
+        <button class="btn-outline">Cuenta</button>
+        <div class="dropdown-content">
+          <p class="email">
+            Cuenta: {{ logged_user.name }} {{ logged_user.last_name }} ({{ logged_user.email }})
+          </p>
+          <a>Ver perfil</a>
+          <a href="/logout">Cerrar sesión</a>
+        </div>
+      </div>
+      {% else %}
+      <form action="/login" method="get">
+        <button class="btn-outline">Iniciar sesion</button>
+      </form>
+      {% endif %}
+    </header>
 
-        <aside>
-            <a
-                href="{{ url_for('home') }}"
-                style="
-                    width: 16rem;
-                    text-align: left;
-                    display: flex;
-                    align-items: center;
-                    flex-direction: row;
-                    gap: 1rem;
-                    padding-left: 0.5rem;
-                "
-            >
-                <img
-                    src="{{ url_for('static', filename='images/escudo_argentino.png') }}"
-                    alt="Registro de sitios históricos"
-                    style="width: 10%; height: auto"
-                />
-                <h3>
-                    Registro de sitios <br />
-                    históricos
-                </h3>
-            </a>
-            <nav>
-                {% if logged_user %}
-                <a href="{{ url_for('sites.home') }}"
-                    >Gestion de sitios históricos</a
-                >
-                {% block site_navigation_links %}{% endblock %}
-                <a>Validación de propuestas</a>
-                <a>Moderación de reseñas</a>
-                {% if can('feature_flags.manage') %}
-                <a href="{{ url_for('feature_flags.list_all_feature_flags') }}"
-                    >Gestión de funcionalidades</a
-                >
-                {% endif %} {% if can('users.manage') %}
-                <a href="{{ url_for('adminpanel.admin_panel') }}"
-                    >Gestión de usuarios</a
-                >
-                {% block admin_navigation_links %}{% endblock %} {% endif %} {%
-                endif %}
-            </nav>
-        </aside>
+    <aside>
+      <a href="{{ url_for('home') }}" style="width: 16rem; text-align: left; display: flex; align-items: center; flex-direction: row; gap: 1rem; padding-left: 0.5rem;">
+        <img src="{{ url_for('static', filename='images/escudo_argentino.png') }}" alt="Registro de sitios históricos" style="width: 10%; height: auto" />
+        <h3>Registro de sitios <br />históricos</h3>
+      </a>
 
-        <main>{% block content %}{% endblock %}</main>
+      <nav>
+        {% if logged_user %}
+          <a href="{{ url_for('sites.home') }}">Gestion de sitios históricos</a>
+          {% block site_navigation_links %}{% endblock %}
+          <a>Validación de propuestas</a>
 
-        <footer>
-            <p>&copy; 2025 Grupo 45</p>
-        </footer>
-    </body>
+          {% if can('reviews.queue_view') %}
+            <a href="{{ url_for('reviews.moderate_list') }}">Moderación de reseñas</a>
+          {% endif %}
+
+          {% if can('feature_flags.manage') %}
+            <a href="{{ url_for('feature_flags.list_all_feature_flags') }}">Gestión de funcionalidades</a>
+          {% endif %}
+          {% if can('users.manage') %}
+            <a href="{{ url_for('adminpanel.admin_panel') }}">Gestión de usuarios</a>
+            {% block admin_navigation_links %}{% endblock %}
+          {% endif %}
+        {% endif %}
+      </nav>
+    </aside>
+
+    <main>{% block content %}{% endblock %}</main>
+
+    <footer>
+      <p>&copy; 2025 Grupo 45</p>
+    </footer>
+  </body>
 </html>
