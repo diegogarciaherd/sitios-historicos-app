@@ -12,6 +12,19 @@ import { RouterLink } from 'vue-router'
         Registro de sitios históricos
       </h1>
     </RouterLink>
+    <div class="relative right-2 w-[40%]">
+      <input
+        type="text"
+        class="flex w-full rounded-full background-transparent border border-[rgba(255,255,255,0.5)] focus:border-white focus:bg-[rgba(255,255,255,0.3)] focus:outline-none transition-background duration-300 text-white px-4 py-1 pr-31"
+      />
+      <select
+        class="absolute top-1/2 right-0 -translate-y-1/2 text-gray-600 bg-white outline-none border-none appearance-none pr-6 pl-3 py-1 rounded-r-full"
+      >
+        <option value="name" selected>Nombre</option>
+        <option value="province">Provincia</option>
+        <option value="city">Ciudad</option>
+      </select>
+    </div>
     <nav>
       <RouterLink
         to="/about"

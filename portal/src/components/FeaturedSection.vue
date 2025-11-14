@@ -1,23 +1,15 @@
 <script setup>
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
-import SiteGrid from './SiteGrid.vue'
-import { onBeforeMount, onMounted, onUpdated, reactive, ref } from 'vue'
-import api from '@/api/base.js'
-
-async function getSites() {
-  const sites = await api.get('/sites/', {
-    params: { filters: {} },
-  })
-  return sites.data
-}
+import { onBeforeMount, reactive, ref } from 'vue'
+import { getSites } from '@/api/sites'
 
 const featuredSites = ref([])
 const carouselOptions = reactive([])
 const selectedCarousel = ref()
 
 onBeforeMount(async () => {
-  featuredSites.value = await getSites()
+  featuredSites.value = await getSites({})
   console.log('Fetched sites:', featuredSites.value)
   carouselOptions.value = [
     {
