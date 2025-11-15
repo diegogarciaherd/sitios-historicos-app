@@ -23,11 +23,19 @@ def check_filters(filters: dict):
         if filters["order_by"] != "rating-5-1" or "rating-1-5" or "latest" or "oldest":
             errors["order_by"] = "Criterio de orden invalido."
     if "lat" in filters and filters["lat"]:
-        if int(filters["lat"]) < -90 or int(filters["lat"]) > 90:
-            errors["lat"] = "Fuera de rango."
+        try:
+            lat_val = float(filters["lat"])
+            if lat_val < -90 or lat_val > 90:
+                errors["lat"] = "Fuera de rango."
+        except ValueError:
+            errors["lat"] = "No es un numero."
     if "long" in filters and filters["long"]:
-        if int(filters["long"]) < -180 or int(filters["long"]) > 180:
-            errors["long"] = "Fuera de rango."
+        try:
+            long_val = float(filters["long"])
+            if long_val < -180 or long_val > 180:
+                errors["long"] = "Fuera de rango."
+        except ValueError:
+            errors["long"] = "No es un numero."
     if "radius" in filters and filters["radius"]:
         try:
             int(filters["radius"])
@@ -40,14 +48,13 @@ def check_filters(filters: dict):
             errors["page"] = "No es un numero."
     if "per_page" in filters and filters["per_page"]:
         try:
-            int(filters["per_page"])
-            if filters["per_page"] > 100:
+            per_page_int = int(filters["per_page"])
+            if per_page_int > 100:
                 filters["per_page"] = 100
+            elif per_page_int < 1:
+                errors["per_page"] = "Debe ser entre 1 y 100."
         except ValueError:
             errors["per_page"] = "No es un numero."
-
-        if int(filters["per_page"]) > 100:
-            errors["per_page"] = "Debe ser entre 1 y 100."
     
     return errors
 
@@ -407,5 +414,89 @@ def delete_site_review_by_id(site_id: int, review_id: int):
             "error": {
                 "code": "server_error",
                 "message": "An unexpected error ocurred."
+            }
+        }), 500
+
+# Metodos Correccion
+def convert_and_validate_filters(filters: dict):
+    """
+    Convierte los valores de los filtros a enteros y valida los rangos.
+    """
+    errors = {}
+    if "page" in filters and filters["page"]:
+        try:
+            filters["page"] = int(filters["page"])
+            if filters["page"] < 1:
+                errors["page"] = "Debe ser mayor a 0."
+        except ValueError:
+            errors["page"] = "No es un numero."
+
+    if "per_page" in filters and filters["per_page"]:
+        try:
+            filters["per_page"] = int(filters["per_page"])
+            if filters["per_page"] < 1:
+                errors["per_page"] = "Debe ser mayor a 0."
+            elif filters["per_page"] > 100:
+                filters["per_page"] = 100
+        except ValueError:
+            errors["per_page"] = "No es un numero."
+    return errors
+
+@sites_api_bp.get("/fix")
+def get_sites_by_criteria_fixed():
+    """
+    Busca los sitios historicos de acuerdo a los criterios especificados.
+    Versión que usa convert_and_validate_filters para manejar tipos correctamente.
+    Los criterios son recibidos en la URL.
+    """
+    filters = request.args.to_dict()
+    errors = check_filters(filters)
+    
+    # Convertir tipos y validar rangos
+    conversion_errors = convert_and_validate_filters(filters)
+    errors.update(conversion_errors)
+
+    if not errors:
+        # Asegurar que page y per_page tengan valores por defecto correctos
+        page = filters.get("page", 1)
+        per_page = filters.get("per_page", 10)
+        
+        # Convertir a int si aún son strings (por si no pasaron por convert_and_validate_filters)
+        if isinstance(page, str):
+            try:
+                page = int(page) if page else 1
+            except ValueError:
+                page = 1
+        if isinstance(per_page, str):
+            try:
+                per_page = int(per_page) if per_page else 10
+            except ValueError:
+                per_page = 10
+                
+        sites, total = list_sites_with_filters(filters, page, per_page)
+        sites_data = [site.to_dict() for site in sites]
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+        return jsonify({
+            "data": sites_data,
+            "meta": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "total_pages": total_pages
+            }
+        }), 200
+    elif errors:
+        return jsonify({
+            "error" : {
+                "code": "invalid_query",
+                "message": "Parameter validation failed.",
+                "details": errors
+            }
+        }), 400
+    else:
+        return jsonify({
+            "error": {
+            "code": "server_error",
+            "message": "An unexpected error occurred."
             }
         }), 500

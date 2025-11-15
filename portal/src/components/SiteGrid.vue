@@ -1,132 +1,113 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import DetailedSiteCard from './DetailedSiteCard.vue'
+import { ref, onMounted, watch } from 'vue'
+import { getSitesFixed } from '@/api/sites'
+import SiteCard from './SiteCard.vue'
 
 const props = defineProps({
-  sites: { type: Array, default: () => [] },
-  cols: { type: Number, default: 3, validator: (v) => v > 0 },
-  rows: { type: Number, default: 2, validator: (v) => v > 0 },
-  page: { type: Number, default: 1 },
+  filters: {
+    type: Object,
+    default: () => ({})
+  }
 })
 
-const emit = defineEmits(['update:page'])
+const sites = ref([])
+const page = ref(1)
+const perPage = 4
+const totalPages = ref(1)
+const loading = ref(false)
 
-const internalPage = ref(props.page ?? 1)
-
-const sitesList = computed(() => (Array.isArray(props.sites) ? props.sites : []))
-const pageSize = computed(() => Math.max(1, (props.cols || 1) * (props.rows || 1)))
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil((sitesList.value.length || 0) / pageSize.value) || 1),
-)
-
-function clampPage(p) {
-  const n = Number(p) || 1
-  if (n < 1) return 1
-  if (n > pageCount.value) return pageCount.value
-  return n
-}
-
-function setPage(p) {
-  const c = clampPage(p)
-  if (c !== internalPage.value) {
-    internalPage.value = c
-    emit('update:page', c)
+async function fetchSites() {
+  loading.value = true
+  try {
+    const params = {
+      page: page.value,
+      per_page: perPage,
+      ...props.filters
+    }
+    const response = await getSitesFixed(params)
+    console.log('Response in SiteGrid:', response)
+    if (response && response.data) {
+      sites.value = response.data
+      totalPages.value = response.meta.total_pages
+    } else {
+      console.error('Invalid response format:', response)
+      sites.value = []
+    }
+  } catch(error) {
+    console.error("Error fetching sites:", error)
+    sites.value = []
+  }
+  finally {
+    loading.value = false
   }
 }
 
-watch(
-  () => props.page,
-  (val) => {
-    if (typeof val === 'number') setPage(val)
-  },
-)
+// Recargar cuando cambien los filtros
+watch(() => props.filters, () => {
+  page.value = 1 // Resetear a la primera página
+  fetchSites()
+}, { deep: true })
 
-watch([sitesList, pageSize], () => {
-  if (internalPage.value > pageCount.value) setPage(pageCount.value)
-})
+function nextPage() {
+  if (page.value < totalPages.value) {
+    page.value++
+    fetchSites()
+  }
+}
 
-const startIndex = computed(() => (internalPage.value - 1) * pageSize.value)
-const endIndex = computed(() => startIndex.value + pageSize.value)
-const visibleSites = computed(() => sitesList.value.slice(startIndex.value, endIndex.value))
+function prevPage() {
+  if (page.value > 1) {
+    page.value--
+    fetchSites()
+  }
+}
 
-const gotoPrev = () => setPage(internalPage.value - 1)
-const gotoNext = () => setPage(internalPage.value + 1)
-
-const gridTemplate = computed(() => `repeat(${props.cols || 1}, minmax(0, 1fr))`)
-
-const liveMessage = computed(() => `Página ${internalPage.value} de ${pageCount.value}`)
+onMounted(fetchSites)
 </script>
 
 <template>
-  <section class="w-full" aria-label="Grilla de sitios con paginación">
-    <!-- Controles superiores -->
-    <div class="flex items-center justify-between mb-4">
-      <div class="text-sm text-gray-600" aria-live="polite">{{ liveMessage }}</div>
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          class="px-3 py-1 rounded bg-gray-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-          :disabled="internalPage === 1"
-          @click="gotoPrev"
-          aria-label="Página anterior"
-        >
-          Anterior
-        </button>
-        <button
-          type="button"
-          class="px-3 py-1 rounded bg-gray-800 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-          :disabled="internalPage === pageCount"
-          @click="gotoNext"
-          aria-label="Página siguiente"
-        >
-          Siguiente
-        </button>
+  <div class="w-full flex flex-col gap-4 pb-4">
+    
+    <!-- Cuando se esta cargando los sitios -->
+    <div v-if="loading" class="flex items-center justify-center py-12">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p class="mt-2 text-gray-600">Cargando sitios...</p>
       </div>
     </div>
 
-    <!-- Grid -->
-    <div
-      v-if="visibleSites.length"
-      class="grid gap-6"
-      :style="{ gridTemplateColumns: gridTemplate }"
-      role="list"
-      aria-label="Página actual"
-    >
-      <div
-        v-for="(site, idx) in visibleSites"
-        :key="startIndex + idx"
-        role="listitem"
-        class="flex justify-center"
-      >
-        <DetailedSiteCard
-          :site="site"
-          @click="$router.push(`/sites/${site.id || ''}`)"
-          style="cursor: pointer"
-        />
-      </div>
+    <!-- Grid responsive: 1 col móvil, 2 tablet, 2 desktop -->
+    <div v-else-if="sites.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
+      <SiteCard v-for="site in sites" :key="site.id" :site="site" />
     </div>
-    <div v-else class="text-center text-gray-500 py-16">No hay sitios para mostrar.</div>
 
-    <!-- Indicadores de páginas -->
-    <div class="mt-4 flex items-center justify-center gap-2" role="tablist" aria-label="Paginación">
-      <button
-        v-for="p in pageCount"
-        :key="p"
-        type="button"
-        class="w-8 h-8 rounded-full flex items-center justify-center text-sm border border-gray-400"
-        :class="
-          p === internalPage
-            ? 'bg-gray-800 text-white border-gray-800'
-            : 'bg-white text-gray-700 hover:bg-gray-100'
-        "
-        @click="setPage(p)"
-        :aria-current="p === internalPage ? 'page' : undefined"
-        :aria-label="`Ir a la página ${p}`"
+    <!-- Estado vacío -->
+    <div v-else-if="!loading" class="flex items-center justify-center py-12">
+      <p class="text-gray-500 text-center">No se encontraron sitios para mostrar.</p>
+    </div>
+
+    <!-- Paginación -->
+    <div v-if="!loading && sites.length > 0 && totalPages > 1" class="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-200">
+      <button 
+        @click="prevPage" 
+        :disabled="page === 1"
+        class="px-4 py-2 bg-gray-800 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
       >
-        {{ p }}
+        Anterior
+      </button>
+      
+      <span class="text-gray-700 font-medium">
+        Página {{ page }} de {{ totalPages }}
+      </span>
+      
+      <button 
+        @click="nextPage" 
+        :disabled="page >= totalPages"
+        class="px-4 py-2 bg-gray-800 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
+      >
+        Siguiente
       </button>
     </div>
-  </section>
-</template>
 
-<style scoped></style>
+  </div>
+</template>

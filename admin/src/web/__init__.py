@@ -20,8 +20,6 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from web.controllers.reviews import reviews_bp
 
-
-
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
 
