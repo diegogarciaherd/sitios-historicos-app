@@ -1,34 +1,51 @@
 <script setup>
-import { ref } from 'vue'
 import SiteGrid from '@/components/SiteGrid.vue'
 import SiteFilters from '@/components/SiteFilters.vue'
+import Topbar from '@/components/Topbar.vue'
+import SearchBar from '@/components/SearchBar.vue'
+import { useSiteSearch } from '@/composables/useSiteSearch'
 
-const filters = ref({})
-
-function handleSearch(newFilters) {
-  filters.value = newFilters
-}
+const {
+  searchBarRef,
+  siteFiltersRef,
+  combinedFilters,
+  handleSearch,
+  handleClear
+} = useSiteSearch()
 </script>
 
 <template>
-  <div class="h-screen bg-gray-50 overflow-hidden flex flex-col">
-    <div class="flex-shrink-0 py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-7xl mx-auto">
+  <div class="min-h-screen bg-gray-50 flex flex-col">
+    <!-- Topbar fijo en la parte superior -->
+    <Topbar />
+    
+    <!-- Contenido principal con padding-top para no quedar debajo del Topbar -->
+    <div class="flex-1 flex flex-col gap-4 pt-20 sm:pt-24 lg:pt-28 px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6">
+      <div class="max-w-7xl mx-auto w-full flex flex-col gap-4">
         
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
+        <!-- Título -->
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
           Listado Sitios Históricos
         </h1>
+        
+        <!-- Barra de búsqueda -->
+        <div class="w-full">
+          <SearchBar ref="searchBarRef" @search="handleSearch" />
+        </div>
 
-        <!-- Layout: Mobile (stacked) / Desktop (sidebar + content) -->
-        <div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)] lg:h-[calc(100vh-10rem)]">
+        <!-- Layout: Filtros y Grid -->
+        <div class="flex flex-col lg:flex-row gap-4">
           <!-- Filtros: Acordeón en móvil, Sidebar en desktop -->
-          <aside class="w-full lg:w-80 flex-shrink-0 lg:overflow-y-auto">
-            <SiteFilters v-model="filters" @search="handleSearch" />
+          <aside class="w-full lg:w-80 shrink-0">
+            <SiteFilters 
+              ref="siteFiltersRef"
+              @clear="handleClear"
+            />
           </aside>
 
           <!-- Contenido principal: Grid de sitios -->
-          <main class="flex-1 min-w-0 overflow-y-auto">
-            <SiteGrid :filters="filters" />
+          <main class="flex-1 min-w-0">
+            <SiteGrid :site-filters="combinedFilters" />
           </main>
         </div>
       </div>
