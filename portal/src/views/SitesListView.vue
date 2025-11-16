@@ -18,7 +18,7 @@ const {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
+  <div class="min-h-screen bg-gray-100 flex flex-col">
     <Topbar />
 
     <div class="flex-1 flex flex-col gap-4 pt-20 sm:pt-24 lg:pt-28 px-4 sm:px-6 lg:px-8 pb-4">
@@ -46,12 +46,14 @@ const {
           <div class="flex-1 flex flex-col gap-4">
             <SearchBar 
               ref="searchBarRef"
-              :model-value="searchTerm"
+              v-model="searchTerm"
               @search="handleSearch" 
             />
 
-            <SiteGrid 
-              :site-filters="combinedFilters"
+            <SiteGrid
+              :siteFilters="combinedFilters"
+              :page="page"
+              @change-page="handlePageChange"
             />
           </div>
         </div>

@@ -7,11 +7,13 @@ const props = defineProps({
   siteFilters: {
     type: Object,
     default: () => ({})
-  }
+  },
+  page: Number
 })
 
+const emit = defineEmits(['change-page']) 
+
 const sites = ref([])
-const page = ref(1)
 const perPage = 4
 const totalPages = ref(1)
 const loading = ref(false)
@@ -19,48 +21,34 @@ const loading = ref(false)
 async function fetchSites() {
   loading.value = true
   try {
-    const params = {
-      page: page.value,
+    const response = await getSitesFixed({
+      page: props.page,
       per_page: perPage,
       ...props.siteFilters
-    }
-    const response = await getSitesFixed(params)
-    console.log('Response in SiteGrid:', response)
-    if (response && response.data) {
-      sites.value = response.data
-      totalPages.value = response.meta?.total_pages || 1
-    } else {
-      console.error('Invalid response format:', response)
-      sites.value = []
-      totalPages.value = 1
-    }
-  } catch(error) {
-    console.error("Error fetching sites:", error)
-    sites.value = []
-    totalPages.value = 1
-  }
-  finally {
+    })
+    sites.value = response.data || []
+    totalPages.value = response.meta?.total_pages || 1
+  } finally {
     loading.value = false
   }
 }
 
 // Recargar cuando cambien los filtros
 watch(() => props.siteFilters, () => {
-  page.value = 1 // Resetear a la primera página
-  fetchSites()
+  emit('change-page', 1)  // reset
 }, { deep: true })
 
+watch(() => props.page, fetchSites) 
+
 function nextPage() {
-  if (page.value < totalPages.value) {
-    page.value++
-    fetchSites()
+  if (props.page < totalPages.value) {
+    emit('change-page', props.page + 1)
   }
 }
 
 function prevPage() {
-  if (page.value > 1) {
-    page.value--
-    fetchSites()
+  if (props.page > 1) {
+    emit('change-page', props.page - 1)
   }
 }
 
