@@ -1,53 +1,34 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    default: () => ({})
-  }
-})
-
-const emit = defineEmits(['update:modelValue', 'search'])
+const emit = defineEmits(['clear'])
 
 const isOpen = ref(false)
-const searchTerm = ref(props.modelValue.search || '')
-const city = ref(props.modelValue.city || '')
-const province = ref(props.modelValue.province || '')
+const city = ref('')
+const province = ref('')
 
-const filters = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
-
-function applyFilters() {
-  const newFilters = {
-    search: searchTerm.value,
-    city: city.value,
-    province: province.value
-  }
-  // Eliminar filtros vacíos
-  Object.keys(newFilters).forEach(key => {
-    if (!newFilters[key]) delete newFilters[key]
-  })
-  filters.value = newFilters
-  emit('search', newFilters)
-  // Cerrar en móvil después de aplicar
-  if (window.innerWidth < 768) {
-    isOpen.value = false
-  }
+// Obtener filtros actuales sin emitir
+function getFilters() {
+  const filters = {}
+  if (city.value) filters.city = city.value
+  if (province.value) filters.province = province.value
+  return filters
 }
 
 function clearFilters() {
-  searchTerm.value = ''
   city.value = ''
   province.value = ''
-  filters.value = {}
-  emit('search', {})
+  emit('clear')
   if (window.innerWidth < 768) {
     isOpen.value = false
   }
 }
+
+// Exponer método para obtener filtros desde fuera
+defineExpose({
+  getFilters,
+  clear: clearFilters
+})
 </script>
 
 <template>
@@ -71,31 +52,15 @@ function clearFilters() {
     <!-- Panel de filtros: acordeon en movil, siempre visible en desktop -->
     <div
       :class="[
-        'bg-white rounded-lg shadow-md p-4 md:p-6',
         'md:block',
         isOpen ? 'block' : 'hidden'
       ]"
     >
-      <h3 class="text-lg font-semibold mb-4 text-gray-800 hidden md:block">
-        Buscar y Filtrar
-      </h3>
-
-      <div class="space-y-4">
-        <!-- Buscador -->
-        <div>
-          <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-            Buscar sitio
-          </label>
-          <input
-            id="search"
-            v-model="searchTerm"
-            type="text"
-            placeholder="Buscar por nombre o descripción..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            @keyup.enter="applyFilters"
-          />
-        </div>
-
+      <div class="space-y-4 border border-gray-300 rounded-lg p-4">
+        <h3 class="text-lg font-bold text-center text-gray-700 mb-2">
+          Filtros
+        </h3>
+        
         <!-- Ciudad -->
         <div>
           <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
@@ -106,8 +71,7 @@ function clearFilters() {
             v-model="city"
             type="text"
             placeholder="Filtrar por ciudad..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            @keyup.enter="applyFilters"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -121,22 +85,15 @@ function clearFilters() {
             v-model="province"
             type="text"
             placeholder="Filtrar por provincia..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            @keyup.enter="applyFilters"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
-        <!-- Botones de acción -->
-        <div class="flex flex-col sm:flex-row gap-2 pt-2">
-          <button
-            @click="applyFilters"
-            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Aplicar Filtros
-          </button>
+        <!-- Botón de limpiar -->
+        <div class="pt-2">
           <button
             @click="clearFilters"
-            class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+            class="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
           >
             Limpiar
           </button>
