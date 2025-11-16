@@ -1,12 +1,15 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import TagFilter from './TagFilter.vue'
+import { getAllTags } from '@/api/tags'
 
 const props = defineProps({
   appliedFilters: {
     type: Object,
     default: () => ({
       city: '',
-      province: ''
+      province: '',
+      tags: []
     })
   }
 })
@@ -16,11 +19,34 @@ const emit = defineEmits(['clear'])
 const isOpen = ref(false)
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
+const selectedTags = ref(props.appliedFilters.tags || [])
+const availableTags = ref([])
+
+// Cargar tags disponibles
+onMounted(async () => {
+  availableTags.value = await getAllTags()
+})
 
 // Sincronizar con props aplicados (para reflejar valores de URL)
 watch(() => props.appliedFilters, (newFilters) => {
   city.value = newFilters.city || ''
   province.value = newFilters.province || ''
+  // Convertir tags desde URL (objetos con name) a objetos con id si están disponibles
+  if (newFilters.tags && newFilters.tags.length > 0) {
+    selectedTags.value = newFilters.tags.map(tag => {
+      if (typeof tag === 'string') {
+        // Buscar tag por nombre en availableTags
+        const found = availableTags.value.find(t => t.name === tag)
+        return found || { name: tag }
+      }
+      // Si ya es un objeto, buscar por nombre para obtener el id
+      const found = availableTags.value.find(t => t.name === tag.name)
+      return found || tag
+    })
+    
+  } else {
+    selectedTags.value = []
+  }
 }, { deep: true })
 
 // Obtener filtros actuales sin emitir
@@ -28,12 +54,19 @@ function getFilters() {
   const filters = {}
   if (city.value) filters.city = city.value
   if (province.value) filters.province = province.value
-  return filters
+  if (selectedTags.value && selectedTags.value.length > 0) {
+    // Mantener tags como objetos para el estado, pero convertir a nombres para el backend
+    filters.tags = selectedTags.value.map(tag => 
+      typeof tag === 'string' ? tag : tag.name
+    )
+  }
+  return { ...filters, tagsObjects: selectedTags.value }
 }
 
 function clearFilters() {
   city.value = ''
   province.value = ''
+  selectedTags.value = []
   emit('clear')
   if (window.innerWidth < 768) {
     isOpen.value = false
@@ -103,6 +136,20 @@ defineExpose({
             placeholder="Filtrar por provincia..."
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        <!-- Filtro de Tags -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Tags
+          </label>
+          <TagFilter
+            v-if="availableTags.length > 0"
+            :tags="availableTags"
+            :selected-tags="selectedTags"
+            @update:selected-tags="selectedTags = $event"
+          />
+          <p v-else class="text-sm text-gray-500">Cargando tags...</p>
         </div>
 
         <!-- Botón de limpiar -->

@@ -7,11 +7,13 @@ const props = defineProps({
   siteFilters: {
     type: Object,
     default: () => ({})
-  }
+  },
+  page: Number
 })
 
+const emit = defineEmits(['change-page']) 
+
 const sites = ref([])
-const page = ref(1)
 const perPage = 4
 const totalPages = ref(1)
 const loading = ref(false)
@@ -19,48 +21,36 @@ const loading = ref(false)
 async function fetchSites() {
   loading.value = true
   try {
-    const params = {
-      page: page.value,
+    const response = await getSitesFixed({
+      page: props.page,
       per_page: perPage,
       ...props.siteFilters
-    }
-    const response = await getSitesFixed(params)
-    console.log('Response in SiteGrid:', response)
-    if (response && response.data) {
-      sites.value = response.data
-      totalPages.value = response.meta?.total_pages || 1
-    } else {
-      console.error('Invalid response format:', response)
-      sites.value = []
-      totalPages.value = 1
-    }
-  } catch(error) {
-    console.error("Error fetching sites:", error)
-    sites.value = []
-    totalPages.value = 1
-  }
-  finally {
+    })
+    sites.value = response.data || []
+    totalPages.value = response.meta?.total_pages || 1
+  } finally {
     loading.value = false
   }
 }
 
 // Recargar cuando cambien los filtros
 watch(() => props.siteFilters, () => {
-  page.value = 1 // Resetear a la primera página
+  emit('change-page', 1)  // reset
+  // Recargar inmediatamente cuando cambian los filtros
   fetchSites()
 }, { deep: true })
 
+watch(() => props.page, fetchSites) 
+
 function nextPage() {
-  if (page.value < totalPages.value) {
-    page.value++
-    fetchSites()
+  if (props.page < totalPages.value) {
+    emit('change-page', props.page + 1)
   }
 }
 
 function prevPage() {
-  if (page.value > 1) {
-    page.value--
-    fetchSites()
+  if (props.page > 1) {
+    emit('change-page', props.page - 1)
   }
 }
 
@@ -92,19 +82,19 @@ onMounted(fetchSites)
     <div v-if="!loading" class="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-200">
       <button 
         @click="prevPage" 
-        :disabled="page === 1 || totalPages === 0"
+        :disabled="props.page === 1 || totalPages === 0"
         class="px-4 py-2 bg-gray-800 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
       >
         Anterior
       </button>
       
       <span class="text-gray-700 font-medium">
-        Página {{ page }} de {{ totalPages || 1 }}
+        Página {{ props.page }} de {{ totalPages || 1 }}
       </span>
       
       <button 
         @click="nextPage" 
-        :disabled="page >= totalPages || totalPages === 0"
+        :disabled="props.page >= totalPages || totalPages === 0"
         class="px-4 py-2 bg-gray-800 text-white rounded disabled:bg-gray-400 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
       >
         Siguiente

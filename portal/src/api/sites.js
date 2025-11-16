@@ -13,10 +13,25 @@ async function getSites(filters = {}) {
 }
 
 async function getSitesFixed(filters = {}) {
-  const queryString = new URLSearchParams(filters).toString()
+  // Construir query params manualmente para manejar arrays (tags)
+  const params = new URLSearchParams()
+  
+  Object.keys(filters).forEach(key => {
+    const value = filters[key]
+    if (value !== null && value !== undefined && value !== '') {
+      if (Array.isArray(value)) {
+        // Para arrays como tags, enviar como string separado por comas
+        if (value.length > 0) {
+          params.append(key, value.join(','))
+        }
+      } else {
+        params.append(key, value)
+      }
+    }
+  })
 
   try {
-    const response = await api.get(`/sites/fix?${queryString}`)
+    const response = await api.get(`/sites/fix?${params.toString()}`)
     console.log('Response from /sites/fix:', response.data)
     const data = response.data
     return data
