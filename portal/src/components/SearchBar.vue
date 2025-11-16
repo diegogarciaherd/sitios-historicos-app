@@ -1,8 +1,6 @@
 <template>
     <div class="space-y-4">
-      <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-        Buscar sitio histórico
-      </label>
+    
   
       <div class="flex gap-2">
   <input
@@ -27,11 +25,27 @@
 
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
-const emit = defineEmits(['search'])
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: ''
+  }
+})
 
-const searchTerm = ref('')
+const emit = defineEmits(['search', 'update:modelValue'])
+
+const searchTerm = ref(props.modelValue)
+
+// Sincronizar con prop
+watch(() => props.modelValue, (newValue) => {
+  searchTerm.value = newValue
+})
+
+watch(searchTerm, (newValue) => {
+  emit('update:modelValue', newValue)
+})
 
 function handleSearch() {
   emit('search', searchTerm.value)

@@ -1,11 +1,27 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+
+const props = defineProps({
+  appliedFilters: {
+    type: Object,
+    default: () => ({
+      city: '',
+      province: ''
+    })
+  }
+})
 
 const emit = defineEmits(['clear'])
 
 const isOpen = ref(false)
-const city = ref('')
-const province = ref('')
+const city = ref(props.appliedFilters.city || '')
+const province = ref(props.appliedFilters.province || '')
+
+// Sincronizar con props aplicados (para reflejar valores de URL)
+watch(() => props.appliedFilters, (newFilters) => {
+  city.value = newFilters.city || ''
+  province.value = newFilters.province || ''
+}, { deep: true })
 
 // Obtener filtros actuales sin emitir
 function getFilters() {
