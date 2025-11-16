@@ -11,10 +11,14 @@ const router = createRouter({
       component: HomeView,
     },
     {
-      path: '/sites',
-      name: 'sites',
-      component: SitesListView,
+      path: '/sitios',
+      name: 'sites-list',
+      component: () => import('@/views/SitesListView.vue'),
+      props: route => ({
+        query: route.query
+      })
     }
+    
   ],
 
 })
