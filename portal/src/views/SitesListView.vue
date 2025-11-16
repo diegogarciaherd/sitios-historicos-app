@@ -7,13 +7,15 @@ import MapSelector from '@/components/MapSelector.vue'
 import { useSiteSearch } from '@/composables/useSiteSearch'
 
 const {
+  page,
   searchTerm,
   searchBarRef,
   siteFiltersRef,
   appliedFilters,
   combinedFilters,
   handleSearch,
-  handleClear
+  handleClear,
+  handlePageChange
 } = useSiteSearch()
 </script>
 

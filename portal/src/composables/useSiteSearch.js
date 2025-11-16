@@ -144,8 +144,8 @@ export function useSiteSearch() {
     }
 
     const newPage = newQuery.page ? Number(newQuery.page) : 1
-    if (newPage !== appliedFilters.value.page) {
-      appliedFilters.value.page = newPage
+    if (newPage !== page.value) {
+      page.value = newPage
     }
     // Comparar tags por nombres
     const currentTagNames = appliedFilters.value.tags.map(t => typeof t === 'string' ? t : t.name).sort()
