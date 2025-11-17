@@ -1,84 +1,106 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import TagFilter from './TagFilter.vue'
 import { getAllTags } from '@/api/tags'
 import ProvinceSelect from './ProvinceSelect.vue'
+import OrderSelector from './OrderSelector.vue'
+
 const props = defineProps({
   appliedFilters: {
     type: Object,
     default: () => ({
       city: '',
       province: '',
-      tags: []
+      tags: [],        // ← objetos {id,name}
+      order_by: ""
     })
   }
 })
 
 const emit = defineEmits(['clear'])
 
-const isOpen = ref(false)
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
-const selectedTags = ref(props.appliedFilters.tags || [])
+const selectedTags = ref(props.appliedFilters.tags || [])   // objetos completos
+const orderBy = ref(props.appliedFilters.order_by || "")
 const availableTags = ref([])
 
-// Cargar tags disponibles
 onMounted(async () => {
-  availableTags.value = await getAllTags()
+  const res = await getAllTags()
+  availableTags.value = res.results || []
+  
+  // Después de cargar los tags, reconstruir los seleccionados desde props
+  // Esto es importante para cuando los tags vienen de la URL (solo tienen name)
+  if (props.appliedFilters.tags?.length > 0) {
+    selectedTags.value = props.appliedFilters.tags
+      .map(tagObj => {
+        // Si ya es un objeto con id, usarlo directamente
+        if (tagObj && tagObj.id) return tagObj
+        // Si solo tiene name, buscar el objeto completo en los tags disponibles
+        if (tagObj && tagObj.name) {
+          const found = availableTags.value.find(t => t.name === tagObj.name)
+          return found || null
+        }
+        return null
+      })
+      .filter(Boolean)
+  }
 })
 
-// Sincronizar con props aplicados (para reflejar valores de URL)
 watch(() => props.appliedFilters, (newFilters) => {
   city.value = newFilters.city || ''
   province.value = newFilters.province || ''
-  // Convertir tags desde URL (objetos con name) a objetos con id si están disponibles
-  if (newFilters.tags && newFilters.tags.length > 0) {
-    selectedTags.value = newFilters.tags.map(tag => {
-      if (typeof tag === 'string') {
-        // Buscar tag por nombre en availableTags
-        const found = availableTags.value.find(t => t.name === tag)
-        return found || { name: tag }
-      }
-      // Si ya es un objeto, buscar por nombre para obtener el id
-      const found = availableTags.value.find(t => t.name === tag.name)
-      return found || tag
-    })
-    
+
+  // reconstruir objetos completos desde nombres
+  if (newFilters.tags?.length > 0) {
+    selectedTags.value = newFilters.tags
+      .map(tagObj => {
+        // Si ya es un objeto con id, usarlo directamente
+        if (tagObj && tagObj.id) return tagObj
+        // Si solo tiene name, buscar el objeto completo en los tags disponibles
+        if (tagObj && tagObj.name) {
+          const found = availableTags.value.find(t => t.name === tagObj.name)
+          return found || null
+        }
+        return null
+      })
+      .filter(Boolean)
   } else {
     selectedTags.value = []
   }
+
+  // mantener orden
+  orderBy.value = newFilters.order_by || ""
 }, { deep: true })
 
-// Obtener filtros actuales sin emitir
 function getFilters() {
-  const filters = {}
-  if (city.value) filters.city = city.value
-  if (province.value) filters.province = province.value
-  if (selectedTags.value && selectedTags.value.length > 0) {
-    // Mantener tags como objetos para el estado, pero convertir a nombres para el backend
-    filters.tags = selectedTags.value.map(tag => 
-      typeof tag === 'string' ? tag : tag.name
-    )
+  return {
+    city: city.value || "",
+    province: province.value || "",
+    order_by: orderBy.value || "",
+    tagsObjects: selectedTags.value || [],         // ← objetos completos
+    tags: (selectedTags.value || []).map(t => {
+      // Asegurar que siempre tengamos el name
+      if (typeof t === 'string') return t
+      return t?.name || ''
+    }).filter(name => name) // ← nombres para URL + backend
   }
-  return { ...filters, tagsObjects: selectedTags.value }
 }
 
 function clearFilters() {
   city.value = ''
   province.value = ''
+  orderBy.value = ''
   selectedTags.value = []
   emit('clear')
-  if (window.innerWidth < 768) {
-    isOpen.value = false
-  }
 }
 
-// Exponer método para obtener filtros desde fuera
 defineExpose({
   getFilters,
   clear: clearFilters
 })
 </script>
+
 
 <template>
   <div class="w-full">
@@ -132,6 +154,9 @@ defineExpose({
           <ProvinceSelect 
           v-model="province" />
         </div>
+
+        <OrderSelector v-model="orderBy" />
+
 
         <!-- Filtro de Tags -->
         <div>

@@ -5,8 +5,8 @@
       :class="[
         'inline-flex items-center rounded-md px-2 py-1 text-xs font-medium transition-colors',
         isSelected 
-          ? 'bg-blue-600 text-white' 
-          : 'bg-gray-400/10 text-gray-300 hover:bg-gray-400/20'
+          ? 'badge badge-success' 
+          : 'badge --badge-color'
       ]"
     >
       {{ tag.name }}
