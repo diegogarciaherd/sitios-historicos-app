@@ -35,6 +35,7 @@ from core.services.site_history import log_site_change, diff_site, diff_tags
 from flask import current_app
 from os import fstat
 import uuid
+from core.models.site_images import create_site_image
 
 
 sites_bp = Blueprint(
@@ -462,6 +463,9 @@ def upload_images(req, site_id):
     if images and len(images) > 0:
         if images[0].filename != "":
 
+            # En este punto, hay imágenes para subir.
+            # Obtenemos los inputs de cada imagen para guardar sus metadatos.
+
             client_storage = current_app.storage
             bucket_name = current_app.config.get("MINIO_BUCKET")
 
@@ -477,7 +481,19 @@ def upload_images(req, site_id):
                     content_type=img.content_type,
                 )
 
-                # Guardar el object_name en la base de datos, asociado al sitio
+                alt_text = req.form.get(f"alt-text-{img.filename}", "")
+                description = req.form.get(f"description-{img.filename}", "")
+                order = req.form.get(f"order-{img.filename}", 0)
+                is_cover = req.form.get(f"is-cover-{img.filename}", "off") == "on"
+
+                create_site_image(
+                    site_id=site_id,
+                    object_name=object_name,
+                    alt_text=alt_text,
+                    description=description,
+                    order=order,
+                    is_cover=is_cover,
+                )
 
                 # Para acceder a una imagen despues, se crea la url:
                 # protocol = "https" if current_app.config.get("MINIO_SECURE") else "http"

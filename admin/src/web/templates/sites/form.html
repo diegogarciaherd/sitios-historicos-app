@@ -358,6 +358,9 @@
         let isValid = true;
 
         // Validar todos los campos obligatorios
+        // Las imagenes por defecto no son obligatorias, pero en el caso de que haya imagenes agregadas por subir:
+        // Se debe validar que cada imagen tenga sus datos comepltos (alt, description, order y is-cover)
+
         const requiredFields = [
             { id: 'nombre', name: 'nombre del sitio' },
             { id: 'descripcionBreve', name: 'descripción breve' },
@@ -365,10 +368,30 @@
             { id: 'categoria', name: 'categoría' },
             { id: 'añoInauguracion', name: 'año de inauguración' }
         ];
+        
 
+        const imageInput = document.getElementById('image-upload-input');
+        if (imageInput.files.length > 0) {
+            for (let i = 0; i < imageInput.files.length; i++) {
+                const file = imageInput.files[i];
+
+                // Agregamos los inputs al array de campos requeridos para su posterior validación
+                requiredFields.push(...[
+                    { id: `alt-text-${file.name}`, name: `texto alternativo de la imagen ${file.name}` },
+                    { id: `description-${file.name}`, name: `descripción de la imagen ${file.name}` },
+                    { id: `order-${file.name}`, name: `orden de la imagen ${file.name}` }
+                ]);              
+                
+                
+                // Falta validar el campo de is-cover, pero primero debemos hacer todo el backend para manejar esa info.
+            }
+        }
+
+
+        // validar que los campos requeridos no estén vacíos
         requiredFields.forEach(field => {
             const input = document.getElementById(field.id);
-            if (!input.value.trim()) {
+            if (!input.value || !input.value.trim()) {
                 showError(field.id, `El campo "${field.name}" es obligatorio`);
                 isValid = false;
             }
@@ -414,6 +437,7 @@
                 firstError.previousElementSibling.focus();
             }
         }
+
     });
 
     // Validación en tiempo real para mejor UX
@@ -522,6 +546,17 @@
         
         // Limpiar error del mapa
         document.getElementById('map').classList.remove('error');
+
+        // Limpiamos los errores de los inputs de las imagenes
+        document.querySelectorAll('.image-preview-inputs fieldset').forEach(elem => {
+            const input = elem.querySelector('input');
+            const error = elem.querySelector('p');
+            if(input) input.classList.remove('error');
+            if(error) {
+                error.textContent = '';
+                error.style.display = 'none';
+            }
+        })
     }
 
     // Tags interactivos
@@ -585,21 +620,42 @@
         }
         // Falta validar la cantidad maxima de imagenes por sitio.
 
-        // En este punto, todas las validaciones pasaron, podemos proceder con la carga de las imágenes.
+        // En este punto, todas las validaciones sobre imagenes pasaron, así que procedemos a mostrar las vistas previas con sus inputs.
 
         const previewContainer = document.querySelector('.image-preview-container');
         previewContainer.innerHTML = ''; // Limpiar vistas previas anteriores
-        for (f of files) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.maxWidth = '150px';
-                img.style.maxHeight = '100px';
-                previewContainer.appendChild(img);
-            };
-            reader.readAsDataURL(f);
+
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            previewContainer.innerHTML += `
+                <div class="image-preview">
+                    <img id="preview-${f.name}" src="${URL.createObjectURL(f)}" />
+
+                    <div class="image-preview-inputs">
+                        <fieldset class="image-preview-input-container">
+                            <label for="alt-text-${f.name}">Texto alternativo:</label>
+                            <input type="text" id="alt-text-${f.name}" name="alt-text-${f.name}" required/>
+                            <p id="alt-text-${f.name}-error"></p>
+                        </fieldset>
+                        <fieldset class="image-preview-input-container">
+                            <label for="description-${f.name}">Descripción:</label>
+                            <input type="text" id="description-${f.name}" name="description-${f.name}" required/>
+                            <p id="description-${f.name}-error"></p>
+                        </fieldset>
+                        <fieldset>
+                            <label for="order-${f.name}">Orden:</label>
+                            <input type="number" id="order-${f.name}" name="order-${f.name}" required value="${i+1}" min="1" max="10"/>
+                            <p id="order-${f.name}-error"></p>
+                        </fieldset>
+                        <fieldset>
+                            <label for="is-cover-${f.name}">¿Es imagen de portada?</label>
+                            <input type="checkbox" id="is-cover-${f.name}" name="is-cover-${f.name}" />
+                        </fieldset>
+                    </div>
+                </div>
+            `;
         }
+
     })
 </script>
 {% endif %}
