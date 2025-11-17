@@ -19,7 +19,7 @@ class SiteImages(Base):
         String(255), nullable=False
     )  # Almacena el object_name en Minio
     alt_text: Mapped[str] = mapped_column(String(150), nullable=False)
-    description: Mapped[str] = mapped_column(String(300), nullable=False)
+    description: Mapped[str] = mapped_column(String(300), nullable=True)
     order: Mapped[int] = mapped_column(Integer, nullable=False)
     is_cover: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[str] = mapped_column(

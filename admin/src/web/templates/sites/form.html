@@ -359,7 +359,7 @@
 
         // Validar todos los campos obligatorios
         // Las imagenes por defecto no son obligatorias, pero en el caso de que haya imagenes agregadas por subir:
-        // Se debe validar que cada imagen tenga sus datos comepltos (alt, description, order y is-cover)
+        // Se debe validar que cada imagen tenga sus campos obligatorios completos (alt, order y is-cover)
 
         const requiredFields = [
             { id: 'nombre', name: 'nombre del sitio' },
@@ -378,7 +378,6 @@
                 // Agregamos los inputs al array de campos requeridos para su posterior validación
                 requiredFields.push(...[
                     { id: `alt-text-${file.name}`, name: `texto alternativo de la imagen ${file.name}` },
-                    { id: `description-${file.name}`, name: `descripción de la imagen ${file.name}` },
                     { id: `order-${file.name}`, name: `orden de la imagen ${file.name}` }
                 ]);              
                 
@@ -633,13 +632,13 @@
 
                     <div class="image-preview-inputs">
                         <fieldset class="image-preview-input-container">
-                            <label for="alt-text-${f.name}">Texto alternativo:</label>
+                            <label for="alt-text-${f.name}">Título/alt:</label>
                             <input type="text" id="alt-text-${f.name}" name="alt-text-${f.name}" required/>
                             <p id="alt-text-${f.name}-error"></p>
                         </fieldset>
                         <fieldset class="image-preview-input-container">
                             <label for="description-${f.name}">Descripción:</label>
-                            <input type="text" id="description-${f.name}" name="description-${f.name}" required/>
+                            <input type="text" id="description-${f.name}" name="description-${f.name}"/>
                             <p id="description-${f.name}-error"></p>
                         </fieldset>
                         <fieldset>
