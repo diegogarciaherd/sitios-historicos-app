@@ -30,13 +30,18 @@ onMounted(async () => {
   availableTags.value = res.results || []
   
   // Después de cargar los tags, reconstruir los seleccionados desde props
+  // Esto es importante para cuando los tags vienen de la URL (solo tienen name)
   if (props.appliedFilters.tags?.length > 0) {
     selectedTags.value = props.appliedFilters.tags
       .map(tagObj => {
         // Si ya es un objeto con id, usarlo directamente
-        if (tagObj.id) return tagObj
-        // Si solo tiene name, buscar el objeto completo
-        return availableTags.value.find(t => t.name === tagObj.name)
+        if (tagObj && tagObj.id) return tagObj
+        // Si solo tiene name, buscar el objeto completo en los tags disponibles
+        if (tagObj && tagObj.name) {
+          const found = availableTags.value.find(t => t.name === tagObj.name)
+          return found || null
+        }
+        return null
       })
       .filter(Boolean)
   }
@@ -51,9 +56,13 @@ watch(() => props.appliedFilters, (newFilters) => {
     selectedTags.value = newFilters.tags
       .map(tagObj => {
         // Si ya es un objeto con id, usarlo directamente
-        if (tagObj.id) return tagObj
-        // Si solo tiene name, buscar el objeto completo
-        return availableTags.value.find(t => t.name === tagObj.name)
+        if (tagObj && tagObj.id) return tagObj
+        // Si solo tiene name, buscar el objeto completo en los tags disponibles
+        if (tagObj && tagObj.name) {
+          const found = availableTags.value.find(t => t.name === tagObj.name)
+          return found || null
+        }
+        return null
       })
       .filter(Boolean)
   } else {
@@ -69,8 +78,12 @@ function getFilters() {
     city: city.value || "",
     province: province.value || "",
     order_by: orderBy.value || "",
-    tagsObjects: selectedTags.value,         // ← objetos completos
-    tags: selectedTags.value.map(t => t.name) // ← nombres para URL + backend
+    tagsObjects: selectedTags.value || [],         // ← objetos completos
+    tags: (selectedTags.value || []).map(t => {
+      // Asegurar que siempre tengamos el name
+      if (typeof t === 'string') return t
+      return t?.name || ''
+    }).filter(name => name) // ← nombres para URL + backend
   }
 }
 

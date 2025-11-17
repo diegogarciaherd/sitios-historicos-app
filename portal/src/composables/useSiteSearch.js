@@ -44,9 +44,16 @@ export function useSiteSearch() {
     }
     if (appliedFilters.value.tags && appliedFilters.value.tags.length > 0) {
       // Convertir tags a string separado por comas (nombres)
-      query.tags = appliedFilters.value.tags
-        .map(tag => typeof tag === 'string' ? tag : tag.name)
-        .join(',')
+      const tagNames = appliedFilters.value.tags
+        .map(tag => {
+          if (typeof tag === 'string') return tag
+          return tag?.name || ''
+        })
+        .filter(name => name) // Filtrar nombres vacíos
+      
+      if (tagNames.length > 0) {
+        query.tags = tagNames.join(',')
+      }
     }
     
     if (orderBy.value) {
@@ -75,9 +82,17 @@ export function useSiteSearch() {
     }
     // Convertir tags a array de nombres para el backend
     if (combined.tags && Array.isArray(combined.tags) && combined.tags.length > 0) {
-      combined.tags = combined.tags.map(tag => 
-        typeof tag === 'string' ? tag : tag.name
-      )
+      combined.tags = combined.tags
+        .map(tag => {
+          if (typeof tag === 'string') return tag
+          return tag?.name || ''
+        })
+        .filter(name => name) // Filtrar nombres vacíos
+      
+      // Si después de filtrar no hay tags, eliminar la propiedad
+      if (combined.tags.length === 0) {
+        delete combined.tags
+      }
     } else {
       delete combined.tags
     }
@@ -94,13 +109,13 @@ export function useSiteSearch() {
   function handleSearch(searchValue) {
   searchTerm.value = searchValue
 
-  // Tomar filtros desde el componente SiteFilters (incluyendo orderBy)
+  // Tomar filtros desde el componente SiteFilters (incluyendo orderBy y tags)
   if (siteFiltersRef.value) {
     const currentFilters = siteFiltersRef.value.getFilters()
     appliedFilters.value = {
       city: currentFilters.city || '',
       province: currentFilters.province || '',
-      tags: currentFilters.tagsObjects || [],
+      tags: currentFilters.tagsObjects || [], // Objetos completos con id y name
       order_by: currentFilters.order_by || ''
     }
     // Sincronizar orderBy del composable con el de los filtros

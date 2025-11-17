@@ -3,10 +3,11 @@ import api from './base'
 async function getAllTags() {
   try {
     const response = await api.get('/tags')
-    return response.data.results || []
+    // El backend retorna { results: [...], total: ... }
+    return response.data
   } catch (error) {
     console.error('Error fetching tags:', error)
-    return []
+    return { results: [], total: 0 }
   }
 }
 
