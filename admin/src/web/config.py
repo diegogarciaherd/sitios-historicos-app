@@ -6,6 +6,7 @@ class Config:
     '''Configuración base para la aplicación Flask.'''
     TESTING = False
     SECRET_KEY = "your-secret-key"
+    CORS_ORIGINS = ["*"]
     SESSION_TYPE = "filesystem"
 
 class ProductionConfig(Config):
@@ -13,6 +14,7 @@ class ProductionConfig(Config):
     SQLALCHEMY_ENGINES = {
         'default': environ.get('DATABASE_URL')
     }
+    CORS_ORIGINS = ["https://grupo45.proyecto2025.linti.unlp.edu.ar"]
 
 class DevelopmentConfig(Config):
     '''Configuración para entorno de desarrollo'''
@@ -28,9 +30,6 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_ENGINES = {
         'default': f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     }
-
-    #JWT cfg
-    JWT_SECRET_KEY = environ.get("JWT_SECRET_KEY", "clave-re-ultra-secreta")
 
 class TestingConfig(Config):
     '''Configuración para entorno de testing'''

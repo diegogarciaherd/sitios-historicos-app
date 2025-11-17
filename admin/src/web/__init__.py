@@ -17,9 +17,8 @@ from core.seeds_roles import run as seed_roles_run
 from web.api.sites import sites_api_bp
 from web.api.auth import auth_api_bp
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 from web.controllers.reviews import reviews_bp
-
-
 
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
@@ -29,6 +28,7 @@ def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
     app.config.from_object(config[env])
     Session(app)
+    CORS(app, resources=r"/api/*")
 
     jwt = JWTManager(app)
 

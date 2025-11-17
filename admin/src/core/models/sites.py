@@ -128,8 +128,7 @@ def list_sites_with_filters(filters, page=1, per_page=10):
     query = db.session.query(SitioHistorico)
     query = apply_filters(query, filters)
     total = query.count()
-    sites = query.offset((int(filters["page"]) - 1 if "page" in filters else page - 1) * per_page).limit(filters["per_page"] if "per_page" in filters else per_page).all()
-    #sites = query.offset((page - 1) * per_page).limit(per_page).all()
+    sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
     return sites, total
 
 
