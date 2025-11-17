@@ -31,6 +31,7 @@ from core.models.sites import (
     delete_site_by_id,
     get_all_cities,
     get_all_provinces,
+    SitioHistorico,  
 )
 from core.models import tags
 from core.models.site_history import SiteChange
