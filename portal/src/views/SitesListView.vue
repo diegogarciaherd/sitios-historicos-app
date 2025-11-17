@@ -16,7 +16,8 @@ const {
   handleSearch,
   handleClear,
   handlePageChange,
-  handleOrderChange
+  handleOrderChange,
+  handleTagChange
 } = useSiteSearch()
 </script>
 
@@ -41,6 +42,7 @@ const {
               :applied-filters="appliedFilters"
               @clear="handleClear"
               @order-change="handleOrderChange"
+              @tags-change="handleTagChange"
             />
 
             <MapSelector />

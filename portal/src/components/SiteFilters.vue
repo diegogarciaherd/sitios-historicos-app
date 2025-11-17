@@ -4,83 +4,67 @@ import TagFilter from './TagFilter.vue'
 import { getAllTags } from '@/api/tags'
 import ProvinceSelect from './ProvinceSelect.vue'
 import OrderSelector from './OrderSelector.vue'
+
 const props = defineProps({
   appliedFilters: {
     type: Object,
     default: () => ({
       city: '',
       province: '',
-      tags: [],
-      order_by: "",
+      tags: [],        // ← objetos {id,name}
+      order_by: ""
     })
   }
 })
 
 const emit = defineEmits(['clear', 'order-change'])
 
-const isOpen = ref(false)
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
-const selectedTags = ref(props.appliedFilters.tags || [])
+const selectedTags = ref(props.appliedFilters.tags || [])   // objetos completos
 const orderBy = ref(props.appliedFilters.order_by || "")
 const availableTags = ref([])
 
-// Cargar tags disponibles
 onMounted(async () => {
-  availableTags.value = await getAllTags()
+  const res = await getAllTags()
+  availableTags.value = res.results || []
 })
 
-// Flag para evitar emitir cuando el cambio viene de props
 const isUpdatingFromProps = ref(false)
 
-// Sincronizar con props aplicados (para reflejar valores de URL)
 watch(() => props.appliedFilters, (newFilters) => {
   city.value = newFilters.city || ''
   province.value = newFilters.province || ''
 
-  const newOrderBy = newFilters.order_by || ""
-  if (newOrderBy !== orderBy.value) {
-    isUpdatingFromProps.value = true
-    orderBy.value = newOrderBy
-    // Resetear el flag después de un tick para evitar emitir cuando viene de props
-    nextTick(() => {
-      isUpdatingFromProps.value = false
-    })
-  }
-
-  if (newFilters.tags && newFilters.tags.length > 0) {
-    selectedTags.value = newFilters.tags.map(tag => {
-      const found = availableTags.value.find(t => t.name === tag)
-      return found || { name: tag }
-    })
+  // reconstruir objetos completos desde nombres
+  if (newFilters.tags?.length > 0) {
+    selectedTags.value = newFilters.tags
+      .map(tagObj =>
+        availableTags.value.find(t => t.name === tagObj.name)
+      )
+      .filter(Boolean)
   } else {
     selectedTags.value = []
   }
+
+  // mantener orden
+  isUpdatingFromProps.value = true
+  orderBy.value = newFilters.order_by || ""
+  nextTick(() => (isUpdatingFromProps.value = false))
 }, { deep: true })
 
-// Watch para detectar cambios en orderBy y emitir evento (solo si viene del usuario)
 watch(orderBy, (newOrder) => {
-  // Solo emitir si el cambio no viene de la sincronización de props
-  if (!isUpdatingFromProps.value) {
-    emit('order-change', newOrder)
-  }
+  if (!isUpdatingFromProps.value) emit('order-change', newOrder)
 })
 
-
-// Obtener filtros actuales sin emitir
 function getFilters() {
-  const filters = {}
-  if (city.value) filters.city = city.value
-  if (province.value) filters.province = province.value
-  if (orderBy.value) filters.order_by = orderBy.value
-
-  if (selectedTags.value.length > 0) {
-    filters.tags = selectedTags.value.map(tag =>
-      typeof tag === 'string' ? tag : tag.name
-    )
+  return {
+    city: city.value || "",
+    province: province.value || "",
+    order_by: orderBy.value || "",
+    tagsObjects: selectedTags.value,         // ← objetos completos
+    tags: selectedTags.value.map(t => t.name) // ← nombres para URL + backend
   }
-
-  return { ...filters, tagsObjects: selectedTags.value }
 }
 
 function clearFilters() {
@@ -89,17 +73,14 @@ function clearFilters() {
   orderBy.value = ''
   selectedTags.value = []
   emit('clear')
-  if (window.innerWidth < 768) {
-    isOpen.value = false
-  }
 }
 
-// Exponer método para obtener filtros desde fuera
 defineExpose({
   getFilters,
   clear: clearFilters
 })
 </script>
+
 
 <template>
   <div class="w-full">
@@ -166,8 +147,11 @@ defineExpose({
             v-if="availableTags.length > 0"
             :tags="availableTags"
             :selected-tags="selectedTags"
-            @update:selected-tags="selectedTags = $event"
-          />
+            @update:selected-tags="(tags) => {
+            selectedTags = tags
+            emit('tags-change', tags)
+          }"
+/>
           <p v-else class="text-sm text-gray-500">Cargando tags...</p>
         </div>
 
