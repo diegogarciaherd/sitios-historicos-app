@@ -12,6 +12,7 @@ import { RouterLink } from 'vue-router'
         Registro de sitios históricos
       </h1>
     </RouterLink>
+    
     <nav>
       <RouterLink
         to="/about"

@@ -1,0 +1,442 @@
+{% extends "sites_layout.html" %}
+{% block title %}Moderación de reseñas{% endblock %}
+
+{% block head_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sites.css') }}">
+
+<style>
+.moderation-container {
+    max-width: 1100px;
+    margin: 2rem auto;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem 1.75rem 1.75rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.moderation-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.moderation-header h1 {
+    font-size: 1.4rem;
+    margin: 0;
+}
+.filters-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
+    margin-bottom: .75rem;
+    font-size: .9rem;
+}
+.filters-form input,
+.filters-form select {
+    padding: .3rem .45rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: .85rem;
+}
+.filters-form button,
+.filters-form a.btn {
+    padding: .32rem .7rem;
+    font-size: .8rem;
+}
+.reviews-table-wrapper {
+    margin-top: .5rem;
+    overflow-x: auto;
+}
+.reviews-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #eee;
+    font-size: .85rem;
+}
+.reviews-table thead {
+    background: #f7f7f9;
+}
+.reviews-table th,
+.reviews-table td {
+    padding: .55rem .6rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+}
+.reviews-table th {
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+}
+.reviews-table tr:last-child td {
+    border-bottom: none;
+}
+.badge {
+    display: inline-block;
+    padding: .12rem .5rem;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 600;
+}
+.badge-pending {
+    background: #fff8e1;
+    color: #8d6e63;
+}
+.badge-approved {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+.badge-rejected {
+    background: #ffebee;
+    color: #c62828;
+}
+.actions-col {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+}
+.btn-xs {
+    padding: .15rem .45rem;
+    font-size: .72rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: #f5f5f5;
+    cursor: pointer;
+}
+.btn-xs.primary {
+    background: #1976d2;
+    color: #fff;
+}
+.btn-xs.danger {
+    background: #e53935;
+    color: #fff;
+}
+.btn-xs.outline {
+    background: #fff;
+    border-color: #ccc;
+    color: #555;
+}
+.text-muted {
+    color: #888;
+}
+.pagination {
+    display: flex;
+    gap: .4rem;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+    font-size: .8rem;
+}
+.pagination a,
+.pagination span {
+    padding: .25rem .5rem;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+}
+.pagination .current {
+    background: #f0f0f0;
+    font-weight: 600;
+    border-color: #e0e0e0;
+}
+
+/* Modales simples */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+.modal-backdrop.active {
+    display: flex;
+}
+.modal-box {
+    background: #fff;
+    padding: 1rem 1.2rem;
+    border-radius: 10px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    max-height: 80vh;
+    overflow-y: auto;
+    font-size: .88rem;
+}
+.modal-box h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    margin-bottom: .4rem;
+}
+.modal-box .close-modal {
+    float: right;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+}
+.modal-label {
+    font-weight: 600;
+    margin-top: .4rem;
+}
+.modal-body-text {
+    white-space: pre-wrap;
+    margin-top: .2rem;
+}
+.reject-textarea {
+    width: 100%;
+    margin-top: .35rem;
+    padding: .35rem .5rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: .85rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="moderation-container">
+    <div class="moderation-header">
+        <h1>Moderación de reseñas</h1>
+        <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-outline btn-sm">← Volver a sitios</a>
+    </div>
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'error' else category }} custom-flash">
+              {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {# Filtros #}
+    <form method="get" class="filters-form">
+        <label>Estado:
+            <select name="status">
+                <option value="">Todos</option>
+                <option value="pending" {{ 'selected' if current_filters.status == 'pending' }}>Pendientes</option>
+                <option value="approved" {{ 'selected' if current_filters.status == 'approved' }}>Aprobadas</option>
+                <option value="rejected" {{ 'selected' if current_filters.status == 'rejected' }}>Rechazadas</option>
+            </select>
+        </label>
+
+        <label>Sitio ID:
+            <input type="number" name="site_id" value="{{ current_filters.site_id }}">
+        </label>
+
+        <label>Puntaje:
+            <select name="rating">
+                <option value="">Todos</option>
+                {% for i in range(1,6) %}
+                    <option value="{{ i }}" {{ 'selected' if current_filters.rating|string == i|string }}>{{ i }}</option>
+                {% endfor %}
+            </select>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <a href="{{ url_for('reviews.moderate_list') }}" class="btn btn-outline btn-sm">Limpiar</a>
+    </form>
+
+    {% if items %}
+    <div class="reviews-table-wrapper">
+        <table class="reviews-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Sitio</th>
+                    <th>Puntaje</th>
+                    <th>Título</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in items %}
+                <tr>
+                    <td>#{{ r.id }}</td>
+                    <td>{{ r.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                    <td>
+                        {% if r.site %}
+                            {{ r.site.nombre }}<br>
+                            <span class="text-muted">ID sitio: {{ r.site_id }}</span>
+                        {% else %}
+                            <span class="text-muted">Sitio {{ r.site_id }}</span>
+                        {% endif %}
+                    </td>
+                    <td>⭐ {{ r.rating }}/5</td>
+                    <td>{{ r.title }}</td>
+                    <td>
+                        {% if r.status.value == 'pending' %}
+                            <span class="badge badge-pending">Pendiente</span>
+                        {% elif r.status.value == 'approved' %}
+                            <span class="badge badge-approved">Aprobada</span>
+                        {% else %}
+                            <span class="badge badge-rejected">Rechazada</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="actions-col">
+                            {# Ver detalle en modal #}
+                            <button type="button"
+                                    class="btn-xs outline"
+                                    data-modal="detail-{{ r.id }}">
+                                Ver detalle
+                            </button>
+
+                            {% if can('reviews.moderate') %}
+                                {% if r.status == r.status.PENDING %}
+                                    <form method="POST"
+                                          action="{{ url_for('reviews.approve', id=r.id) }}"
+                                          style="display:inline">
+                                        <button type="submit"
+                                                class="btn-xs primary">
+                                            Aprobar
+                                        </button>
+                                    </form>
+
+                                    <button type="button"
+                                            class="btn-xs danger"
+                                            data-modal="reject-{{ r.id }}">
+                                        Rechazar
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+
+                            {% if can('reviews.delete_any') %}
+                                <form method="POST"
+                                      action="{{ url_for('reviews.delete', id=r.id) }}"
+                                      style="display:inline"
+                                      onsubmit="return confirm('¿Eliminar esta reseña?');">
+                                    <button type="submit"
+                                            class="btn-xs danger">
+                                        Eliminar
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+
+                        {# Modal detalle #}
+                        <div class="modal-backdrop" id="modal-detail-{{ r.id }}">
+                            <div class="modal-box">
+                                <span class="close-modal" data-close="modal-detail-{{ r.id }}">×</span>
+                                <h3>Detalle de reseña #{{ r.id }}</h3>
+                                <div class="modal-label">Sitio</div>
+                                <div class="modal-body-text">
+                                    {% if r.site %}
+                                        {{ r.site.nombre }} (ID {{ r.site_id }})
+                                    {% else %}
+                                        ID sitio: {{ r.site_id }}
+                                    {% endif %}
+                                </div>
+
+                                <div class="modal-label">Puntaje</div>
+                                <div class="modal-body-text">⭐ {{ r.rating }}/5</div>
+
+                                <div class="modal-label">Título</div>
+                                <div class="modal-body-text">{{ r.title }}</div>
+
+                                <div class="modal-label">Comentario</div>
+                                <div class="modal-body-text">{{ r.body }}</div>
+
+                                <div class="modal-label">Estado</div>
+                                <div class="modal-body-text">
+                                    {{ r.status.value }}
+                                    {% if r.reject_reason %}
+                                        <br><span class="text-muted">Motivo rechazo: {{ r.reject_reason }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Modal rechazo #}
+                        {% if can('reviews.moderate') and r.status == r.status.PENDING %}
+                        <div class="modal-backdrop" id="modal-reject-{{ r.id }}">
+                            <div class="modal-box">
+                                <span class="close-modal" data-close="modal-reject-{{ r.id }}">×</span>
+                                <h3>Rechazar reseña #{{ r.id }}</h3>
+                                <form method="POST" action="{{ url_for('reviews.reject', id=r.id) }}">
+                                    <label class="modal-label" for="reason-{{ r.id }}">Motivo (opcional)</label>
+                                    <textarea id="reason-{{ r.id }}"
+                                              name="reason"
+                                              rows="3"
+                                              class="reject-textarea"
+                                              placeholder="Ej: Contenido inapropiado, spam, fuera de tema..."></textarea>
+                                    <div style="margin-top:.6rem; display:flex; gap:.5rem; justify-content:flex-end;">
+                                        <button type="button"
+                                                class="btn-xs outline"
+                                                data-close="modal-reject-{{ r.id }}">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit"
+                                                class="btn-xs danger">
+                                            Confirmar rechazo
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Paginación #}
+    {% if pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('reviews.moderate_list', page=1, **current_filters) }}">«</a>
+            <a href="{{ url_for('reviews.moderate_list', page=pagination.prev_num, **current_filters) }}">‹</a>
+        {% endif %}
+
+        <span class="current">
+            Página {{ pagination.page }} de {{ pagination.pages }}
+        </span>
+
+        {% if pagination.has_next %}
+            <a href="{{ url_for('reviews.moderate_list', page=pagination.next_num, **current_filters) }}">›</a>
+            <a href="{{ url_for('reviews.moderate_list', page=pagination.pages, **current_filters) }}">»</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+        <p class="text-muted" style="margin-top:1rem;">No hay reseñas para mostrar.</p>
+    {% endif %}
+</div>
+
+<script>
+// abrir modales
+document.querySelectorAll("[data-modal]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-modal");
+        const el = document.getElementById("modal-" + id);
+        if (el) el.classList.add("active");
+    });
+});
+
+// cerrar modales
+document.querySelectorAll(".close-modal, .modal-backdrop").forEach(el => {
+    el.addEventListener("click", (e) => {
+        if (e.target.classList.contains("modal-backdrop") ||
+            e.target.classList.contains("close-modal") ||
+            e.target.dataset.close) {
+
+            const targetId = e.target.dataset.close || e.target.closest(".modal-backdrop")?.id;
+            if (targetId) {
+                document.getElementById(targetId).classList.remove("active");
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

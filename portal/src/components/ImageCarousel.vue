@@ -404,6 +404,9 @@ onBeforeUnmount(() => {
 
 /* Smaller screens adjust aspect ratio */
 @media (max-width: 1024px) {
+  .card {
+    right: -100px;
+  }
   .card.next {
     transform: translateY(-50%) translateX(280px) scale(0.88);
   }

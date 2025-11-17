@@ -14,6 +14,12 @@ from web.config import config
 from core.services.auth_service import check_flags
 from core.models.feature_flags import FeatureFlag
 from core.seeds_roles import run as seed_roles_run
+from web.api.sites import sites_api_bp
+from web.api.auth import auth_api_bp
+from web.api.tags import tags_api_bp
+from flask_jwt_extended import JWTManager
+from flask_cors import CORS
+from web.controllers.reviews import reviews_bp
 
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
@@ -23,6 +29,9 @@ def create_app(env="development", static_folder="../../static"):
     app = Flask(__name__, static_folder=static_folder)
     app.config.from_object(config[env])
     Session(app)
+    CORS(app, resources=r"/api/*")
+
+    jwt = JWTManager(app)
 
     # DB
     database.init_app(app)
@@ -40,6 +49,11 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(adminpanel_bp)
     app.register_blueprint(tags_bp)
     app.register_blueprint(feature_flags_bp)
+    # API blueprints
+    app.register_blueprint(sites_api_bp)
+    app.register_blueprint(auth_api_bp)
+    app.register_blueprint(tags_api_bp)
+    app.register_blueprint(reviews_bp)
 
     # Rutas mínimas
     @app.route("/")
