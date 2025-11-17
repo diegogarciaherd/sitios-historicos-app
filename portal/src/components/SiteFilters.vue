@@ -17,7 +17,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['clear', 'order-change'])
+const emit = defineEmits(['clear'])
 
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
@@ -28,9 +28,19 @@ const availableTags = ref([])
 onMounted(async () => {
   const res = await getAllTags()
   availableTags.value = res.results || []
+  
+  // Después de cargar los tags, reconstruir los seleccionados desde props
+  if (props.appliedFilters.tags?.length > 0) {
+    selectedTags.value = props.appliedFilters.tags
+      .map(tagObj => {
+        // Si ya es un objeto con id, usarlo directamente
+        if (tagObj.id) return tagObj
+        // Si solo tiene name, buscar el objeto completo
+        return availableTags.value.find(t => t.name === tagObj.name)
+      })
+      .filter(Boolean)
+  }
 })
-
-const isUpdatingFromProps = ref(false)
 
 watch(() => props.appliedFilters, (newFilters) => {
   city.value = newFilters.city || ''
@@ -39,23 +49,20 @@ watch(() => props.appliedFilters, (newFilters) => {
   // reconstruir objetos completos desde nombres
   if (newFilters.tags?.length > 0) {
     selectedTags.value = newFilters.tags
-      .map(tagObj =>
-        availableTags.value.find(t => t.name === tagObj.name)
-      )
+      .map(tagObj => {
+        // Si ya es un objeto con id, usarlo directamente
+        if (tagObj.id) return tagObj
+        // Si solo tiene name, buscar el objeto completo
+        return availableTags.value.find(t => t.name === tagObj.name)
+      })
       .filter(Boolean)
   } else {
     selectedTags.value = []
   }
 
   // mantener orden
-  isUpdatingFromProps.value = true
   orderBy.value = newFilters.order_by || ""
-  nextTick(() => (isUpdatingFromProps.value = false))
 }, { deep: true })
-
-watch(orderBy, (newOrder) => {
-  if (!isUpdatingFromProps.value) emit('order-change', newOrder)
-})
 
 function getFilters() {
   return {
@@ -147,11 +154,8 @@ defineExpose({
             v-if="availableTags.length > 0"
             :tags="availableTags"
             :selected-tags="selectedTags"
-            @update:selected-tags="(tags) => {
-            selectedTags = tags
-            emit('tags-change', tags)
-          }"
-/>
+            @update:selected-tags="selectedTags = $event"
+          />
           <p v-else class="text-sm text-gray-500">Cargando tags...</p>
         </div>
 
