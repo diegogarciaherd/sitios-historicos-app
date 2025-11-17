@@ -3,13 +3,15 @@ import { ref, watch, onMounted } from 'vue'
 import TagFilter from './TagFilter.vue'
 import { getAllTags } from '@/api/tags'
 import ProvinceSelect from './ProvinceSelect.vue'
+import OrderSelector from './OrderSelector.vue'
 const props = defineProps({
   appliedFilters: {
     type: Object,
     default: () => ({
       city: '',
       province: '',
-      tags: []
+      tags: [],
+      order_by: "",
     })
   }
 })
@@ -20,6 +22,7 @@ const isOpen = ref(false)
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
 const selectedTags = ref(props.appliedFilters.tags || [])
+const orderBy = ref(props.appliedFilters.order_by || "")
 const availableTags = ref([])
 
 // Cargar tags disponibles
@@ -31,35 +34,33 @@ onMounted(async () => {
 watch(() => props.appliedFilters, (newFilters) => {
   city.value = newFilters.city || ''
   province.value = newFilters.province || ''
-  // Convertir tags desde URL (objetos con name) a objetos con id si están disponibles
+
+  orderBy.value = newFilters.order_by || ""
+
   if (newFilters.tags && newFilters.tags.length > 0) {
     selectedTags.value = newFilters.tags.map(tag => {
-      if (typeof tag === 'string') {
-        // Buscar tag por nombre en availableTags
-        const found = availableTags.value.find(t => t.name === tag)
-        return found || { name: tag }
-      }
-      // Si ya es un objeto, buscar por nombre para obtener el id
-      const found = availableTags.value.find(t => t.name === tag.name)
-      return found || tag
+      const found = availableTags.value.find(t => t.name === tag)
+      return found || { name: tag }
     })
-    
   } else {
     selectedTags.value = []
   }
 }, { deep: true })
+
 
 // Obtener filtros actuales sin emitir
 function getFilters() {
   const filters = {}
   if (city.value) filters.city = city.value
   if (province.value) filters.province = province.value
-  if (selectedTags.value && selectedTags.value.length > 0) {
-    // Mantener tags como objetos para el estado, pero convertir a nombres para el backend
-    filters.tags = selectedTags.value.map(tag => 
+  if (orderBy.value) filters.order_by = orderBy.value
+
+  if (selectedTags.value.length > 0) {
+    filters.tags = selectedTags.value.map(tag =>
       typeof tag === 'string' ? tag : tag.name
     )
   }
+
   return { ...filters, tagsObjects: selectedTags.value }
 }
 
@@ -132,6 +133,9 @@ defineExpose({
           <ProvinceSelect 
           v-model="province" />
         </div>
+
+        <OrderSelector v-model="orderBy" />
+
 
         <!-- Filtro de Tags -->
         <div>

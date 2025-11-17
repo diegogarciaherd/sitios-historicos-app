@@ -19,8 +19,10 @@ def check_filters(filters: dict):
         Errores si se produjeron.
     """
     errors = {}
+    valid_orders = {"rating-5-1", "rating-1-5", "latest", "oldest"}
+
     if "order_by" in filters and filters["order_by"]:
-        if filters["order_by"] != "rating-5-1" or "rating-1-5" or "latest" or "oldest":
+        if filters["order_by"] not in valid_orders:
             errors["order_by"] = "Criterio de orden invalido."
     if "lat" in filters and filters["lat"]:
         try:
