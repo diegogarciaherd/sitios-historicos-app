@@ -15,6 +15,7 @@ from web.config import config
 from core.services.auth_service import check_flags
 from core.models.feature_flags import FeatureFlag
 from core.seeds_roles import run as seed_roles_run
+from web import helpers
 
 # Auth helpers (roles/permisos)
 from core.services.auth_roles import load_user, inject_template_helpers
@@ -58,6 +59,9 @@ def create_app(env="development", static_folder="../../static"):
     app.register_error_handler(404, error.not_found)
     app.register_error_handler(401, error.unauthorized)
     app.register_error_handler(500, error.server_error)
+
+    # Registramos un helper para obtener la URL de una imagen
+    app.jinja_env.globals["image_url"] = helpers.image_url
 
     # Comandos
     @app.cli.command("reset-db")

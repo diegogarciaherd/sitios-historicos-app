@@ -35,7 +35,7 @@ from core.services.site_history import log_site_change, diff_site, diff_tags
 from flask import current_app
 from os import fstat
 import uuid
-from core.models.site_images import create_site_image
+from core.models.site_images import create_site_image, get_images_by_site
 
 
 sites_bp = Blueprint(
@@ -190,6 +190,7 @@ def edit_site(id):
 
     all_tags = tags.get_all_tags()
     selected_tag_ids = [str(tag.id) for tag in site.tags]
+    site_images = get_images_by_site(site.id)
 
     if request.method == "POST":
         # --- SNAPSHOT ANTES (desvinculado para que el diff vea cambios reales) ---
@@ -234,7 +235,11 @@ def edit_site(id):
         return redirect(url_for("sites.list_all_sites"))
 
     return render_template(
-        "form.html", site=site, tags=all_tags, selected_tag_ids=selected_tag_ids
+        "form.html",
+        site=site,
+        tags=all_tags,
+        selected_tag_ids=selected_tag_ids,
+        site_images=site_images,
     )
 
 
@@ -269,8 +274,14 @@ def view_site(id):
     site = get_site(id)
     site_lat = site.lat
     site_lng = site.lng
+
+    site_images = get_images_by_site(site.id)
     return render_template(
-        "show_site.html", site=site, site_lat=site_lat, site_lng=site_lng
+        "show_site.html",
+        site=site,
+        site_lat=site_lat,
+        site_lng=site_lng,
+        site_images=site_images,
     )
 
 
@@ -498,5 +509,5 @@ def upload_images(req, site_id):
                 # Para acceder a una imagen despues, se crea la url:
                 # protocol = "https" if current_app.config.get("MINIO_SECURE") else "http"
                 # print(
-                #    f"{protocol}://{current_app.config.get("MINIO_SERVER")}/{current_app.config.get("MINIO_BUCKET")}/{object_name}"
+                #    f""
                 # )
