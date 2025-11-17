@@ -299,6 +299,10 @@ def apply_filters(query, filters):
                 query = query.order_by(SitioHistorico.fechaRegistro.asc())
             case "oldest":
                 query = query.order_by(SitioHistorico.fechaRegistro.desc())
+            case "name-asc":
+                query = query.order_by(SitioHistorico.nombre.asc())
+            case "name-desc":
+                query = query.order_by(SitioHistorico.nombre.desc())
 
     if "lat" in filters and filters["lat"]:
         query = query.filter(lat=filters["lat"])

@@ -17,17 +17,19 @@ export function useSiteSearch() {
     ? String(query.tags).split(',').map(name => ({ name: name.trim() })).filter(t => t.name)
     : []
   const initialPage = query.page ? Number(query.page) : 1
+  const initialOrderBy = query.order_by ? String(query.order_by) : ''
 
   // Estado de búsqueda y filtros aplicados
   const searchTerm = ref(initialSearch)
   const searchBarRef = ref(null)
   const siteFiltersRef = ref(null)
   const page = ref(initialPage)
+  const orderBy = ref(initialOrderBy)
   const appliedFilters = ref({
     city: initialCity,
     province: initialProvince,
     tags: initialTags,
-
+    order_by: initialOrderBy
   })
 
   // Sincronizar estado con URL (solo valores no vacíos)
@@ -50,6 +52,10 @@ export function useSiteSearch() {
         .join(',')
     }
     
+    if (orderBy.value) {
+      query.order_by = orderBy.value
+    }
+    
     if (page.value && page.value >= 1) {
       query.page = page.value
     }
@@ -66,6 +72,9 @@ export function useSiteSearch() {
     const combined = { ...appliedFilters.value }
     if (searchTerm.value) {
       combined.search = searchTerm.value
+    }
+    if (orderBy.value) {
+      combined.order_by = orderBy.value
     }
     // Convertir tags a array de nombres para el backend
     if (combined.tags && Array.isArray(combined.tags) && combined.tags.length > 0) {
@@ -94,7 +103,12 @@ export function useSiteSearch() {
     appliedFilters.value = {
       city: currentFilters.city || '',
       province: currentFilters.province || '',
-      tags: currentFilters.tagsObjects || []
+      tags: currentFilters.tagsObjects || [],
+      order_by: currentFilters.order_by || ''
+    }
+    // Sincronizar orderBy del composable con el de los filtros
+    if (currentFilters.order_by) {
+      orderBy.value = currentFilters.order_by
     }
   }
 
@@ -107,12 +121,14 @@ export function useSiteSearch() {
 
   function handleClear() {
     searchTerm.value = ''
+    orderBy.value = ''
     searchBarRef.value?.clear()
     siteFiltersRef.value?.clear()
     appliedFilters.value = {
       city: '',
       province: '',
-      tags: []
+      tags: [],
+      order_by: ''
     }
     syncToUrl()
     
@@ -132,6 +148,7 @@ export function useSiteSearch() {
 
       ? String(newQuery.tags).split(',').map(name => ({ name: name.trim() })).filter(t => t.name)
       : []
+    const newOrderBy = newQuery.order_by ? String(newQuery.order_by) : ''
 
     if (newSearch !== searchTerm.value) {
       searchTerm.value = newSearch
@@ -141,6 +158,10 @@ export function useSiteSearch() {
     }
     if (newProvince !== appliedFilters.value.province) {
       appliedFilters.value.province = newProvince
+    }
+    if (newOrderBy !== orderBy.value) {
+      orderBy.value = newOrderBy
+      appliedFilters.value.order_by = newOrderBy
     }
 
     const newPage = newQuery.page ? Number(newQuery.page) : 1
@@ -155,15 +176,24 @@ export function useSiteSearch() {
     }
   }, { deep: true })
 
+  // Handler para cambio de orden
+  function handleOrderChange(newOrder) {
+    orderBy.value = newOrder
+    page.value = 1  // Resetear a la primera página
+    syncToUrl()
+  }
+
   return {
     page,
     searchTerm,
+    orderBy,
     searchBarRef,
     siteFiltersRef,
     appliedFilters,
     combinedFilters,
     handleSearch,
     handleClear,
-    handlePageChange
+    handlePageChange,
+    handleOrderChange
   }
 }

@@ -19,7 +19,7 @@ def check_filters(filters: dict):
         Errores si se produjeron.
     """
     errors = {}
-    valid_orders = {"rating-5-1", "rating-1-5", "latest", "oldest"}
+    valid_orders = {"rating-5-1", "rating-1-5", "latest", "oldest", "name-asc", "name-desc"}
 
     if "order_by" in filters and filters["order_by"]:
         if filters["order_by"] not in valid_orders:

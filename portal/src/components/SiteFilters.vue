@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import TagFilter from './TagFilter.vue'
 import { getAllTags } from '@/api/tags'
 import ProvinceSelect from './ProvinceSelect.vue'
@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['clear'])
+const emit = defineEmits(['clear', 'order-change'])
 
 const isOpen = ref(false)
 const city = ref(props.appliedFilters.city || '')
@@ -30,12 +30,23 @@ onMounted(async () => {
   availableTags.value = await getAllTags()
 })
 
+// Flag para evitar emitir cuando el cambio viene de props
+const isUpdatingFromProps = ref(false)
+
 // Sincronizar con props aplicados (para reflejar valores de URL)
 watch(() => props.appliedFilters, (newFilters) => {
   city.value = newFilters.city || ''
   province.value = newFilters.province || ''
 
-  orderBy.value = newFilters.order_by || ""
+  const newOrderBy = newFilters.order_by || ""
+  if (newOrderBy !== orderBy.value) {
+    isUpdatingFromProps.value = true
+    orderBy.value = newOrderBy
+    // Resetear el flag después de un tick para evitar emitir cuando viene de props
+    nextTick(() => {
+      isUpdatingFromProps.value = false
+    })
+  }
 
   if (newFilters.tags && newFilters.tags.length > 0) {
     selectedTags.value = newFilters.tags.map(tag => {
@@ -46,6 +57,14 @@ watch(() => props.appliedFilters, (newFilters) => {
     selectedTags.value = []
   }
 }, { deep: true })
+
+// Watch para detectar cambios en orderBy y emitir evento (solo si viene del usuario)
+watch(orderBy, (newOrder) => {
+  // Solo emitir si el cambio no viene de la sincronización de props
+  if (!isUpdatingFromProps.value) {
+    emit('order-change', newOrder)
+  }
+})
 
 
 // Obtener filtros actuales sin emitir
@@ -67,6 +86,7 @@ function getFilters() {
 function clearFilters() {
   city.value = ''
   province.value = ''
+  orderBy.value = ''
   selectedTags.value = []
   emit('clear')
   if (window.innerWidth < 768) {
