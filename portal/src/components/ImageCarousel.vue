@@ -1,8 +1,10 @@
 <script setup>
+// Este componente es el carrusel que aparece en la página principal, de las provincias y su sitio histórico.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SiteCard from './SiteCard.vue'
 import { RouterLink } from 'vue-router'
 
+// Algunos de estos props son para configurar el carrusel, traen algunos valores por defecto.
 const props = defineProps({
   images: {
     type: Array,
@@ -19,10 +21,13 @@ const props = defineProps({
 
 const emit = defineEmits(['change'])
 
+// Índice de la slide actualmente activa
 const current = ref(0)
+// Hovering define si se pone el mouse encima del carrusel (para pausar autoplay si está activado)
 const hovering = ref(false)
 let timerId = null
 
+// Estos cálculos usan computed, que vuelve a ejecutar la función que se le pasa como parámetro cuando alguno de los valores reactivos que usa cambia.
 const count = computed(() => props.images?.length || 0)
 const canNavigate = computed(() => count.value > 1)
 const nextIndex = computed(() => clampIndex(current.value + 1))
@@ -36,12 +41,14 @@ const visibleIndices = computed(() => {
   return [current.value, nextIndex.value, next2Index.value]
 })
 
+// Esta función asegura que el índice esté dentro del rango válido, considerando si el carrusel debe hacer loop o no. Es un poco más complicada de lo que es necesario pero funciona bien.
 function clampIndex(i) {
   if (count.value === 0) return 0
   if (props.loop) return (i + count.value) % count.value
   return Math.min(Math.max(i, 0), count.value - 1)
 }
 
+// Esta función cambia a la slide indicada por índice. Se usa cuando se cliquea una de las cards, o uno de los dots del costado.
 function goTo(i) {
   const next = clampIndex(i)
   if (next !== current.value) {
@@ -50,6 +57,7 @@ function goTo(i) {
   }
 }
 
+// Estas son para avanzar y retroceder.
 function next() {
   goTo(current.value + 1)
 }
@@ -57,6 +65,7 @@ function prev() {
   goTo(current.value - 1)
 }
 
+// Esta función inicia el autoplay, si está activado. Definimos que si el tiempo alcanza el intervalo, se avanza a la siguiente slide.
 function startAutoplay() {
   stopAutoplay()
   if (!props.autoplay || !canNavigate.value) return
@@ -98,7 +107,9 @@ function onTouchEnd(e) {
     dx < 0 ? next() : prev()
   }
 }
+// Hasta acá el soporte touch
 
+// Navegación por teclado
 function onKeydown(e) {
   if (!canNavigate.value) return
   if (e.key === 'ArrowRight') {
@@ -111,6 +122,7 @@ function onKeydown(e) {
   }
 }
 
+// Vuelvo a iniciar el autoplay si cambian estas propiedades o el conteo de imágenes.
 watch(() => props.autoplay, startAutoplay)
 watch(() => props.interval, startAutoplay)
 watch(count, startAutoplay)
@@ -137,6 +149,7 @@ onBeforeUnmount(() => {
   >
     <div class="viewport">
       <div class="slides" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
+        <!-- v-for crea un div con los contenidos indicados como si fuera un foreach. -->
         <div
           v-for="(img, i) in images"
           :key="i"
@@ -146,6 +159,7 @@ onBeforeUnmount(() => {
           :aria-roledescription="'slide'"
           :aria-label="`${i + 1} de ${count}`"
         >
+          <!-- Esta parte es la de la imagen de fondo -->
           <a v-if="img.href" class="media" :href="img.href" draggable="false">
             <img :src="img.src" :alt="img.alt || ''" draggable="false" />
           </a>
@@ -170,6 +184,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <!-- Cuando no se le pasan los slides, solo muestra el mensaje. -->
         <div v-if="count === 0" class="slide placeholder active" aria-hidden="true">
           <div class="media">
             <div class="empty">Sin imágenes</div>
@@ -178,6 +193,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Esta parte es la de las cards de las provincias. Por suerte se ve más simple que la de las slides -->
     <div v-if="visibleIndices.length" class="sitecards" aria-hidden="false">
       <div
         v-for="(idx, pos) in visibleIndices"
@@ -189,6 +205,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Esta parte es la de las flechas para navegar entre slides -->
     <div v-if="showArrows && canNavigate" class="nav-under">
       <button class="nav prev text-2xl" type="button" aria-label="Anterior" @click="prev">‹</button>
       <button class="nav next text-2xl" type="button" aria-label="Siguiente" @click="next">
@@ -196,6 +213,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
+    <!-- Esta parte es la de los indicadores de las slides. O sea, los dots que hay al costado -->
     <div
       v-if="showIndicators && canNavigate"
       class="indicators"
@@ -230,7 +248,7 @@ onBeforeUnmount(() => {
   height: 100vh;
   background: #0f172a08;
   outline: none;
-  overflow: hidden; /* oculta desborde horizontal de sitecards para evitar scrollbar */
+  overflow: hidden;
 }
 .carousel:focus-visible {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.6);
@@ -245,7 +263,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   z-index: 30; /* por encima de las slides/caption */
-  width: 2.25rem; /* ancho suficiente para el dot con número */
+  width: 2.25rem;
 }
 .dot-wrap {
   display: flex;
@@ -357,8 +375,6 @@ onBeforeUnmount(() => {
   transform: scale(0.96);
 }
 
-/* (El bloque antiguo de indicadores se eliminó para evitar conflictos) */
-
 /* Placeholder */
 .placeholder .empty {
   color: #94a3b8;
@@ -371,7 +387,7 @@ onBeforeUnmount(() => {
   top: 50%;
   left: 70%;
   transform: translateY(-50%);
-  z-index: 25; /* debajo de flechas/indicadores, encima de imagen */
+  z-index: 25;
   pointer-events: auto; /* permitir interacción con cards */
 }
 .card {
@@ -405,7 +421,6 @@ onBeforeUnmount(() => {
   z-index: 1;
 }
 
-/* Smaller screens adjust aspect ratio */
 @media (max-width: 1024px) {
   .card {
     right: -100px;
@@ -438,7 +453,7 @@ onBeforeUnmount(() => {
   position: absolute;
   top: 75%;
   left: 55%;
-  transform: translate(-50%, 220%); /* más abajo de las cards */
+  transform: translate(-50%, 220%);
   display: flex;
   gap: 0.5rem;
   z-index: 30;

@@ -1,9 +1,13 @@
 <script setup>
+// Este componente corresponde a la sección de sitios destacados que está abajo en la página principal.
+
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
 import { onBeforeMount, reactive, ref } from 'vue'
 import { getSites } from '@/api/sites'
 
+// featuredSites son todos los sitios que agarro y luego distribuyo en los disintos carruseles.
+// Más adelante, cada sección debería tener su propia llamada a la API para traer los sitios correspondientes.
 const featuredSites = ref([])
 const carouselOptions = reactive([])
 const selectedCarousel = ref()

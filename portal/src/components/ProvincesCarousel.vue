@@ -1,6 +1,8 @@
 <script setup>
+// Este componente sirve para crear la instancia de ImageCarousel con las imágenes y datos de las provincias, las imágenes no van a ser necesarias más adelante.
+
 import ImageCarousel from './ImageCarousel.vue'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive } from 'vue'
 import { getSites } from '@/api/sites'
 
 const slides = reactive([])
@@ -11,6 +13,7 @@ const sitioMendoza = reactive({})
 const sitioTucuman = reactive({})
 
 async function fetchSitios() {
+  // Obtengo el primer sitio de la provincia y le agrego una imagen.
   sitioBuenosAires.value = await getSites({ province: 'Buenos Aires' })
   sitioBuenosAires.value = sitioBuenosAires.value[0]
   sitioBuenosAires.value.image =
@@ -34,6 +37,7 @@ async function fetchSitios() {
 
   slides.value = [
     {
+      // Esta imagen es la que aparece de fondo
       src: 'https://www.argentina.gob.ar/sites/default/files/caba-puerto-madero.jpg',
       alt: 'Paisaje 1',
       caption: { title: 'Buenos Aires', subtitle: 'Argentina' },
