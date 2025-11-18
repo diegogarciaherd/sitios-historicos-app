@@ -126,57 +126,99 @@ def get_image_cover_by_site(site_id: int) -> SiteImages | None:
     )
 
 
-def validate_site_images_data(request, site_id: int) -> dict:
+def generate_data_for_update(request, site_id) -> list:
+    """Genera una lista de diccionarios con los datos actualizados de las imágenes asociadas a un sitio histórico.
+
+    Keyword arguments:
+    request -- objeto de la solicitud que contiene los datos del formulario.
+    site_id -- ID del sitio histórico.
+    Return: lista de diccionarios con los datos actualizados de las imágenes.
+    """
+
+    data_for_update = []
+    existing_images = get_images_by_site(site_id)
+
+    if len(existing_images) > 0:
+        for img in existing_images:
+            data_for_update.append(
+                {
+                    "id": img.id,
+                    "alt_text": request.form.get(f"alt-text-{img.object_name}", ""),
+                    "description": request.form.get(
+                        f"description-{img.object_name}", ""
+                    ),
+                    "order": request.form.get(f"order-{img.object_name}", 0),
+                    "is_cover": (
+                        request.form.get(f"is-cover-{img.object_name}", "off") == "on"
+                    ),
+                }
+            )
+
+    return data_for_update
+
+
+def generate_data_for_create(request, site_id) -> list:
+    """Genera una lista de diccionarios con los datos de las nuevas imágenes a crear asociadas a un sitio histórico.
+
+    Keyword arguments:
+    request -- objeto de la solicitud que contiene los datos del formulario.
+    site_id -- ID del sitio histórico.
+    Return: lista de diccionarios con los datos de las nuevas imágenes a crear.
+    """
+
+    data_for_create = []
+
+    new_images = request.files.getlist("images")
+    if new_images and len(new_images) > 0 and new_images[0].filename != "":
+        for img in new_images:
+            data_for_create.append(
+                {
+                    "object_name": f"public/sites/{site_id}/{uuid.uuid4()}{img.filename}",
+                    "data": img,
+                    "length": fstat(img.fileno()).st_size,
+                    "content_type": img.content_type,
+                    "alt_text": request.form.get(f"alt-text-{img.filename}", ""),
+                    "description": request.form.get(f"description-{img.filename}", ""),
+                    "order": request.form.get(f"order-{img.filename}", 0),
+                    "is_cover": request.form.get(f"is-cover-{img.filename}", "off")
+                    == "on",
+                }
+            )
+
+    return data_for_create
+
+
+def validate_site_images_data(request, site_id) -> list:
     """Verifica que los datos de las imagenes a subir cumplan con las restricciones establecidas.
 
     Args:
         request: Objeto de la solicitud que contiene los datos de las imágenes.
-        site_id (int): ID del sitio histórico.
+        site_id: ID del sitio histórico, puede ser None si es un nuevo sitio.
 
     Returns:
-        dict: Diccionario con:
-            - erros: Los errores encontrados durante la validación (vacío si no hay errores),
-            - update_data: Los datos de las imágenes existentes a actualizar,
-            - create_data: Los datos de las nuevas imágenes a crear.
-
+        list: Lista de errores encontrados durante la validación.
     """
 
     errors = []
     model_data_to_validate = []  # Para validar los datos de la tabla
     new_data_to_validate = []  # Para validar los datos de minio
-    images_to_update = []  # Para actualizar las imagenes existentes
-    images_to_create = []  # Para crear las nuevas imagenes
 
     # Verificamos si el sitio tiene imagenes guardadas
-    existing_images = get_images_by_site(site_id)
+    existing_images = []
+    if site_id is not None:
+        existing_images = get_images_by_site(site_id)
 
     # Si el sitio tiene imagenes guardadas, agregamos los inputs de las mismas al model_data_to_validate
-    if existing_images:
+    if len(existing_images) > 0:
         for img in existing_images:
-            temp_order = request.form.get(f"order-{img.object_name}", 0)
-            temp_is_cover = (
-                request.form.get(f"is-cover-{img.object_name}", "off") == "on"
-            )
-            temp_alt_text = request.form.get(f"alt-text-{img.object_name}", "")
-
             model_data_to_validate.append(
                 {
                     "image": img.object_name,
-                    "order": temp_order,
-                    "is_cover": temp_is_cover,
-                    "alt_text": temp_alt_text,
-                }
-            )
-
-            images_to_update.append(
-                {
-                    "id": img.id,
-                    "alt_text": temp_alt_text,
-                    "description": request.form.get(
-                        f"description-{img.object_name}", ""
+                    "order": request.form.get(f"order-{img.object_name}", 0),
+                    "is_cover": (
+                        request.form.get(f"is-cover-{img.object_name}", "off") == "on"
                     ),
-                    "order": temp_order,
-                    "is_cover": temp_is_cover,
+                    "alt_text": request.form.get(f"alt-text-{img.object_name}", ""),
                 }
             )
 
@@ -186,17 +228,13 @@ def validate_site_images_data(request, site_id: int) -> dict:
     # Si hay nuevas imágenes, agregamos sus datos al model_data_to_validate y new_data_to_validate
     if new_images and len(new_images) > 0 and new_images[0].filename != "":
         for img in new_images:
-            temp_order = request.form.get(f"order-{img.filename}", 0)
-            temp_is_cover = request.form.get(f"is-cover-{img.filename}", "off") == "on"
-            temp_alt_text = request.form.get(f"alt-text-{img.filename}", "")
-            temp_size = fstat(img.fileno()).st_size
-
             model_data_to_validate.append(
                 {
                     "image": img.filename,
-                    "order": temp_order,
-                    "is_cover": temp_is_cover,
-                    "alt_text": temp_alt_text,
+                    "order": request.form.get(f"order-{img.filename}", 0),
+                    "is_cover": request.form.get(f"is-cover-{img.filename}", "off")
+                    == "on",
+                    "alt_text": request.form.get(f"alt-text-{img.filename}", ""),
                 }
             )
 
@@ -204,20 +242,7 @@ def validate_site_images_data(request, site_id: int) -> dict:
                 {
                     "image": img.filename,
                     "format": img.content_type,
-                    "size": temp_size,
-                }
-            )
-
-            images_to_create.append(
-                {
-                    "object_name": f"public/sites/{site_id}/{uuid.uuid4()}{img.filename}",
-                    "data": img,
-                    "length": temp_size,
-                    "content_type": img.content_type,
-                    "alt_text": temp_alt_text,
-                    "description": request.form.get(f"description-{img.filename}", ""),
-                    "order": temp_order,
-                    "is_cover": temp_is_cover,
+                    "size": fstat(img.fileno()).st_size,
                 }
             )
 
@@ -263,8 +288,4 @@ def validate_site_images_data(request, site_id: int) -> dict:
             if data["size"] > maxSize:
                 errors.append(f"Tamaño excedido para la imagen {data['image']}.")
 
-    return {
-        "errors": errors,
-        "update_data": images_to_update,
-        "create_data": images_to_create,
-    }
+    return errors

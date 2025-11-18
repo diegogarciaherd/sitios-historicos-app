@@ -38,6 +38,8 @@ from core.models.site_images import (
     get_image_cover_by_site,
     update_image_data,
     validate_site_images_data,
+    generate_data_for_update,
+    generate_data_for_create,
 )
 
 
@@ -142,12 +144,17 @@ def create_site():
 
         # Validar datos
         errors = validate_site_data(data)
+        imagesErrors = validate_site_images_data(request, None)
 
         # Si hay errores, mostrar el formulario con los errores
-        if errors:
+        if errors or imagesErrors:
             # Mostrar cada error individualmente
             for error in errors:
                 flash(error, "error")
+
+            for error in imagesErrors:
+                flash(error, "error")
+
             return render_template(
                 "form.html",
                 site=None,
@@ -159,6 +166,10 @@ def create_site():
         # SOLO crear el sitio si NO hay errores
         try:
             site = create_sites(**data)
+
+            images_data_create = generate_data_for_create(request, site.id)
+            for new_img_data in images_data_create:
+                create_site_image(site.id, **new_img_data)
 
             if tag_ids:
                 selected_tags = tags.get_tags_by_ids(tag_ids)
@@ -217,15 +228,15 @@ def edit_site(id):
         data.pop("tags[]", None)
 
         errors = validate_site_data(data)
-        images_validation_result = validate_site_images_data(request, id)
+        imagesErrors = validate_site_images_data(request, id)
 
         # Si hay errores, mostrar el formulario con los errores
-        if errors or images_validation_result["errors"]:
+        if errors or imagesErrors:
             # Mostrar cada error individualmente
             for error in errors:
                 flash(error, "error")
 
-            for error in images_validation_result["errors"]:
+            for error in imagesErrors:
                 flash(error, "error")
 
             return render_template(
@@ -239,10 +250,13 @@ def edit_site(id):
         # --- UPDATE CAMPOS ---
         update_site(id, **data)
 
-        for img_data in images_validation_result["update_data"]:
+        images_data_update = generate_data_for_update(request, site.id)
+        images_data_create = generate_data_for_create(request, site.id)
+
+        for img_data in images_data_update:
             update_image_data(img_data.pop("id"), **img_data)
 
-        for new_img_data in images_validation_result["create_data"]:
+        for new_img_data in images_data_create:
             create_site_image(site.id, **new_img_data)
 
         # --- TAGS ---
