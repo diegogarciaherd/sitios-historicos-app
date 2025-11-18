@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from core.models.sites import list_sites_with_filters
 from core.models.sites import create_sites, get_site
+from core.services.sites_services import get_sites_within_radius
 from flask_jwt_extended import jwt_required
 from core.models.tags import get_tags_by_ids, assign_tags
 from core.models.reviews import get_reviews_by_site_id, create_review, get_review_by_id
@@ -80,12 +81,13 @@ def validate_post_data(data: dict):
 
     return errors
 
+"""
 @sites_api_bp.get("")
 def get_sites_by_criteria():
-    """
+    ""x
     Busca los sitios historicos de acuerdo a los criterios especificados.
     Los criterios son recibidos en la URL.
-    """
+    ""c
     filters = request.args.to_dict()
     errors = check_filters(filters)
 
@@ -114,7 +116,7 @@ def get_sites_by_criteria():
             "message": "An unexpected error occurred."
             }
         }), 500
-
+"""
 @sites_api_bp.post("")
 @jwt_required()
 def create_site():
@@ -444,8 +446,8 @@ def convert_and_validate_filters(filters: dict):
             errors["per_page"] = "No es un numero."
     return errors
 
-@sites_api_bp.get("/fix")
-def get_sites_by_criteria_fixed():
+@sites_api_bp.get("")
+def get_sites_by_criteria():
     """
     Busca los sitios historicos de acuerdo a los criterios especificados.
     Versión que usa convert_and_validate_filters para manejar tipos correctamente.
@@ -502,3 +504,15 @@ def get_sites_by_criteria_fixed():
             "message": "An unexpected error occurred."
             }
         }), 500
+    
+@sites_api_bp.get("/nearby")
+def get_sites_nearby():
+    try:
+        lat = float(request.args.get("lat"))
+        lng = float(request.args.get("lng"))
+        radius = float(request.args.get("radius"))
+    except:
+        return jsonify({"error": "lat, lng y radius deben ser números"}), 400
+
+    sites = get_sites_within_radius(lat, lng, radius)
+    return jsonify([s.to_dict() for s in sites])

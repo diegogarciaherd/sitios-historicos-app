@@ -221,3 +221,12 @@ scripts-postgres/
 
 .vscode/settings.json
 
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+admin/.dockerignore
+portal/.dockerignore
+admin/.dockerfile 
+portal/.dockerfile 
+
