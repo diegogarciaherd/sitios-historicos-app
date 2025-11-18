@@ -41,7 +41,7 @@ const {
               @clear="handleClear"
             />
 
-            <MapSelector />
+            <MapSelector @nearby-sites="sites = $event" />
           </aside>
 
           <!-- Derecha: SearchBar + Grid -->

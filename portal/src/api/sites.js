@@ -47,4 +47,19 @@ async function getSites(filters = {}) {
   }
 }
 
-export { getSites }
+async function getSitesNearby({ lat, lng, radius }) {
+  return api.get("/sites/nearby", {
+    params: {
+      lat,
+      lng,
+      radius
+    },
+    paramsSerializer: params =>
+      new URLSearchParams(params).toString()
+  })
+}
+
+export { getSites, getSitesNearby }
+
+
+

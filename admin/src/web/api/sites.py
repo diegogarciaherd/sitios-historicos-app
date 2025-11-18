@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from core.models.sites import list_sites_with_filters
 from core.models.sites import create_sites, get_site
+from core.services.sites_services import get_sites_within_radius
 from flask_jwt_extended import jwt_required
 from core.models.tags import get_tags_by_ids, assign_tags
 from core.models.reviews import get_reviews_by_site_id, create_review, get_review_by_id
@@ -503,3 +504,15 @@ def get_sites_by_criteria():
             "message": "An unexpected error occurred."
             }
         }), 500
+    
+@sites_api_bp.get("/nearby")
+def get_sites_nearby():
+    try:
+        lat = float(request.args.get("lat"))
+        lng = float(request.args.get("lng"))
+        radius = float(request.args.get("radius"))
+    except:
+        return jsonify({"error": "lat, lng y radius deben ser números"}), 400
+
+    sites = get_sites_within_radius(lat, lng, radius)
+    return jsonify([s.to_dict() for s in sites])
