@@ -86,13 +86,10 @@ def get_images_by_site(site_id: int) -> list[SiteImages]:
 
 def update_image_data(site_image_id: int, **kwargs):
     """Actualiza los datos de una imagen en la base de datos."""
-    print("Comenando update...")
 
     image = db.session.query(SiteImages).get(site_image_id)
     if not image:
         raise ValueError(f"Imagen con ID {site_image_id} no encontrada.")
-
-    print("Paramtros a actualizar:", kwargs)
 
     for key, value in kwargs.items():
         if hasattr(image, key):
@@ -143,7 +140,6 @@ def validate_site_images_data(request, site_id: int) -> dict:
             - create_data: Los datos de las nuevas imágenes a crear.
 
     """
-    print("Validando datos...")
 
     errors = []
     model_data_to_validate = []  # Para validar los datos de la tabla
@@ -227,44 +223,45 @@ def validate_site_images_data(request, site_id: int) -> dict:
 
     # Realizamos las validaciones necesarias en model_data_to_validate y new_data_to_validate
 
-    # Validacion 1: Un sitio histórico puede tener un máximo de 10 imágenes.
-    total_images = len(existing_images) + len(new_data_to_validate)
-    if total_images > 10:
-        errors.append("Se excede el límite máximo de 10 imágenes por sitio.")
+    if len(model_data_to_validate) > 0:
+        # Validacion 1: Un sitio histórico puede tener un máximo de 10 imágenes.
+        total_images = len(existing_images) + len(new_data_to_validate)
+        if total_images > 10:
+            errors.append("Se excede el límite máximo de 10 imágenes por sitio.")
 
-    # Validacion 2: El campo 'alt_text' no puede estar vacío.
-    for data in model_data_to_validate:
-        if not data["alt_text"] or data["alt_text"].strip() == "":
-            errors.append(
-                "El campo 'Titulo/Alt' no puede estar vacío en la imagen: "
-                + data["image"]
-            )
+        # Validacion 2: El campo 'alt_text' no puede estar vacío.
+        for data in model_data_to_validate:
+            if not data["alt_text"] or data["alt_text"].strip() == "":
+                errors.append(
+                    "El campo 'Titulo/Alt' no puede estar vacío en la imagen: "
+                    + data["image"]
+                )
 
-    # Validacion 3: Un sitio histórico sólo puede tener una imagen de portada.
-    covers = sum(1 for data in model_data_to_validate if data["is_cover"])
-    if covers > 1:
-        errors.append("Un sitio sólo puede tener una imagen de portada.")
-    elif covers == 0:
-        errors.append("Debe seleccionarse una imagen de portada.")
+        # Validacion 3: Un sitio histórico sólo puede tener una imagen de portada.
+        covers = sum(1 for data in model_data_to_validate if data["is_cover"])
+        if covers > 1:
+            errors.append("Un sitio sólo puede tener una imagen de portada.")
+        elif covers == 0:
+            errors.append("Debe seleccionarse una imagen de portada.")
 
-    # Validacion 4: Los numeros de orden deben ser únicos y consecutivos, sin saltos.
-    orders = [int(data["order"]) for data in model_data_to_validate]
-    orders.sort()
-    for i in range(len(orders)):
-        if orders[i] != i + 1:
-            errors.append(
-                "Los números de orden deben ser únicos y consecutivos, sin saltos."
-            )
-            break
+        # Validacion 4: Los numeros de orden deben ser únicos y consecutivos, sin saltos.
+        orders = [int(data["order"]) for data in model_data_to_validate]
+        orders.sort()
+        for i in range(len(orders)):
+            if orders[i] != i + 1:
+                errors.append(
+                    "Los números de orden deben ser únicos y consecutivos, sin saltos."
+                )
+                break
 
-    # Validacion 5 y 6: Formatos permitidos: JPG, PNG, WEBP y Tamaño máximo por archivo: 5 MB.
-    allowed_formats = ["image/jpg", "image/jpeg", "image/png", "image/webp"]
-    maxSize = 5 * 1024 * 1024  # 5 MB
-    for data in new_data_to_validate:
-        if data["format"].lower() not in allowed_formats:
-            errors.append(f"Formato no permitido para la imagen {data['image']}.")
-        if data["size"] > maxSize:
-            errors.append(f"Tamaño excedido para la imagen {data['image']}.")
+        # Validacion 5 y 6: Formatos permitidos: JPG, PNG, WEBP y Tamaño máximo por archivo: 5 MB.
+        allowed_formats = ["image/jpg", "image/jpeg", "image/png", "image/webp"]
+        maxSize = 5 * 1024 * 1024  # 5 MB
+        for data in new_data_to_validate:
+            if data["format"].lower() not in allowed_formats:
+                errors.append(f"Formato no permitido para la imagen {data['image']}.")
+            if data["size"] > maxSize:
+                errors.append(f"Tamaño excedido para la imagen {data['image']}.")
 
     return {
         "errors": errors,

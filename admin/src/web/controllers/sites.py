@@ -32,9 +32,6 @@ import csv
 from core.database import db
 from core.models.site_history import SiteChange
 from core.services.site_history import log_site_change, diff_site, diff_tags
-from flask import current_app
-from os import fstat
-import uuid
 from core.models.site_images import (
     create_site_image,
     get_images_by_site,
@@ -221,7 +218,6 @@ def edit_site(id):
 
         errors = validate_site_data(data)
         images_validation_result = validate_site_images_data(request, id)
-        print("Resultado validación imágenes:", images_validation_result)
 
         # Si hay errores, mostrar el formulario con los errores
         if errors or images_validation_result["errors"]:
@@ -236,11 +232,9 @@ def edit_site(id):
                 "form.html",
                 site=site,
                 tags=all_tags,
-                selected_tag_ids=tag_ids,
-                form_data=data,  # Mantener datos del formulario
+                selected_tag_ids=selected_tag_ids,
+                site_images=site_images,
             )
-
-        print("Actualizando campos..")
 
         # --- UPDATE CAMPOS ---
         update_site(id, **data)
