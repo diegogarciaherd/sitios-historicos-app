@@ -1,8 +1,20 @@
 # admin/src/web/controllers/reviews.py
 
 from __future__ import annotations
+
 from datetime import datetime
-from flask import Blueprint, request, render_template, redirect, url_for, flash, session, abort
+
+from flask import (
+    Blueprint,
+    request,
+    render_template,
+    redirect,
+    url_for,
+    flash,
+    session,
+    abort,
+)
+
 from core.database import db
 from core.services.auth_roles import require_permission
 from core.models.reviews import Review, ReviewStatus
@@ -13,13 +25,18 @@ reviews_bp = Blueprint(
     "reviews",
     __name__,
     url_prefix="/reseñas",
-    template_folder="../templates/reviews"
+    template_folder="../templates/reviews",
 )
+
 
 # --- Público / usuarios logueados: crear reseña (queda en PENDING)
 @reviews_bp.route("/nuevo/<int:site_id>", methods=["POST"])
+@require_permission("reviews.submit_public")
 def create_public(site_id: int):
-    """Crea una reseña para un sitio y la deja en estado PENDING."""
+    """
+    Crea una reseña para un sitio y la deja en estado PENDING.
+    Solo usuarios con permiso `reviews.submit_public`.
+    """
     site = get_site(site_id)
     if not site:
         abort(404)
