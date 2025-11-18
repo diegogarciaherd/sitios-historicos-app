@@ -289,15 +289,47 @@
 
         <!-- Input de imagenes -->
         <div>
+            <h3>Imagenes</h3>
+            {% if site_images %}
             <div>
-                <h3>Imagenes</h3>
-                <p>No hay imagenes disponibles.</p>
-            </div>
+                {% for image in site_images %}
+                <div class="image-preview">
+                    <img src="{{ image_url(image.object_name) }}" alt="{{ image.alt_text }}"/>
 
-            <!--  
-            Formatos permitidos: JPG, PNG, WEBP.
-            Tamaño máximo por archivo: 5 MB.
-            -->
+                    <div class="image-preview-inputs">
+                        <fieldset class="image-preview-input-container">
+                            <label for="alt-text-{{ image.object_name }}">Título/alt:</label>
+                            
+                            <input type="text" id="alt-text-{{ image.object_name }}" name="alt-text-{{ image.object_name }}" required value="{{image.alt_text}}"/>
+                            <p id="alt-text-{{ image.object_name }}-error"></p>
+                        </fieldset>
+
+                        <fieldset class="image-preview-input-container">
+                            <label for="description-{{ image.object_name }}">Descripción:</label>
+                            <input type="text" id="description-{{ image.object_name }}" name="description-{{ image.object_name }}" value="{{image.description}}"/>
+                            <p id="description-{{ image.object_name }}-error"></p>
+                        </fieldset>
+
+                        <fieldset>
+                            <label for="order-{{ image.object_name }}">Orden:</label>
+                            <input type="number" id="order-{{ image.object_name }}" name="order-{{ image.object_name }}" required value="{{ image.order}}" min="1" max="10"/>
+                            <p id="order-{{ image.object_name }}-error"></p>
+                        </fieldset>
+
+                        <fieldset>
+                            <label for="is-cover-{{ image.object_name }}">¿Es imagen de portada?</label>
+                            <input type="checkbox" id="is-cover-{{ image.object_name }}" name="is-cover-{{ image.object_name }}" {% if image.is_cover %}checked{% endif %}/>
+                        </fieldset>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>No hay imagenes disponibles.</p> 
+            {% endif %}
+
+
+            {% if site_images|length < 10 %}
             <div class="image-upload-container">
                 <div class="image-upload">
                     <label for="image-upload-input">Subir imágenes:</label>
@@ -318,6 +350,9 @@
 
                 <p class="error"></p>
             </div>
+            {% endif %}
+
+            <div id="images-errors-container"></div>
         </div>
 
         <div class="form-actions">
@@ -352,14 +387,14 @@
       document.getElementById('lat').value = lat;
       document.getElementById('lng').value = lng;
   });
+
     // Validación completa del formulario
     document.getElementById('siteForm').addEventListener('submit', function(e) {
         clearAllErrors();
+        clearImageErrors();
         let isValid = true;
 
         // Validar todos los campos obligatorios
-        // Las imagenes por defecto no son obligatorias, pero en el caso de que haya imagenes agregadas por subir:
-        // Se debe validar que cada imagen tenga sus campos obligatorios completos (alt, order y is-cover)
 
         const requiredFields = [
             { id: 'nombre', name: 'nombre del sitio' },
@@ -370,6 +405,7 @@
         ];
         
 
+        // Validaciones para la carga de imagenes
         const imageInput = document.getElementById('image-upload-input');
         if (imageInput.files.length > 0) {
             for (let i = 0; i < imageInput.files.length; i++) {
@@ -380,9 +416,6 @@
                     { id: `alt-text-${file.name}`, name: `texto alternativo de la imagen ${file.name}` },
                     { id: `order-${file.name}`, name: `orden de la imagen ${file.name}` }
                 ]);              
-                
-                
-                // Falta validar el campo de is-cover, pero primero debemos hacer todo el backend para manejar esa info.
             }
         }
 
@@ -425,9 +458,59 @@
         if (descBreveInput.value.trim() && descBreveInput.value.length > 255) {
             showError('descripcionBreve', 'La descripción breve no puede exceder 255 caracteres');
             isValid = false;
+        }       
+
+
+        // Realizamos las validaciones de imagenes sobre todas las imagenes que hay en el html (por subir y las ya existentes)
+        const imagePreviews = document.querySelectorAll('.image-preview');
+        let coverInputsChecked = 0;
+        let orderValues = [];
+
+        for (let preview of imagePreviews) {
+            const coverInput = preview.querySelector('input[type="checkbox"]');
+            if (coverInput.checked){
+                coverInputsChecked += 1;
+            }
+
+            const orderInput = preview.querySelector('input[type="number"]');
+            const orderValue = orderInput.value;
+            orderValues.push(orderValue);
+            let orderCount = 0;
+
+            imagePreviews.forEach(otherPreview => {
+                const otherOrderInput = otherPreview.querySelector('input[type="number"]');
+                if (otherOrderInput.value === orderValue){
+                    orderCount += 1;
+                }
+            })
+
+
+            if (orderCount > 1){
+                showImageError(`El orden ${orderValue} se encuentra repetido en otra imagen.`);
+                isValid = false;
+                break;
+            }
         }
 
-        if (!isValid) {
+        const orderValuesSorted = orderValues.sort((a,b) => a - b)
+        for (let i = 0; i < orderValuesSorted.length; i++) {
+            if (parseInt(orderValuesSorted[i]) !== i + 1){
+                showImageError(`El orden de las imágenes debe ser consecutivo sin saltos. Falta el orden ${i + 1}.`);
+                isValid = false;
+                break
+            }
+        }
+
+
+        if (coverInputsChecked === 0) {
+            showImageError('Debe haber al menos una imagen marcada como portada.');
+            isValid = false;
+        }else if (coverInputsChecked > 1){
+            showImageError('Solo puede haber una imagen marcada como portada.');
+            isValid = false;
+        }   
+
+        if (!isValid) { 
             e.preventDefault();
             // Scroll al primer error
             const firstError = document.querySelector('.error-message.active');
@@ -436,7 +519,7 @@
                 firstError.previousElementSibling.focus();
             }
         }
-
+                    
     });
 
     // Validación en tiempo real para mejor UX
@@ -579,6 +662,16 @@
         }
     });
 
+    function showImageError(message) {
+        const errorContainer = document.getElementById('images-errors-container');
+        errorContainer.innerHTML += `<p>Error: ${message}</p>`;
+    }
+
+    function clearImageErrors() {
+        const errorContainer = document.getElementById('images-errors-container');
+        errorContainer.innerHTML = '';
+    }
+
     /*
         Validaciones para la carga de imágenes
     */
@@ -592,9 +685,10 @@
         const allowedFormats = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp'];
         const maxSize = 5 * 1024 * 1024; // 5 MB
         const maxImages = 10; // Máximo de imágenes permitidas
+        const existingImagesCount = {{ site_images|length if site_images else 0 }};
 
-        if (files.length > maxImages) {
-            errorMsg.textContent = `Error: No se pueden subir más de ${maxImages} imágenes.`;
+        if (files.length + existingImagesCount > maxImages) {
+            errorMsg.textContent = `Error: El sitio no puede tener más de ${maxImages} imágenes.`;
             input.value = '';
             errorMsg.style.display = 'block';
             return;
@@ -617,7 +711,6 @@
                 return;
             }
         }
-        // Falta validar la cantidad maxima de imagenes por sitio.
 
         // En este punto, todas las validaciones sobre imagenes pasaron, así que procedemos a mostrar las vistas previas con sus inputs.
 
@@ -626,6 +719,8 @@
 
         for (let i = 0; i < files.length; i++) {
             const f = files[i];
+            const image_order = {{ site_images|length if site_images else 0 }} + i + 1;
+
             previewContainer.innerHTML += `
                 <div class="image-preview">
                     <img id="preview-${f.name}" src="${URL.createObjectURL(f)}" />
@@ -643,7 +738,7 @@
                         </fieldset>
                         <fieldset>
                             <label for="order-${f.name}">Orden:</label>
-                            <input type="number" id="order-${f.name}" name="order-${f.name}" required value="${i+1}" min="1" max="10"/>
+                            <input type="number" id="order-${f.name}" name="order-${f.name}" required value="${image_order}" min="1" max="10"/>
                             <p id="order-${f.name}-error"></p>
                         </fieldset>
                         <fieldset>
