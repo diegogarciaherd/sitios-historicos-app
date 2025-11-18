@@ -17,6 +17,7 @@ const {
   handleClear,
   handlePageChange
 } = useSiteSearch()
+ 
 </script>
 
 <template>
@@ -41,7 +42,7 @@ const {
               @clear="handleClear"
             />
 
-            <MapSelector @nearby-sites="sites = $event" />
+            <MapSelector />
           </aside>
 
           <!-- Derecha: SearchBar + Grid -->

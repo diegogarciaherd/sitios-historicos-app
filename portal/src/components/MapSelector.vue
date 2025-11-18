@@ -22,6 +22,14 @@
         >
           Limpiar
         </button>
+        <button
+          @click="searchByMap"
+          :disabled="!selectedLocation || searching"
+          class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+        >
+          <span v-if="!searching">Búsqueda por mapa</span>
+          <span v-else>Buscando...</span>
+        </button>
       </div>
     </div>
 
@@ -56,10 +64,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { LMap, LTileLayer, LMarker, LCircle } from "@vue-leaflet/vue-leaflet"
-import { getSitesNearby } from "@/api/sites.js"
 
 const emit = defineEmits(["nearby-sites"])
+const router = useRouter()
+const route = useRoute()
 
 // CONFIG
 const zoom = ref(14)
@@ -73,30 +83,38 @@ const radiusMeters = computed(() => radius.value * 1000)
 // Limpiar selección + reiniciar posición del mapa
 function clearSelection() {
   selectedLocation.value = null
-  emit("nearby-sites", []) // limpiar resultados en el padre
+  // Remove map-related query params so the app returns to normal filter mode
+  const newQuery = { ...route.query }
+  delete newQuery.lat
+  delete newQuery.lng
+  delete newQuery.radius
+  delete newQuery.page
+  router.replace({ query: Object.keys(newQuery).length > 0 ? newQuery : {} })
 }
 
-// Evento de click en el mapa
-async function onMapClick(e) {
+// Click en el mapa sólo selecciona la ubicación; la búsqueda se ejecuta con el botón
+function onMapClick(e) {
   const { lat, lng } = e.latlng
   selectedLocation.value = { lat, lng }
-
   console.log("📍 Usuario seleccionó:", lat, lng)
-
-  try {
-    const sites = await getSitesNearby({
-      lat, 
-      lng, 
-      radius: radius.value
-    })
-
-    console.log("📌 Sitios dentro del radio:", sites)
-
-    //  Enviar los sitios al componente padre
-    emit("nearby-sites", sites.data)
-
-  } catch (err) {
-    console.error("Error al obtener sitios cercanos:", err)
-  }
 }
+
+// Ejecuta la búsqueda por mapa (estricta) sólo cuando el usuario lo solicita
+async function searchByMap() {
+  if (!selectedLocation.value) return
+  // Build a strict query containing ONLY map params so the search is shareable
+  const { lat, lng } = selectedLocation.value
+  const q = {
+    lat: String(lat),
+    lng: String(lng),
+    radius: String(radius.value),
+    page: '1'
+  }
+
+  // Replace the route query with only the map filters (strict mode)
+  // This makes the URL shareable and signals other components to use map results only
+  router.replace({ query: q })
+}
+
+const searching = ref(false)
 </script>

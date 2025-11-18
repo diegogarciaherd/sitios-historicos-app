@@ -11,6 +11,9 @@ export function useSiteSearch() {
   const initialSearch = route.query.search ? String(route.query.search) : ''
   const initialCity = route.query.city ? String(route.query.city) : ''
   const initialProvince = route.query.province ? String(route.query.province) : ''
+  const initialLat = route.query.lat ? String(route.query.lat) : ''
+  const initialLng = route.query.lng ? String(route.query.lng) : ''
+  const initialRadius = route.query.radius ? String(route.query.radius) : ''
   const initialOrderBy = route.query.order_by ? String(route.query.order_by) : '' 
   const initialTags = route.query.tags 
     ? String(route.query.tags).split(',').map(name => ({ name: name.trim() })).filter(t => t.name)
@@ -24,7 +27,10 @@ export function useSiteSearch() {
     city: initialCity,
     province: initialProvince,
     tags: initialTags,
-    order_by: initialOrderBy  
+    order_by: initialOrderBy,
+    lat: initialLat,
+    lng: initialLng,
+    radius: initialRadius
   })
 
   function syncToUrl() {
@@ -55,6 +61,17 @@ export function useSiteSearch() {
     if (appliedFilters.value.order_by) { 
       query.order_by = appliedFilters.value.order_by
       console.log('🔍 [useSiteSearch] syncToUrl - order_by:', appliedFilters.value.order_by)
+    }
+
+    // Map search params (shareable)
+    if (appliedFilters.value.lat) {
+      query.lat = appliedFilters.value.lat
+    }
+    if (appliedFilters.value.lng) {
+      query.lng = appliedFilters.value.lng
+    }
+    if (appliedFilters.value.radius) {
+      query.radius = appliedFilters.value.radius
     }
   
   console.log('🔍 [useSiteSearch] syncToUrl - query completo:', query)
@@ -97,6 +114,17 @@ export function useSiteSearch() {
         delete combined[key]
       }
     })
+
+    // Si hay lat y lng, tratamos esto como una búsqueda estricta por mapa:
+    // devolvemos únicamente lat,lng,radius y page (no combinamos con otros filtros)
+    if (combined.lat && combined.lng) {
+      const mapOnly = {
+        lat: combined.lat,
+        lng: combined.lng,
+      }
+      if (combined.radius) mapOnly.radius = combined.radius
+      return { ...mapOnly, page: page.value }
+    }
     
     return combined
   })
@@ -153,6 +181,10 @@ export function useSiteSearch() {
       ? String(newQuery.tags).split(',').map(name => ({ name: name.trim() })).filter(t => t.name)
       : []
 
+    const newLat = newQuery.lat ? String(newQuery.lat) : ''
+    const newLng = newQuery.lng ? String(newQuery.lng) : ''
+    const newRadius = newQuery.radius ? String(newQuery.radius) : ''
+
     if (newSearch !== searchTerm.value) {
       searchTerm.value = newSearch
     }
@@ -175,6 +207,17 @@ export function useSiteSearch() {
     const newTagNames = newTags.map(t => t.name).sort()
     if (JSON.stringify(currentTagNames) !== JSON.stringify(newTagNames)) {
       appliedFilters.value.tags = newTags
+    }
+
+    // Actualizar filtros de mapa
+    if (newLat !== appliedFilters.value.lat) {
+      appliedFilters.value.lat = newLat
+    }
+    if (newLng !== appliedFilters.value.lng) {
+      appliedFilters.value.lng = newLng
+    }
+    if (newRadius !== appliedFilters.value.radius) {
+      appliedFilters.value.radius = newRadius
     }
   }, { deep: true })
 

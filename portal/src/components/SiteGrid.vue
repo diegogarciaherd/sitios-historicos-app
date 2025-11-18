@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { getSites } from '@/api/sites'
+import { getSites, getSitesNearby } from '@/api/sites'
 import DetailedSiteCard from './DetailedSiteCard.vue'
 
 const props = defineProps({
@@ -21,6 +21,24 @@ const loading = ref(false)
 async function fetchSites() {
   loading.value = true
   try {
+    // Si los filtros contienen lat y lng, hacemos una búsqueda estricta por mapa
+    if (props.siteFilters && props.siteFilters.lat && props.siteFilters.lng) {
+      try {
+        const resp = await getSitesNearby({
+          lat: props.siteFilters.lat,
+          lng: props.siteFilters.lng,
+          radius: props.siteFilters.radius || 5,
+        })
+        sites.value = resp.data || []
+        totalPages.value = 1
+        return
+      } catch (err) {
+        console.error('Error fetching nearby sites:', err)
+        sites.value = []
+        totalPages.value = 1
+        return
+      }
+    }
     const response = await getSites({
       page: props.page,
       per_page: perPage,
@@ -45,6 +63,7 @@ watch(
 )
 
 watch(() => props.page, fetchSites)
+
 
 function nextPage() {
   if (props.page < totalPages.value) {
