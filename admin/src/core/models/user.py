@@ -3,10 +3,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import db
 from core.services.bcrypt import bcrypt
 from core.database import Base
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, List
 from core.models.auth import UserRole, LogicallyDeletedUser
 from datetime import datetime
 from sqlalchemy import DateTime
+from core.models.favorites import Favorite
 
 if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
@@ -41,6 +42,12 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+
+    favorites: Mapped[List[Favorite]] = relationship(
+    "Favorite",
+    back_populates="user",
+    cascade="all, delete-orphan"
+    )   
 
     def __repr__(self):
         '''Representación en string del Usuario'''
@@ -207,3 +214,5 @@ def list_all_users() -> list[User]:
         u.deleted = u.id in deleted_ids
 
     return query
+
+

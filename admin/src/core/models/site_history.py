@@ -2,6 +2,8 @@
 from core.database import Base, db
 from sqlalchemy import Integer, String, Text, DateTime, Enum, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
+from core.models.favorites import Favorite
 
 #Creamos una tabla sites_history con un registro por cambio de campo. Guarda: sitio, usuario, acción, campo, valor anterior/nuevo y timestamp.
 
@@ -19,3 +21,10 @@ class SiteChange(Base):
 
     def __repr__(self):
         return f"<SiteChange {self.action} site={self.site_id} field={self.field}>"
+
+
+    favorites: Mapped[List[Favorite]] = relationship(
+    "Favorite",
+    back_populates="site",
+    cascade="all, delete-orphan"
+    )

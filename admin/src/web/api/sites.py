@@ -1,10 +1,14 @@
+# admin/src/core/web/api/sites.py
 from flask import Blueprint, jsonify, request
 from core.models.sites import list_sites_with_filters
 from core.models.sites import create_sites, get_site
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from core.models.tags import get_tags_by_ids, assign_tags
 from core.models.reviews import get_reviews_by_site_id, create_review, get_review_by_id
 from core.models.reviews import delete_review, ReviewStatus
+from core.services.favorite_service import toggle_favorite
+from core.models.favorites import Favorite
+from core.models.sites import SitioHistorico
 
 sites_api_bp = Blueprint("sites_api", __name__, url_prefix="/api/sites")
 
@@ -169,6 +173,41 @@ def get_site_by_id(id):
             "message": "An unexpected error occurred"
             }
         }), 500
+    
+
+# marcar / desmarcar favorito
+@api_bp.post("/sites/<int:site_id>/favorite")
+@jwt_required()
+def toggle_favorite_api(site_id):
+    user_id = get_jwt_identity()
+
+    exists = SitioHistorico.query.get(site_id)
+    if not exists:
+        return jsonify({"error": "Sitio no encontrado"}), 404
+
+    created = toggle_favorite(user_id, site_id)
+
+    return jsonify({
+        "favorite": created,
+        "site_id": site_id
+    }), 200
+
+
+# obtener favoritos de usuario
+@api_bp.get("/users/me/favorites")
+@jwt_required()
+def get_my_favorites():
+    user_id = get_jwt_identity()
+    favorites = Favorite.query.filter_by(user_id=user_id).all()
+
+    return jsonify([
+        {
+            "site_id": fav.site.id,
+            "site_name": fav.site.nombre,
+            "created_at": fav.created_at.isoformat()
+        }
+        for fav in favorites
+    ])
 
 # --- Reviews ---
 def check_pagination_params(params: dict):
