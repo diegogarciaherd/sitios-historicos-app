@@ -51,13 +51,6 @@ def create_site_image(
         is_cover (bool, optional): Indica si es la imagen de portada. Por defecto es False.
     """
 
-    # Validaciones:
-    # 1. Que el sitio exista
-    # 2. Que no exista otra imagen con el mismo order para el mismo site_id
-    # 3. Que el order sea un numero positivo
-    # 4. Que alt_text, description y object_name no sean vacios
-    # 5. Que el sitio tenga menos de 10 imagenes
-
     site_image = SiteImages(
         site_id=site_id,
         object_name=object_name,
@@ -111,3 +104,71 @@ def get_image_cover_by_site(site_id: int) -> SiteImages | None:
         .filter(SiteImages.site_id == site_id, SiteImages.is_cover == True)
         .first()
     )
+
+
+def validate_site_images(site_id: int, images: list) -> bool:
+    """Verifica si se pueden subir una cantidad determinada de imágenes a un sitio histórico, considerando las restricciones establecidas:
+    1. Formatos permitidos: JPG, PNG, WEBP.
+    2. Tamaño máximo por archivo: 5 MB.
+    3. Sólo una imagen puede ser marcada como portada.
+    4. Los numeros de orden deben ser únicos y consecutivos, sin saltos.
+    5. Límite máximo de 10 imágenes por sitio.
+
+
+    Args:
+        site_id (int): ID del sitio histórico.
+        images: Lista de imágenes que se desean subir.
+
+    Returns:
+        bool: True si se pueden subir las imágenes, False en caso contrario.
+    """
+    flag = True
+    existing_images = get_images_by_site(site_id)
+
+    # Validar límite máximo de 10 imágenes
+    total_images = len(existing_images) + len(images)
+    if total_images > 10:
+        flag = False
+        raise ValueError("Error: Se excede el límite máximo de 10 imágenes por sitio.")
+
+    # Validar numeros de orden únicos y consecutivos
+    existing_orders = [img.order for img in existing_images]
+    new_orders = [img["order"] for img in images]
+    all_orders = existing_orders + new_orders
+    for i in range(0, len(all_orders)):
+        if int(all_orders[i]) != i + 1:
+            flag = False
+            raise ValueError(
+                "Error: Los números de orden deben ser únicos y consecutivos, sin saltos."
+            )
+
+    # Validamos que sólo haya una imagen de portada
+    existing_cover = any(img.is_cover for img in existing_images)
+    new_covers = sum(1 for img in images if img.get("is_cover", False))
+    if existing_cover and new_covers > 0:
+        flag = False
+        raise ValueError(
+            "Error: Ya existe una imagen de portada para este sitio histórico."
+        )
+    if new_covers > 1:
+        flag = False
+        raise ValueError("Error: Sólo se permite una imagen de portada por sitio.")
+
+    # Validar formatos y tamaños
+    allowed_formats = ["image/jpg", "image/jpeg", "image/png", "image/webp"]
+    maxSize = 5 * 1024 * 1024  # 5 MB
+    for img in images:
+        if img["format"].lower() not in allowed_formats:
+            flag = False
+            raise ValueError(
+                f"Error: Formato no permitido para la imagen {img.get('filename', '')}. "
+                f"Formatos permitidos: JPG, PNG, WEBP."
+            )
+        if img["size"] > maxSize:
+            flag = False
+            raise ValueError(
+                f"Error: Tamaño excedido para la imagen {img.get('filename', '')}. "
+                f"Tamaño máximo permitido: 5 MB."
+            )
+
+    return flag
