@@ -95,3 +95,19 @@ def delete_image(image_id: int):
     if image:
         db.session.delete(image)
         db.session.commit()
+
+
+def get_image_cover_by_site(site_id: int) -> SiteImages | None:
+    """Obtiene la imagen de portada asociada a un sitio histórico.
+
+    Args:
+        site_id (int): ID del sitio histórico.
+
+    Returns:
+        SiteImages | None: Instancia de SiteImages que es la imagen de portada, o None si no existe.
+    """
+    return (
+        db.session.query(SiteImages)
+        .filter(SiteImages.site_id == site_id, SiteImages.is_cover == True)
+        .first()
+    )

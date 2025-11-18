@@ -35,7 +35,11 @@ from core.services.site_history import log_site_change, diff_site, diff_tags
 from flask import current_app
 from os import fstat
 import uuid
-from core.models.site_images import create_site_image, get_images_by_site
+from core.models.site_images import (
+    create_site_image,
+    get_images_by_site,
+    get_image_cover_by_site,
+)
 
 
 sites_bp = Blueprint(
@@ -102,6 +106,11 @@ def list_all_sites():
     cities = [c[0] for c in get_all_cities()]
     provinces = [p[0] for p in get_all_provinces()]
     tags_list = [t.name for t in tags.get_all_tags()]
+
+    # Agregamos la imagen de portada al objeto de sitio
+    for site in sites:
+        cover_image = get_image_cover_by_site(site.id)
+        site.cover_image = cover_image
 
     sitesJson = [
         site.to_dict() for site in sites

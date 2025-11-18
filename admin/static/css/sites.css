@@ -702,3 +702,19 @@
 	gap: 0.5rem;
 	width: 100%;
 }
+
+.site-cover-image {
+	max-height: 250px;
+	overflow: hidden;
+	margin-bottom: 1.5rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 0.5rem;
+
+	& img {
+		width: 100%;
+		height: max-content;
+		border-radius: 0.5rem;
+	}
+}
