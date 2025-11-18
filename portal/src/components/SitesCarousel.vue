@@ -396,6 +396,10 @@ onBeforeUnmount(() => {
     height: 360px;
   }
 
+  .nav {
+    display: none;
+  }
+
   .pos-1 {
     transform: translate(-50%, -50%) translateX(200px) translateY(-18px) rotateY(-16deg)
       translateZ(-150px) scale(0.88);

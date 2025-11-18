@@ -23,7 +23,7 @@ function select() {
 <template>
   <button
     type="button"
-    class="toggle"
+    class="toggle text-xs md:text-base w-fit md:w-auto"
     :class="{ [activeClass]: isActive }"
     role="radio"
     :aria-checked="isActive"

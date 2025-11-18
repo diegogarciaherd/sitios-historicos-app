@@ -152,6 +152,7 @@ onBeforeUnmount(() => {
           <div v-else class="media">
             <img :src="img.src" :alt="img.alt || ''" draggable="false" />
           </div>
+          <!-- Esta parte es la del título, descripción y botón de la provincia -->
           <div v-if="img.caption" class="caption">
             <div class="flex flex-col gap-14">
               <div class="caption-inner">
@@ -159,7 +160,9 @@ onBeforeUnmount(() => {
                 <p class="caption-subtitle">{{ img.caption.subtitle }}</p>
               </div>
               <div>
-                <RouterLink class="px-12 py-4 text-white bg-sky-950 rounded-lg" to="/"
+                <RouterLink
+                  class="px-5 py-3 md:px-12 md:py-4 text-white bg-sky-950 rounded-lg text-sm md:text-base"
+                  to="/"
                   >Explorar →</RouterLink
                 >
               </div>

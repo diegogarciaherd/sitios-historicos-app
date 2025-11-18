@@ -15,7 +15,7 @@ const stateColors = {
 
 <template>
   <div
-    class="site-card relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 w-60 h-80"
+    class="site-card relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 w-45 h-60 md:w-60 md:h-80"
   >
     <img
       :src="site.image"
