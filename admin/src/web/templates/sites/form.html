@@ -466,50 +466,53 @@
         let coverInputsChecked = 0;
         let orderValues = [];
 
-        for (let preview of imagePreviews) {
-            const coverInput = preview.querySelector('input[type="checkbox"]');
-            if (coverInput.checked){
-                coverInputsChecked += 1;
-            }
-
-            const orderInput = preview.querySelector('input[type="number"]');
-            const orderValue = orderInput.value;
-            orderValues.push(orderValue);
-            let orderCount = 0;
-
-            imagePreviews.forEach(otherPreview => {
-                const otherOrderInput = otherPreview.querySelector('input[type="number"]');
-                if (otherOrderInput.value === orderValue){
-                    orderCount += 1;
+        if (imagePreviews.length > 0){
+            for (let preview of imagePreviews) {
+                const coverInput = preview.querySelector('input[type="checkbox"]');
+                if (coverInput.checked){
+                    coverInputsChecked += 1;
                 }
-            })
+
+                const orderInput = preview.querySelector('input[type="number"]');
+                const orderValue = orderInput.value;
+                orderValues.push(orderValue);
+                let orderCount = 0;
+
+                imagePreviews.forEach(otherPreview => {
+                    const otherOrderInput = otherPreview.querySelector('input[type="number"]');
+                    if (otherOrderInput.value === orderValue){
+                        orderCount += 1;
+                    }
+                })
 
 
-            if (orderCount > 1){
-                showImageError(`El orden ${orderValue} se encuentra repetido en otra imagen.`);
+                if (orderCount > 1){
+                    showImageError(`El orden ${orderValue} se encuentra repetido en otra imagen.`);
+                    isValid = false;
+                    break;
+                }
+            }
+
+            const orderValuesSorted = orderValues.sort((a,b) => a - b)
+            for (let i = 0; i < orderValuesSorted.length; i++) {
+                if (parseInt(orderValuesSorted[i]) !== i + 1){
+                    showImageError(`El orden de las imágenes debe ser consecutivo sin saltos. Falta el orden ${i + 1}.`);
+                    isValid = false;
+                    break
+                }
+            }
+
+
+            if (coverInputsChecked === 0) {
+                showImageError('Debe haber al menos una imagen marcada como portada.');
                 isValid = false;
-                break;
+            }else if (coverInputsChecked > 1){
+                showImageError('Solo puede haber una imagen marcada como portada.');
+                isValid = false;
             }
         }
 
-        const orderValuesSorted = orderValues.sort((a,b) => a - b)
-        for (let i = 0; i < orderValuesSorted.length; i++) {
-            if (parseInt(orderValuesSorted[i]) !== i + 1){
-                showImageError(`El orden de las imágenes debe ser consecutivo sin saltos. Falta el orden ${i + 1}.`);
-                isValid = false;
-                break
-            }
-        }
-
-
-        if (coverInputsChecked === 0) {
-            showImageError('Debe haber al menos una imagen marcada como portada.');
-            isValid = false;
-        }else if (coverInputsChecked > 1){
-            showImageError('Solo puede haber una imagen marcada como portada.');
-            isValid = false;
-        }   
-
+           
         if (!isValid) { 
             e.preventDefault();
             // Scroll al primer error
