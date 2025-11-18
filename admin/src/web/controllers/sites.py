@@ -39,7 +39,8 @@ from core.models.site_images import (
     create_site_image,
     get_images_by_site,
     get_image_cover_by_site,
-    validate_site_images,
+    update_image_data,
+    validate_site_images_data,
 )
 
 
@@ -219,43 +220,36 @@ def edit_site(id):
         data.pop("tags[]", None)
 
         errors = validate_site_data(data)
+        images_validation_result = validate_site_images_data(request, id)
+        print("Resultado validación imágenes:", images_validation_result)
+
         # Si hay errores, mostrar el formulario con los errores
-        if errors:
+        if errors or images_validation_result["errors"]:
             # Mostrar cada error individualmente
             for error in errors:
                 flash(error, "error")
+
+            for error in images_validation_result["errors"]:
+                flash(error, "error")
+
             return render_template(
                 "form.html",
-                site=None,
+                site=site,
                 tags=all_tags,
                 selected_tag_ids=tag_ids,
                 form_data=data,  # Mantener datos del formulario
             )
 
-        try:
-            upload_images(request, id)
-        except Exception as e:
-            flash(f"Error al subir las imágenes: {str(e)}", "error")
-            return render_template(
-                "form.html",
-                site=site,
-                tags=all_tags,
-                selected_tag_ids=selected_tag_ids,
-                site_images=site_images,
-            )
+        print("Actualizando campos..")
 
         # --- UPDATE CAMPOS ---
-        try:
-            update_site(id, **data)
-        except Exception as e:
-            flash(f"Error al actualizar el sitio: {str(e)}", "error")
-            return render_template(
-                "form.html",
-                site=site,
-                tags=all_tags,
-                selected_tag_ids=selected_tag_ids,
-                site_images=site_images,
-            )
+        update_site(id, **data)
+
+        for img_data in images_validation_result["update_data"]:
+            update_image_data(img_data.pop("id"), **img_data)
+
+        for new_img_data in images_validation_result["create_data"]:
+            create_site_image(site.id, **new_img_data)
 
         # --- TAGS ---
         selected_tags = tags.get_tags_by_ids(tag_ids)
@@ -508,74 +502,3 @@ def api_history(id):
         for c in cambios
     ]
     return json.dumps(data), 200, {"Content-Type": "application/json"}
-
-
-def upload_images(req, site_id):
-    """Función para manejar la subida de imágenes asociadas a un sitio histórico."""
-
-    images = req.files.getlist("images")
-
-    if images and len(images) > 0:
-        if images[0].filename != "":
-
-            # En este punto, hay imágenes para subir.
-            # Armamos los datos para validar las images a subir
-
-            images_data_to_validate = []
-            images_data_to_upload = []
-
-            for img in images:
-                order = req.form.get(f"order-{img.filename}", 0)
-                is_cover = req.form.get(f"is-cover-{img.filename}", "off") == "on"
-                size = fstat(img.fileno()).st_size
-                format = img.content_type
-                images_data_to_validate.append(
-                    {
-                        "size": size,
-                        "format": format,
-                        "order": order,
-                        "is_cover": is_cover,
-                        "filename": img.filename,
-                    }
-                )
-                images_data_to_upload.append(
-                    {
-                        "object_name": f"public/sites/{site_id}/{uuid.uuid4()}{img.filename}",
-                        "data": img,
-                        "length": size,
-                        "content_type": img.content_type,
-                        "alt_text": req.form.get(f"alt-text-{img.filename}", ""),
-                        "description": req.form.get(f"description-{img.filename}", ""),
-                        "order": order,
-                        "is_cover": is_cover,
-                    }
-                )
-
-            # Validar las imágenes antes de subirlas
-            validation_result = validate_site_images(site_id, images_data_to_validate)
-
-            if validation_result is not True:
-                raise ValueError("Error al validar las imágenes")
-
-            # En este punto, las imágenes son válidas y podemos proceder a subirlas.
-
-            client_storage = current_app.storage
-            bucket_name = current_app.config.get("MINIO_BUCKET")
-
-            for img in images_data_to_upload:
-                client_storage.put_object(
-                    bucket_name=bucket_name,
-                    object_name=img["object_name"],
-                    data=img["data"],
-                    length=img["length"],
-                    content_type=img["content_type"],
-                )
-
-                create_site_image(
-                    site_id=site_id,
-                    object_name=img["object_name"],
-                    alt_text=img["alt_text"],
-                    description=img["description"],
-                    order=img["order"],
-                    is_cover=img["is_cover"],
-                )

@@ -1,6 +1,9 @@
 from core.database import Base, db
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, ForeignKey, String, Boolean, DateTime, func
+from os import fstat
+import uuid
+from flask import current_app
 
 
 class SiteImages(Base):
@@ -32,32 +35,35 @@ class SiteImages(Base):
         return f"<SiteImages site_id={self.site_id} object_name={self.object_name}>"
 
 
-def create_site_image(
-    site_id: int,
-    object_name: str,
-    alt_text: str,
-    description: str,
-    order: int,
-    is_cover: bool = False,
-) -> SiteImages:
-    """Crea una nueva instancia de SiteImages y la guarda en la base de datos.
+def create_site_image(site_id: int, **kwargs) -> SiteImages:
+    """Crea una nueva instancia de SiteImages y almacena la imagen en Minio.
 
     Args:
         site_id (int): ID del sitio histórico asociado.
-        object_name (str): Nombre del objeto en Minio.
-        alt_text (str): Texto alternativo para la imagen.
-        description (str): Descripción de la imagen.
-        order (int): Orden de la imagen.
-        is_cover (bool, optional): Indica si es la imagen de portada. Por defecto es False.
+        **kwargs: Argumentos adicionales para los campos de SiteImages y Metadata de Minio.
+
+    Returns:
+        SiteImages: La instancia creada de SiteImages.
     """
+
+    client_storage = current_app.storage
+    bucket_name = current_app.config.get("MINIO_BUCKET")
+
+    client_storage.put_object(
+        bucket_name=bucket_name,
+        object_name=kwargs["object_name"],
+        data=kwargs["data"],
+        length=kwargs["length"],
+        content_type=kwargs["content_type"],
+    )
 
     site_image = SiteImages(
         site_id=site_id,
-        object_name=object_name,
-        alt_text=alt_text,
-        description=description,
-        order=order,
-        is_cover=is_cover,
+        object_name=kwargs["object_name"],
+        alt_text=kwargs["alt_text"],
+        description=kwargs["description"],
+        order=kwargs["order"],
+        is_cover=kwargs["is_cover"],
     )
 
     db.session.add(site_image)
@@ -76,6 +82,23 @@ def get_images_by_site(site_id: int) -> list[SiteImages]:
         list[SiteImages]: Lista de instancias de SiteImages asociadas al sitio.
     """
     return db.session.query(SiteImages).filter(SiteImages.site_id == site_id).all()
+
+
+def update_image_data(site_image_id: int, **kwargs):
+    """Actualiza los datos de una imagen en la base de datos."""
+    print("Comenando update...")
+
+    image = db.session.query(SiteImages).get(site_image_id)
+    if not image:
+        raise ValueError(f"Imagen con ID {site_image_id} no encontrada.")
+
+    print("Paramtros a actualizar:", kwargs)
+
+    for key, value in kwargs.items():
+        if hasattr(image, key):
+            setattr(image, key, value)
+
+    db.session.commit()
 
 
 def delete_image(image_id: int):
@@ -106,69 +129,145 @@ def get_image_cover_by_site(site_id: int) -> SiteImages | None:
     )
 
 
-def validate_site_images(site_id: int, images: list) -> bool:
-    """Verifica si se pueden subir una cantidad determinada de imágenes a un sitio histórico, considerando las restricciones establecidas:
-    1. Formatos permitidos: JPG, PNG, WEBP.
-    2. Tamaño máximo por archivo: 5 MB.
-    3. Sólo una imagen puede ser marcada como portada.
-    4. Los numeros de orden deben ser únicos y consecutivos, sin saltos.
-    5. Límite máximo de 10 imágenes por sitio.
-
+def validate_site_images_data(request, site_id: int) -> dict:
+    """Verifica que los datos de las imagenes a subir cumplan con las restricciones establecidas.
 
     Args:
+        request: Objeto de la solicitud que contiene los datos de las imágenes.
         site_id (int): ID del sitio histórico.
-        images: Lista de imágenes que se desean subir.
 
     Returns:
-        bool: True si se pueden subir las imágenes, False en caso contrario.
+        dict: Diccionario con:
+            - erros: Los errores encontrados durante la validación (vacío si no hay errores),
+            - update_data: Los datos de las imágenes existentes a actualizar,
+            - create_data: Los datos de las nuevas imágenes a crear.
+
     """
-    flag = True
+    print("Validando datos...")
+
+    errors = []
+    model_data_to_validate = []  # Para validar los datos de la tabla
+    new_data_to_validate = []  # Para validar los datos de minio
+    images_to_update = []  # Para actualizar las imagenes existentes
+    images_to_create = []  # Para crear las nuevas imagenes
+
+    # Verificamos si el sitio tiene imagenes guardadas
     existing_images = get_images_by_site(site_id)
 
-    # Validar límite máximo de 10 imágenes
-    total_images = len(existing_images) + len(images)
-    if total_images > 10:
-        flag = False
-        raise ValueError("Error: Se excede el límite máximo de 10 imágenes por sitio.")
+    # Si el sitio tiene imagenes guardadas, agregamos los inputs de las mismas al model_data_to_validate
+    if existing_images:
+        for img in existing_images:
+            temp_order = request.form.get(f"order-{img.object_name}", 0)
+            temp_is_cover = (
+                request.form.get(f"is-cover-{img.object_name}", "off") == "on"
+            )
+            temp_alt_text = request.form.get(f"alt-text-{img.object_name}", "")
 
-    # Validar numeros de orden únicos y consecutivos
-    existing_orders = [img.order for img in existing_images]
-    new_orders = [img["order"] for img in images]
-    all_orders = existing_orders + new_orders
-    for i in range(0, len(all_orders)):
-        if int(all_orders[i]) != i + 1:
-            flag = False
-            raise ValueError(
-                "Error: Los números de orden deben ser únicos y consecutivos, sin saltos."
+            model_data_to_validate.append(
+                {
+                    "image": img.object_name,
+                    "order": temp_order,
+                    "is_cover": temp_is_cover,
+                    "alt_text": temp_alt_text,
+                }
             )
 
-    # Validamos que sólo haya una imagen de portada
-    existing_cover = any(img.is_cover for img in existing_images)
-    new_covers = sum(1 for img in images if img.get("is_cover", False))
-    if existing_cover and new_covers > 0:
-        flag = False
-        raise ValueError(
-            "Error: Ya existe una imagen de portada para este sitio histórico."
-        )
-    if new_covers > 1:
-        flag = False
-        raise ValueError("Error: Sólo se permite una imagen de portada por sitio.")
+            images_to_update.append(
+                {
+                    "id": img.id,
+                    "alt_text": temp_alt_text,
+                    "description": request.form.get(
+                        f"description-{img.object_name}", ""
+                    ),
+                    "order": temp_order,
+                    "is_cover": temp_is_cover,
+                }
+            )
 
-    # Validar formatos y tamaños
+    # Verificamos si se están subiendo nuevas imágenes
+    new_images = request.files.getlist("images")
+
+    # Si hay nuevas imágenes, agregamos sus datos al model_data_to_validate y new_data_to_validate
+    if new_images and len(new_images) > 0 and new_images[0].filename != "":
+        for img in new_images:
+            temp_order = request.form.get(f"order-{img.filename}", 0)
+            temp_is_cover = request.form.get(f"is-cover-{img.filename}", "off") == "on"
+            temp_alt_text = request.form.get(f"alt-text-{img.filename}", "")
+            temp_size = fstat(img.fileno()).st_size
+
+            model_data_to_validate.append(
+                {
+                    "image": img.filename,
+                    "order": temp_order,
+                    "is_cover": temp_is_cover,
+                    "alt_text": temp_alt_text,
+                }
+            )
+
+            new_data_to_validate.append(
+                {
+                    "image": img.filename,
+                    "format": img.content_type,
+                    "size": temp_size,
+                }
+            )
+
+            images_to_create.append(
+                {
+                    "object_name": f"public/sites/{site_id}/{uuid.uuid4()}{img.filename}",
+                    "data": img,
+                    "length": temp_size,
+                    "content_type": img.content_type,
+                    "alt_text": temp_alt_text,
+                    "description": request.form.get(f"description-{img.filename}", ""),
+                    "order": temp_order,
+                    "is_cover": temp_is_cover,
+                }
+            )
+
+    # Realizamos las validaciones necesarias en model_data_to_validate y new_data_to_validate
+
+    # Validacion 1: Un sitio histórico puede tener un máximo de 10 imágenes.
+    total_images = len(existing_images) + len(new_data_to_validate)
+    if total_images > 10:
+        errors.append("Se excede el límite máximo de 10 imágenes por sitio.")
+
+    # Validacion 2: El campo 'alt_text' no puede estar vacío.
+    for data in model_data_to_validate:
+        if not data["alt_text"] or data["alt_text"].strip() == "":
+            errors.append(
+                "El campo 'Titulo/Alt' no puede estar vacío en la imagen: "
+                + data["image"]
+            )
+
+    # Validacion 3: Un sitio histórico sólo puede tener una imagen de portada.
+    covers = sum(1 for data in model_data_to_validate if data["is_cover"])
+    if covers > 1:
+        errors.append("Un sitio sólo puede tener una imagen de portada.")
+    elif covers == 0:
+        errors.append("Debe seleccionarse una imagen de portada.")
+
+    # Validacion 4: Los numeros de orden deben ser únicos y consecutivos, sin saltos.
+    orders = [int(data["order"]) for data in model_data_to_validate]
+    orders.sort()
+    for i in range(len(orders)):
+        if orders[i] != i + 1:
+            errors.append(
+                "Los números de orden deben ser únicos y consecutivos, sin saltos."
+            )
+            break
+
+    # Validacion 5 y 6: Formatos permitidos: JPG, PNG, WEBP y Tamaño máximo por archivo: 5 MB.
     allowed_formats = ["image/jpg", "image/jpeg", "image/png", "image/webp"]
     maxSize = 5 * 1024 * 1024  # 5 MB
-    for img in images:
-        if img["format"].lower() not in allowed_formats:
-            flag = False
-            raise ValueError(
-                f"Error: Formato no permitido para la imagen {img.get('filename', '')}. "
-                f"Formatos permitidos: JPG, PNG, WEBP."
-            )
-        if img["size"] > maxSize:
-            flag = False
-            raise ValueError(
-                f"Error: Tamaño excedido para la imagen {img.get('filename', '')}. "
-                f"Tamaño máximo permitido: 5 MB."
-            )
+    for data in new_data_to_validate:
+        if data["format"].lower() not in allowed_formats:
+            errors.append(f"Formato no permitido para la imagen {data['image']}.")
+        if data["size"] > maxSize:
+            errors.append(f"Tamaño excedido para la imagen {data['image']}.")
 
-    return flag
+    return {
+        "errors": errors,
+        "update_data": images_to_update,
+        "create_data": images_to_create,
+    }
