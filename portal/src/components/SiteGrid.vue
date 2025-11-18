@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { getSitesFixed } from '@/api/sites'
-import SiteCard from './SiteCard.vue'
+import DetailedSiteCard from './DetailedSiteCard.vue'
 
 const props = defineProps({
   siteFilters: {
@@ -70,7 +70,7 @@ onMounted(fetchSites)
 
     <!-- Grid responsive: 1 col móvil, 2 tablet, 2 desktop -->
     <div v-else-if="sites.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 w-full">
-      <SiteCard v-for="site in sites" :key="site.id" :site="site" />
+      <DetailedSiteCard v-for="site in sites" :key="site.id" :site="site" />
     </div>
 
     <!-- Estado vacío -->
