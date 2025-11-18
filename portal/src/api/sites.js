@@ -1,5 +1,6 @@
 import api from './base'
 
+/*
 async function getSites(filters = {}) {
   const queryString = new URLSearchParams(filters).toString()
 
@@ -11,9 +12,11 @@ async function getSites(filters = {}) {
     console.error('Error fetching sites:', error)
   }
 }
+*/ 
 
-async function getSitesFixed(filters = {}) {
+async function getSites(filters = {}) {
   // Construir query params manualmente para manejar arrays (tags)
+  console.log('📦 Filters recibidos en getSites:', filters)
   const params = new URLSearchParams()
   
   Object.keys(filters).forEach(key => {
@@ -31,8 +34,8 @@ async function getSitesFixed(filters = {}) {
   })
 
   try {
-    const response = await api.get(`/sites/fix?${params.toString()}`)
-    console.log('Response from /sites/fix:', response.data)
+    const response = await api.get(`/sites?${params.toString()}`)
+    console.log('Response from /sites:', response.data)
     const data = response.data
     return data
   } catch (error) {
@@ -44,4 +47,4 @@ async function getSitesFixed(filters = {}) {
   }
 }
 
-export { getSites, getSitesFixed }
+export { getSites }

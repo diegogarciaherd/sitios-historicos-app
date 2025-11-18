@@ -1,0 +1,39 @@
+# Dockerfile para el backend Flask
+FROM python:3.12-slim
+
+# Instalar dependencias del sistema necesarias para PostgreSQL y PostGIS
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    libpq-dev \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar Poetry
+RUN pip install --no-cache-dir poetry==2.0.0
+
+# Configurar Poetry para no crear entorno virtual
+RUN poetry config virtualenvs.create false
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar archivos de dependencias
+COPY pyproject.toml poetry.lock* ./
+
+# Instalar dependencias
+RUN poetry install --no-interaction --no-ansi --no-root || pip install .
+
+
+# Copiar el resto de la aplicación
+COPY . .
+
+# Exponer el puerto 5000 (puerto por defecto de Flask)
+EXPOSE 5000
+
+# Variables de entorno por defecto
+ENV FLASK_APP=main.py
+ENV FLASK_ENV=production
+ENV PYTHONUNBUFFERED=1
+
+# Comando para ejecutar la aplicación
+CMD ["python", "main.py"]

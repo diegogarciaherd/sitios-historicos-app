@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL con PostGIS
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: portal_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sitios_historicos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Flask
+  backend:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: portal_backend
+    environment:
+      - FLASK_ENV=development
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=sitios_historicos
+      - DB_SCHEME=postgresql
+      - SECRET_KEY=your-secret-key-change-in-production
+    ports:
+      - "5000:5000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./admin:/app
+      - flask_session:/app/flask_session
+    command: >
+      sh -c "python -c 'import time; time.sleep(5)' &&
+             python -c \"
+             from psycopg2 import connect
+             conn = connect('postgresql://postgres:password@db:5432/sitios_historicos')
+             conn.cursor().execute('CREATE EXTENSION IF NOT EXISTS postgis;')
+             conn.commit()
+             conn.close()
+             print('PostGIS extension created')
+             \" || true &&
+             python main.py"
+
+  # Frontend Vue.js
+  frontend:
+    build:
+      context: ./portal
+      dockerfile: Dockerfile
+      args:
+        - VITE_BASE_API_URL=http://localhost:5000/api
+    container_name: portal_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    # Para desarrollo, puedes usar un volumen para hot-reload:
+    # volumes:
+    #   - ./portal:/app
+    #   - /app/node_modules
+
+volumes:
+  postgres_data:
+  flask_session:
+

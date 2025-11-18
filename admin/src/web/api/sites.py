@@ -80,12 +80,13 @@ def validate_post_data(data: dict):
 
     return errors
 
+"""
 @sites_api_bp.get("")
 def get_sites_by_criteria():
-    """
+    ""x
     Busca los sitios historicos de acuerdo a los criterios especificados.
     Los criterios son recibidos en la URL.
-    """
+    ""c
     filters = request.args.to_dict()
     errors = check_filters(filters)
 
@@ -114,7 +115,7 @@ def get_sites_by_criteria():
             "message": "An unexpected error occurred."
             }
         }), 500
-
+"""
 @sites_api_bp.post("")
 @jwt_required()
 def create_site():
@@ -444,8 +445,8 @@ def convert_and_validate_filters(filters: dict):
             errors["per_page"] = "No es un numero."
     return errors
 
-@sites_api_bp.get("/fix")
-def get_sites_by_criteria_fixed():
+@sites_api_bp.get("")
+def get_sites_by_criteria():
     """
     Busca los sitios historicos de acuerdo a los criterios especificados.
     Versión que usa convert_and_validate_filters para manejar tipos correctamente.
