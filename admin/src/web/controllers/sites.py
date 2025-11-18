@@ -31,6 +31,7 @@ from core.models.sites import (
     delete_site_by_id,
     get_all_cities,
     get_all_provinces,
+    SitioHistorico,  
 )
 from core.models import tags
 from core.models.site_history import SiteChange
@@ -258,12 +259,25 @@ def view_site(id):
     )
 
     # Promedio de rating (solo aprobadas)
-    avg_rating, total_reviews = db.session.query(
-        func.coalesce(func.avg(Review.rating), 0), func.count(Review.id)
-    ).filter(
-        Review.site_id == id, Review.status == ReviewStatus.APPROVED
-    ).one()
-    avg_rating = round(float(avg_rating), 1)
+    avg_rating, total_reviews = (
+        db.session.query(
+            func.coalesce(func.avg(Review.rating), 0),
+            func.count(Review.id),
+        )
+        .filter(
+            Review.site_id == id,
+            Review.status == ReviewStatus.APPROVED,
+        )
+        .one()
+    )
+
+    total_reviews = int(total_reviews)
+    # Si no hay reseñas, dejamos avg_rating en None para que el template
+    # muestre el mensaje "Todavía no hay reseñas..."
+    if total_reviews == 0:
+        avg_rating = None
+    else:
+        avg_rating = round(float(avg_rating), 1)
 
     return render_template(
         "show_site.html",
@@ -274,6 +288,7 @@ def view_site(id):
         avg_rating=avg_rating,
         total_reviews=total_reviews,
     )
+
 
 
 @sites_bp.route("/exportar_csv", methods=["POST"])

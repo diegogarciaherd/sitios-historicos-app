@@ -1,8 +1,256 @@
-{% extends "sites_layout.html" %} {% block title %}Inicio{% endblock %} {% block
-content %}
-<section class="home-page">
+{% extends "sites_layout.html" %}
+{% block title %}Sitios históricos | Reseñas recientes{% endblock %}
+
+{% block head_styles %}
+{{ super() }}
+<style>
+  .home-container {
+    max-width: 1200px;
+    margin: 2rem auto 3rem auto;
+    padding: 2rem 2.5rem;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  }
+
+  .home-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .home-header h1 {
+    font-size: 2rem;
+    margin: 0;
+  }
+
+  .home-subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+  }
+
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .review-card {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .review-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(15, 23, 42, 0.12);
+    border-color: #60a5fa;
+  }
+
+  .site-name {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .site-meta {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .review-title {
+    font-weight: 500;
+    font-size: 0.95rem;
+    margin-top: 0.35rem;
+  }
+
+  .review-body {
+    font-size: 0.9rem;
+    color: #4b5563;
+  }
+
+  .rating-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
+  }
+
+  .stars {
+    font-size: 0.95rem;
+    letter-spacing: 1px;
+  }
+
+  .star-full {
+    color: #fbbf24;
+  }
+
+  .star-empty {
+    color: #e5e7eb;
+  }
+
+  .rating-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+
+  .review-footer {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #9ca3af;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 500;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+  }
+
+  .empty-state h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    margin: 0;
+  }
+
+  .btn-outline-small {
+    margin-top: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: none;
+    color: #111827;
+  }
+
+  .btn-outline-small:hover {
+    border-color: #60a5fa;
+    color: #1d4ed8;
+  }
+
+  @media (max-width: 768px) {
+    .home-container {
+      margin: 1rem;
+      padding: 1.25rem 1.5rem;
+    }
+
+    .home-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+  <div class="home-header">
     <div>
-        <h2 class="bold-title">Sitios históricos</h2>
+      <h1>Sitios históricos</h1>
+      <p class="home-subtitle">
+        Estas son algunas de las últimas reseñas realizadas sobre los sitios
+        registrados en el sistema.
+      </p>
     </div>
-</section>
+    <div>
+      <a href="{{ url_for('sites.list_all_sites') }}" class="btn-outline-small">
+        Ver todos los sitios →
+      </a>
+    </div>
+  </div>
+
+  {% if latest_reviews and latest_reviews|length > 0 %}
+  <div class="reviews-grid">
+    {% for item in latest_reviews %}
+    {% set site = item.site %}
+    {% set review = item.review %}
+    <article class="review-card">
+      <div class="badge">
+        ⭐ {{ review.rating }}/5
+      </div>
+
+      <div class="site-name">
+        <a href="{{ url_for('sites.view_site', id=site.id) }}">
+          {{ site.nombre }}
+        </a>
+      </div>
+      <div class="site-meta">
+        {{ site.ciudad or '' }}{% if site.ciudad and site.provincia %}, {% endif %}{{ site.provincia or '' }}
+      </div>
+
+      <div class="rating-row">
+        <div class="stars">
+          {% for i in range(1, 6) %}
+          {% if i <= review.rating %}
+          <span class="star-full">★</span>
+          {% else %}
+          <span class="star-empty">★</span>
+          {% endif %}
+          {% endfor %}
+        </div>
+        <span class="rating-label">
+          Reseña reciente
+        </span>
+      </div>
+
+      <div class="review-title">
+        {{ review.title }}
+      </div>
+      <div class="review-body">
+        {{ item.short_body }}
+      </div>
+
+      <div class="review-footer">
+        <span>
+          {{ review.created_at.strftime("%d/%m/%Y") }}
+        </span>
+        <a href="{{ url_for('sites.view_site', id=site.id) }}" class="btn-outline-small">
+          Ver sitio
+        </a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h2>Todavía no hay reseñas.</h2>
+    <p>
+      Esperando reseñas de los usuarios sobre los sitios históricos.
+    </p>
+    <a href="{{ url_for('sites.list_all_sites') }}" class="btn-outline-small">
+      Ir al listado de sitios
+    </a>
+  </div>
+  {% endif %}
+</div>
 {% endblock %}

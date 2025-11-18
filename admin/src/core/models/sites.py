@@ -128,8 +128,7 @@ def list_sites_with_filters(filters, page=1, per_page=10):
     query = db.session.query(SitioHistorico)
     query = apply_filters(query, filters)
     total = query.count()
-    sites = query.offset((int(filters["page"]) - 1 if "page" in filters else page - 1) * per_page).limit(filters["per_page"] if "per_page" in filters else per_page).all()
-    #sites = query.offset((page - 1) * per_page).limit(per_page).all()
+    sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
     return sites, total
 
 
@@ -300,6 +299,10 @@ def apply_filters(query, filters):
                 query = query.order_by(SitioHistorico.fechaRegistro.asc())
             case "oldest":
                 query = query.order_by(SitioHistorico.fechaRegistro.desc())
+            case "name-asc":
+                query = query.order_by(SitioHistorico.nombre.asc())
+            case "name-desc":
+                query = query.order_by(SitioHistorico.nombre.desc())
 
     if "lat" in filters and filters["lat"]:
         query = query.filter(lat=filters["lat"])
@@ -313,3 +316,34 @@ def get_sites_by_tag(tag_id: int):
     """Devuelve todos los sitios asociados a un tag dado."""
     return db.session.query(SitioHistorico).filter(SitioHistorico.tags.any(id=tag_id)).all()
 
+"""
+def get_sites_within_radius(lat: float, lng: float, radius_km: float):
+
+    Devuelve todos los sitios históricos dentro de un radio dado (en km).
+    No aplica ningún otro filtro.
+    
+    from geoalchemy2.functions import ST_DWithin, ST_SetSRID, ST_MakePoint
+    
+    try:
+        lat = float(lat)
+        lng = float(lng)
+        radius_m = float(radius_km) * 1000
+    except ValueError:
+        raise ValueError("lat, lng y radius deben ser números válidos.")
+
+    # Crear punto de referencia
+    point = ST_SetSRID(ST_MakePoint(lng, lat), 4326)
+
+    # Query
+    query = (
+        db.session.query(SitioHistorico)
+        .filter(
+            SitioHistorico.localizacion.isnot(None)
+        )  # evita fallas si hay sitios sin coordenadas
+        .filter(
+            ST_DWithin(SitioHistorico.localizacion, point, radius_m)
+        )
+    )
+
+    return query.all()
+"""

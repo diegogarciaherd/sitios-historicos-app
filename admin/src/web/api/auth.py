@@ -23,11 +23,11 @@ def login():
         if user:
             auth_errors = authenticate(data["email"], data["password"])[1]
             if not auth_errors:
-                ttl = timedelta(seconds=3600)
+                ttl = timedelta(seconds=99999)
                 token = create_access_token(identity=str(user.id), expires_delta=ttl)
                 return jsonify({
                     "token": token,
-                    "expires_in": 3600
+                    "expires_in": 99999
                 }), 200
             else:
                 return jsonify({
