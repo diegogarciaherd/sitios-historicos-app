@@ -1,4 +1,4 @@
-#admin/src/web/controllers/sites.py
+# admin/src/web/controllers/sites.py
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ from core.models.sites import (
     delete_site_by_id,
     get_all_cities,
     get_all_provinces,
-    SitioHistorico,  
+    SitioHistorico,
 )
 from core.models import tags
 from core.models.site_history import SiteChange
@@ -81,10 +81,10 @@ def list_all_sites():
 
     sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
-    sites.sort(
+    """ sites.sort(
         key=lambda s: (s.fechaRegistro, s.nombre.lower(), s.ciudad.lower()),
-        reverse=True,
-    )
+        reverse=False,
+    ) """
 
     total_pages = (total + per_page - 1) // per_page
     pagination = {
@@ -343,7 +343,7 @@ def view_site(id):
         avg_rating = None
     else:
         avg_rating = round(float(avg_rating), 1)
-    
+
     site_images = get_images_by_site(site.id)
 
     return render_template(
@@ -356,6 +356,7 @@ def view_site(id):
         total_reviews=total_reviews,
         site_images=site_images,
     )
+
 
 @sites_bp.route("/exportar_csv", methods=["POST"])
 @require_permission("sites.export")
@@ -450,7 +451,9 @@ def view_history(id):
     if d_from:
         q = q.filter(SiteChange.changed_at >= d_from)
     if d_to:
-        q = q.filter(SiteChange.changed_at < d_to.replace(hour=23, minute=59, second=59))
+        q = q.filter(
+            SiteChange.changed_at < d_to.replace(hour=23, minute=59, second=59)
+        )
 
     q = q.order_by(SiteChange.changed_at.desc())
 

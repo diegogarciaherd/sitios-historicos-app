@@ -1,3 +1,5 @@
+# admin/src/core/models/sites.py
+
 from core.database import Base, db
 import enum
 from datetime import datetime
@@ -10,16 +12,19 @@ from geoalchemy2.shape import to_shape
 from core.models.tags import Tag
 
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from core.models.reviews import Review  # solo para hints, no ejecuta en runtime ya que ponerlo arriba tira error de circular import
 
-# Tabla de asociación
-""" Tabla de asociación entre sitios históricos y tags """
-""" atributos: 
-     id: Identificador único de la asociación
-     site_id: Identificador del sitio histórico
-     tag_id: Identificador del tag asociado
-     """
+# TYPE_CHECKING para evitar imports circulares en runtime
+if TYPE_CHECKING:
+    from core.models.reviews import Review  # solo hints
+    from core.models.favorites import Favorite  # hints para la relación de favoritos
+
+
+# ----------------------------------------------------
+# Tabla de asociación sitios <-> tags (many-to-many)
+# ----------------------------------------------------
+# No hace falta modelo propio, con esta tabla de asociación alcanza.
+
+
 sites_tags = Table(
     "sites_tags",
     Base.metadata,
@@ -29,7 +34,10 @@ sites_tags = Table(
 
 
 class EstadoConservacion(enum.Enum):
-    """Enum para el estado de conservación de un sitio histórico"""
+    """Enum de estado de conservación de un sitio histórico.
+
+    Lo guardamos como texto legible y validamos contra estos valores.
+    """
 
     BUENO = "Bueno"
     REGULAR = "Regular"
@@ -37,25 +45,46 @@ class EstadoConservacion(enum.Enum):
 
 
 class SitioHistorico(Base):
-    """Modelo de Sitio Histórico"""
+    """Modelo principal de sitio histórico.
+
+    Esta es la entidad que después ve el usuario en el portal.
+    Acá van todos los datos "duros" del sitio (descripciones, ubicación,
+    estado, etc.) y las relaciones con tags, reseñas y favoritos.
+    """
 
     __tablename__ = "sitios_historicos"
 
+    # -------------------------------
+    # Campos básicos del sitio
+    # -------------------------------
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nombre: Mapped[str] = mapped_column(String(100), nullable=False)
     descripcionBreve: Mapped[str] = mapped_column(Text, nullable=True)
     descripcionCompleta: Mapped[str] = mapped_column(Text, nullable=True)
     ciudad: Mapped[str] = mapped_column(String(100), nullable=True)
     provincia: Mapped[str] = mapped_column(String(100), nullable=True)
+
+    # Estado de conservación (usamos enum de arriba)
     estado: Mapped[EstadoConservacion] = mapped_column(
         Enum(EstadoConservacion, native_enum=False, validate_strings=True),
         nullable=False,
     )
+
     añoInauguracion: Mapped[int] = mapped_column(Integer, nullable=True)
     categoria: Mapped[str] = mapped_column(Text, nullable=True)
-    fechaRegistro: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Tags 
+    # Cuándo se registró en el sistema (no cuándo se inauguró)
+    fechaRegistro: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    # -------------------------------
+    # Relaciones con otras entidades
+    # -------------------------------
+
+    # Tags asociados (many-to-many)
     tags: Mapped[list["Tag"]] = relationship(
         "Tag",
         secondary=sites_tags,
@@ -63,7 +92,7 @@ class SitioHistorico(Base):
         lazy="select",
     )
 
-    # Relación con reseñas
+    # Reseñas que los usuarios dejaron sobre el sitio
     reviews: Mapped[list["Review"]] = relationship(
         "Review",
         back_populates="site",
@@ -71,28 +100,49 @@ class SitioHistorico(Base):
         lazy="selectin",
     )
 
+    # Favoritos: todos los registros de usuarios que marcaron este sitio
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite",
+        back_populates="site",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    # -------------------------------
+    # Otros campos
+    # -------------------------------
     visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    localizacion: Mapped[Geometry] = mapped_column(Geometry(geometry_type="POINT", srid=4326), nullable=True)
 
+    # Punto geográfico (srid=4326 para trabajar en lat/lng)
+    localizacion: Mapped[Geometry] = mapped_column(
+        Geometry(geometry_type="POINT", srid=4326),
+        nullable=True,
+    )
 
+    # -------------------------------
+    # Helpers para lat / lng
+    # -------------------------------
     @property
-    def lat(self) -> float:
-        """Devuelve la latitud del sitio"""
+    def lat(self) -> float | None:
+        """Devuelve la latitud del sitio a partir de la geometría."""
         if self.localizacion:
             punto = to_shape(self.localizacion)
-            return punto.y  # Latitud
+            return punto.y
         return None
 
     @property
-    def lng(self) -> float:
-        "Devuelve la longitud del sitio"
+    def lng(self) -> float | None:
+        """Devuelve la longitud del sitio a partir de la geometría."""
         if self.localizacion:
             punto = to_shape(self.localizacion)
-            return punto.x  # Longitud
+            return punto.x
         return None
 
+    # -------------------------------
+    # Serialización a dict para APIs
+    # -------------------------------
     def to_dict(self) -> dict:
-        """Convierte el sitio a un diccionario"""
+        """Convierte el sitio a un diccionario listo para enviar por JSON."""
         return {
             "id": self.id,
             "nombre": self.nombre,
@@ -115,18 +165,31 @@ class SitioHistorico(Base):
         }
 
 
-def list_sites(page=1, per_page=10):
-    """Lista todos los sitios históricos con paginación."""
+# --------------------------------------------------------------------
+# Funciones helper de consulta / creación / actualización de sitios
+# --------------------------------------------------------------------
+
+
+def list_sites(page: int = 1, per_page: int = 10):
+    """Lista todos los sitios históricos con paginación simple.
+
+    Devuelve (sites, total) donde:
+    - sites es la página actual
+    - total es la cantidad total de sitios
+    """
     query = db.session.query(SitioHistorico)
     total = query.count()
     sites = query.offset((page - 1) * per_page).limit(per_page).all()
     return sites, total
 
 
-def list_sites_with_filters(filters, page=1, per_page=10):
-    """Lista sitios históricos aplicando filtros opcionales."""
-
-    query = db.session.query(SitioHistorico)
+def list_sites_with_filters(filters: dict, page: int = 1, per_page: int = 10):
+    """Lista sitios aplicando los filtros que vienen del portal público."""
+    query = db.session.query(SitioHistorico).order_by(
+        SitioHistorico.fechaRegistro.desc(),  # ordena por fecha de registro, más recientes primero
+        SitioHistorico.nombre.asc(),  # ordena alfabéticamente por nombre A-Z
+        SitioHistorico.ciudad.asc(),
+    )
     query = apply_filters(query, filters)
     total = query.count()
     sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
@@ -134,31 +197,35 @@ def list_sites_with_filters(filters, page=1, per_page=10):
 
 
 def get_all_provinces():
-    """Devuelve una lista de todas las provincias únicas en la base de datos."""
+    """Devuelve una lista de provincias únicas (para armar filtros en el front)."""
     return db.session.query(SitioHistorico.provincia).distinct().all()
 
 
 def get_all_cities():
-    """Devuelve una lista de todas las ciudades únicas en la base de datos."""
+    """Devuelve una lista de ciudades únicas (para armar filtros en el front)."""
     return db.session.query(SitioHistorico.ciudad).distinct().all()
 
 
 def create_sites(**kwargs):
-    """Crea un nuevo sitio historico"""
-    """ params : kwargs: diccionario con los atributos del sitio historico"""
+    """Crea un nuevo sitio histórico a partir de los datos del formulario admin.
 
-    # Extraer y convertir coordenadas
+    Acá también se encarga de transformar valores "de front" a lo que
+    espera el modelo (ej: lat/lng en WKT, año como int, etc.).
+    """
+
+    # Extraigo coordenadas porque después las uso para el WKT
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
 
+    # Normalizo el estado para matchear con el enum
     kwargs["estado"] = kwargs["estado"].upper()
 
-    # Convertir año si existe
+    # Convierto el año de inauguración si viene
     año_inauguracion = kwargs.get("añoInauguracion")
     if año_inauguracion:
         kwargs["añoInauguracion"] = int(año_inauguracion)
 
-    # Crear el sitio
+    # Creo el sitio con los campos relevantes
     site = SitioHistorico(
         nombre=kwargs.get("nombre"),
         descripcionBreve=kwargs.get("descripcionBreve"),
@@ -171,7 +238,7 @@ def create_sites(**kwargs):
         visible=kwargs.get("visible", True),
     )
 
-    # Asignar geometría si hay coordenadas
+    # Si tengo coordenadas, armo el POINT
     if lat is not None and lng is not None:
         site.localizacion = WKTElement(f"POINT({float(lng)} {float(lat)})", srid=4326)
 
@@ -180,21 +247,21 @@ def create_sites(**kwargs):
     return site
 
 
-def update_site(id, **kwargs):
-    """Actualiza un sitio historico existente"""
-    """ params : id: id del sitio a actualizar
-        kwargs: diccionario con los atributos a actualizar
+def update_site(id: int, **kwargs):
+    """Actualiza un sitio histórico existente.
+
+    Solo pisa los campos que vienen en kwargs y valida año y coordenadas.
     """
 
     site = get_site(id)
     if not site:
         raise ValueError(f"Sitio con id {id} no encontrado")
 
-    # Extraer coordenadas si vienen en kwargs
+    # Coordenadas que puedan venir de un formulario
     lat = kwargs.pop("lat", None)
     lng = kwargs.pop("lng", None)
 
-    # Convertir año si existe
+    # Año de inauguración: puede venir vacío, None o string numérico
     año_inauguracion = kwargs.get("añoInauguracion")
     if año_inauguracion is not None:
         if año_inauguracion == "":
@@ -205,18 +272,18 @@ def update_site(id, **kwargs):
             except (ValueError, TypeError):
                 raise ValueError("El año de inauguración debe ser un número válido")
 
-    # Actualizar atributos
+    # Actualizo solo atributos que realmente existen en el modelo
     for key, value in kwargs.items():
         if hasattr(site, key):
             setattr(site, key, value)
 
-    # Actualizar geometría si hay nuevas coordenadas
+    # Si vinieron coords nuevas, actualizo la geometría
     if lat is not None and lng is not None:
         try:
             site.localizacion = WKTElement(
                 f"POINT({float(lng)} {float(lat)})", srid=4326
             )
-            # También actualizar latitud y longitud por separado si existen en tu modelo
+            # Campos latitud/longitud separados, si existen
             if hasattr(site, "latitud"):
                 site.latitud = float(lat)
             if hasattr(site, "longitud"):
@@ -228,24 +295,28 @@ def update_site(id, **kwargs):
     return site
 
 
-def get_site(id):
-    """Obtiene un sitio historico por su id"""
+def get_site(id: int) -> SitioHistorico | None:
+    """Devuelve un sitio por id o None si no existe."""
     return db.session.query(SitioHistorico).filter(SitioHistorico.id == id).first()
 
 
-def delete_site_by_id(id):
-    """Elimina un sitio historico por su id"""
+def delete_site_by_id(id: int) -> SitioHistorico:
+    """Elimina físicamente un sitio histórico por id."""
     site = get_site(id)
     db.session.delete(site)
     db.session.commit()
     return site
 
 
-def apply_filters(query, filters):
-    """Aplica filtros a una consulta de sitios históricos."""
+def apply_filters(query, filters: dict):
+    """Aplica sobre la query los filtros que llegan desde el portal público.
+
+    Acá vive toda la lógica de búsqueda y ordenamiento, así aislamos
+    la complejidad y el endpoint queda más limpio.
+    """
 
     if "search" in filters and filters["search"]:
-        # Búsqueda por texto: El texto debe estar contenido en el nombre del sitio o la descripción breve
+        # Texto libre: busca en nombre y descripción breve
         search_term = f"%{filters['search']}%"
         query = query.filter(
             (SitioHistorico.nombre.ilike(search_term))
@@ -253,21 +324,20 @@ def apply_filters(query, filters):
         )
 
     if "city" in filters and filters["city"]:
-        # El valor de ciudad debe coincidir exactamente (case-insensitive)
         query = query.filter(SitioHistorico.ciudad.ilike(filters["city"]))
 
     if "province" in filters and filters["province"]:
-        # El valor de provincia debe coincidir exactamente (case-insensitive)
         query = query.filter(SitioHistorico.provincia.ilike(filters["province"]))
 
     if "status" in filters and filters["status"]:
-        # Filtrar por estado de conservación
         try:
             estado_enum = EstadoConservacion[filters["status"].upper()]
             query = query.filter(SitioHistorico.estado == estado_enum)
         except KeyError:
-            pass  # Si el estado no es válido, no aplicar el filtro
+            # Si viene algo inválido, simplemente ignoramos ese filtro
+            pass
 
+    # Si no mandan visibility, por defecto mostramos solo visibles
     if "visibility" in filters:
         visibility = filters["visibility"].lower() == "true"
     else:
@@ -279,7 +349,7 @@ def apply_filters(query, filters):
             start_date = datetime.strptime(filters["startDate"], "%Y-%m-%d")
             query = query.filter(SitioHistorico.fechaRegistro >= start_date)
         except ValueError:
-            pass  # Si la fecha no es válida, no aplicar el filtro
+            pass
 
     if "endDate" in filters and filters["endDate"]:
         try:
@@ -289,23 +359,15 @@ def apply_filters(query, filters):
             pass
 
     if "tags" in filters and filters["tags"]:
-        # Filtrar por tags (lista de nombres de tags)
-        # Por cada sitio en la query se debe verificar que tenga almenos uno de los tags en la lista filters["tags"]
-
-        # Convertimos los tags a una lista porque es un string separado por comas
+        # Los tags pueden venir como string "tag1,tag2" → los paso a lista
         if isinstance(filters["tags"], str):
             filters["tags"] = [tag.strip() for tag in filters["tags"].split(",")]
 
         query = query.filter(SitioHistorico.tags.any(Tag.name.in_(filters["tags"])))
 
+    # Ordenamiento configurable desde el portal
     if "order_by" in filters and filters["order_by"]:
         match filters["order_by"]:
-            #Todavia no hay una columna o tabla aparte de rating, cuando haya,
-            #se descomenta esto
-            #case "rating-5-1":
-            #    query = query.order_by(SitioHistorico.rating.desc())
-            #case "rating-1-5:":
-            #    query = query.order_by(SitioHistorico.rating.asc())
             case "latest":
                 query = query.order_by(SitioHistorico.fechaRegistro.asc())
             case "oldest":
@@ -315,6 +377,7 @@ def apply_filters(query, filters):
             case "name-desc":
                 query = query.order_by(SitioHistorico.nombre.desc())
 
+    # Filtros de lat/long crudos (todavía poco usados)
     if "lat" in filters and filters["lat"]:
         query = query.filter(lat=filters["lat"])
 
@@ -325,38 +388,9 @@ def apply_filters(query, filters):
 
 
 def get_sites_by_tag(tag_id: int):
-    """Devuelve todos los sitios asociados a un tag dado."""
-
-    return db.session.query(SitioHistorico).filter(SitioHistorico.tags.any(id=tag_id)).all()
-
-"""
-def get_sites_within_radius(lat: float, lng: float, radius_km: float):
-
-    Devuelve todos los sitios históricos dentro de un radio dado (en km).
-    No aplica ningún otro filtro.
-    
-    from geoalchemy2.functions import ST_DWithin, ST_SetSRID, ST_MakePoint
-    
-    try:
-        lat = float(lat)
-        lng = float(lng)
-        radius_m = float(radius_km) * 1000
-    except ValueError:
-        raise ValueError("lat, lng y radius deben ser números válidos.")
-
-    # Crear punto de referencia
-    point = ST_SetSRID(ST_MakePoint(lng, lat), 4326)
-
-    # Query
-    query = (
+    """Devuelve todos los sitios que tienen asociado el tag indicado."""
+    return (
         db.session.query(SitioHistorico)
-        .filter(
-            SitioHistorico.localizacion.isnot(None)
-        )  # evita fallas si hay sitios sin coordenadas
-        .filter(
-            ST_DWithin(SitioHistorico.localizacion, point, radius_m)
-        )
+        .filter(SitioHistorico.tags.any(id=tag_id))
+        .all()
     )
-
-    return query.all()
-"""

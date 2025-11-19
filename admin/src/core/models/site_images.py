@@ -209,7 +209,7 @@ def generate_data_for_create(request, site_id) -> list:
     return data_for_create
 
 
-def validate_site_images_data(request, site_id, images_to_ignore) -> list:
+def validate_site_images_data(request, site_id, images_to_ignore=[]) -> list:
     """Verifica que los datos de las imagenes a subir cumplan con las restricciones establecidas.
 
     Args:
@@ -229,7 +229,6 @@ def validate_site_images_data(request, site_id, images_to_ignore) -> list:
     existing_images = []
     if site_id is not None:
         existing_images = get_images_by_site(site_id)
-        print("Existing images:", existing_images)
         # Filtramos las imagenes a ignorar
         if len(images_to_ignore) > 0:
             existing_images = [
@@ -237,8 +236,6 @@ def validate_site_images_data(request, site_id, images_to_ignore) -> list:
                 for img in existing_images
                 if img.object_name not in images_to_ignore
             ]
-
-        print("Filtered existing images:", existing_images)
 
     # Si el sitio tiene imagenes guardadas, agregamos los inputs de las mismas al model_data_to_validate
     if len(existing_images) > 0:
