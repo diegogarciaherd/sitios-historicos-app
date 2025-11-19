@@ -9,7 +9,6 @@ class Config:
 
     TESTING = False
     SECRET_KEY = "your-secret-key"
-    CORS_ORIGINS = ["*"]
     SESSION_TYPE = "filesystem"
 
 
@@ -52,6 +51,8 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_ENGINES = {
         "default": f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     }
+
+    CORS_ORIGINS = ["*"]
 
 class TestingConfig(Config):
     """Configuración para entorno de testing"""

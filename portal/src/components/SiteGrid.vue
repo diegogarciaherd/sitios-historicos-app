@@ -64,7 +64,6 @@ watch(
 
 watch(() => props.page, fetchSites)
 
-
 function nextPage() {
   if (props.page < totalPages.value) {
     emit('change-page', props.page + 1)
@@ -97,7 +96,13 @@ onMounted(fetchSites)
       v-else-if="sites.length > 0"
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 w-full"
     >
-      <DetailedSiteCard v-for="site in sites" :key="site.id" :site="site" />
+      <DetailedSiteCard
+        v-for="site in sites"
+        :key="site.id"
+        :site="site"
+        @click="$router.push(`sitios/${site.id}`)"
+        class="cursor-pointer"
+      />
     </div>
 
     <!-- Estado vacío -->

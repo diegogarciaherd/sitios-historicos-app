@@ -1,16 +1,20 @@
 <script setup>
+// Este componente corresponde a la sección de sitios destacados que está abajo en la página principal.
+
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
 import { onBeforeMount, reactive, ref } from 'vue'
 import { getSites } from '@/api/sites'
 
+// featuredSites son todos los sitios que agarro y luego distribuyo en los disintos carruseles.
+// Más adelante, cada sección debería tener su propia llamada a la API para traer los sitios correspondientes.
 const featuredSites = ref([])
 const carouselOptions = reactive([])
 const selectedCarousel = ref()
 
 onBeforeMount(async () => {
   featuredSites.value = await getSites({})
-  console.log('Fetched sites:', featuredSites.value)
+  featuredSites.value = featuredSites.value.data
   carouselOptions.value = [
     {
       id: 'top-rated',
@@ -34,8 +38,6 @@ onBeforeMount(async () => {
     },
   ]
   selectedCarousel.value = ref(carouselOptions.value[0]?.id ?? null)
-  console.log('Carousel Options:', carouselOptions)
-  console.log('Selected Carousel:', selectedCarousel.value)
 })
 </script>
 
@@ -44,11 +46,11 @@ onBeforeMount(async () => {
     class="flex m-0 w-full min-h-screen items-center justify-center bg-white overflow-x-hidden"
   >
     <div class="text-center">
-      <h2 class="text-4xl font-bold mb-4">Sitios Históricos Destacados</h2>
-      <p class="text-lg text-gray-700">
+      <h2 class="text-xl md:text-4xl font-bold mb-4">Sitios Históricos Destacados</h2>
+      <p class="text-base md:text-lg text-gray-700">
         Explora algunos de los sitios históricos más emblemáticos de Argentina.
       </p>
-      <div class="flex justify-center gap-3 mt-8">
+      <div class="flex flex-col md:flex-row justify-center gap-3 mt-2 md:mt-8 items-center">
         <SiteCarouselButton
           v-for="option in carouselOptions.value"
           :key="option.id"
@@ -57,7 +59,7 @@ onBeforeMount(async () => {
           :label="option.label"
         />
       </div>
-      <div class="carousel-stack">
+      <div class="carousel-stack mt-1.5 md:mt-3">
         <SitesCarousel
           v-for="option in carouselOptions.value"
           :key="`carousel-${option.id}`"
@@ -73,6 +75,5 @@ onBeforeMount(async () => {
 <style scoped>
 .carousel-stack {
   position: relative;
-  margin-top: 3rem;
 }
 </style>

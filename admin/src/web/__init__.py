@@ -19,6 +19,7 @@ from web import helpers
 from web.api.sites import sites_api_bp
 from web.api.auth import auth_api_bp
 from web.api.tags import tags_api_bp
+from web.api.site_images import site_images_api_bp
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from web.controllers.reviews import reviews_bp
@@ -58,6 +59,7 @@ def create_app(env="development", static_folder="../../static"):
     app.register_blueprint(auth_api_bp)
     app.register_blueprint(tags_api_bp)
     app.register_blueprint(reviews_bp)
+    app.register_blueprint(site_images_api_bp)
 
     # Rutas mínimas
     @app.route("/")
