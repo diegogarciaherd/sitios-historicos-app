@@ -16,7 +16,13 @@ Este módulo es utilizado por la aplicación pública mediante JWT.
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
-from core.models.sites import list_sites_with_filters, create_sites, get_site
+from core.models.sites import (
+    list_sites_with_filters,
+    create_sites,
+    get_site,
+    increment_site_visit_count,
+    get_sites_by_visits,
+)
 from core.models.tags import get_tags_by_ids, assign_tags
 from core.models.reviews import (
     get_reviews_by_site_id,
@@ -28,6 +34,7 @@ from core.models.reviews import (
 from core.services.favorite_service import toggle_favorite
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
+
 # del branch de tus compas: búsqueda por radio
 from core.services.sites_services import get_sites_within_radius
 
@@ -51,7 +58,14 @@ def check_filters(filters: dict) -> dict:
         dict: Diccionario con errores, vacío si no hay problemas.
     """
     errors: dict[str, str] = {}
-    valid_orders = {"rating-5-1", "rating-1-5", "latest", "oldest", "name-asc", "name-desc"}
+    valid_orders = {
+        "rating-5-1",
+        "rating-1-5",
+        "latest",
+        "oldest",
+        "name-asc",
+        "name-desc",
+    }
 
     if "order_by" in filters and filters["order_by"]:
         if filters["order_by"] not in valid_orders:
@@ -220,6 +234,10 @@ def get_site_by_id(id: int):
     """
     site = get_site(id)
     if site:
+        try:
+            increment_site_visit_count(id)
+        except ValueError:
+            pass
         return jsonify(site.to_dict()), 200
 
     return (
@@ -635,3 +653,26 @@ def delete_site_review_by_id(site_id: int, review_id: int):
     delete_review(reviews[review_id - 1].id)
     # 204: sin body
     return ("", 204)
+
+
+@sites_api_bp.get("/most_visited")
+def get_most_visited_sites():
+    """
+    Devuelve una lista de los sitios más visitados.
+
+    Returns:
+        JSON con la lista de sitios más visitados.
+    """
+
+    most_visited_sites = get_sites_by_visits()
+
+    sites_data = [site.to_dict() for site in most_visited_sites]
+
+    return (
+        jsonify(
+            {
+                "data": sites_data,
+            }
+        ),
+        200,
+    )
