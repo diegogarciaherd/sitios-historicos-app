@@ -65,7 +65,7 @@ export function useSiteSearch() {
       query.order_by = appliedFilters.value.order_by
     }
 
-    // Map search params (shareable)
+
     if (appliedFilters.value.lat) {
       query.lat = appliedFilters.value.lat
     }
@@ -113,8 +113,7 @@ export function useSiteSearch() {
       }
     })
 
-    // Si hay lat y lng, tratamos esto como una búsqueda estricta por mapa:
-    // devolvemos únicamente lat,lng,radius y page (no combinamos con otros filtros)
+    
     if (combined.lat && combined.lng) {
       const mapOnly = {
         lat: combined.lat,
@@ -222,6 +221,39 @@ export function useSiteSearch() {
     { deep: true },
   )
 
+
+function goBackToList() {
+  const queryParams = {}
+  
+  // Reconstruir los parámetros
+  if (searchTerm.value) queryParams.search = searchTerm.value
+  if (appliedFilters.value.city) queryParams.city = appliedFilters.value.city
+  if (appliedFilters.value.province) queryParams.province = appliedFilters.value.province
+  if (appliedFilters.value.order_by) queryParams.order_by = appliedFilters.value.order_by
+  if (page.value && page.value > 1) queryParams.page = page.value
+  
+  // Tags
+  if (appliedFilters.value.tags && appliedFilters.value.tags.length > 0) {
+    const tagNames = appliedFilters.value.tags
+      .map(tag => typeof tag === 'string' ? tag : tag?.name || '')
+      .filter(name => name)
+    if (tagNames.length > 0) {
+      queryParams.tags = tagNames.join(',')
+    }
+  }
+  
+  // Parámetros de mapa
+  if (appliedFilters.value.lat) queryParams.lat = appliedFilters.value.lat
+  if (appliedFilters.value.lng) queryParams.lng = appliedFilters.value.lng
+  if (appliedFilters.value.radius) queryParams.radius = appliedFilters.value.radius
+
+
+  router.push({
+    name: 'sites-list', 
+    query: queryParams
+  })
+}
+
   return {
     page,
     searchTerm,
@@ -232,5 +264,6 @@ export function useSiteSearch() {
     handleSearch,
     handleClear,
     handlePageChange,
+    goBackToList
   }
 }
