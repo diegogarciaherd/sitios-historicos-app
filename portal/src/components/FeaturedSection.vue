@@ -4,7 +4,7 @@
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
 import { onBeforeMount, reactive, ref } from 'vue'
-import { getSites } from '@/api/sites'
+import { getSites, getMostVisitedSites } from '@/api/sites'
 
 // featuredSites son todos los sitios que agarro y luego distribuyo en los disintos carruseles.
 // Más adelante, cada sección debería tener su propia llamada a la API para traer los sitios correspondientes.
@@ -12,9 +12,15 @@ const featuredSites = ref([])
 const carouselOptions = reactive([])
 const selectedCarousel = ref()
 
+const mostVisitedSites = ref([])
+
 onBeforeMount(async () => {
   featuredSites.value = await getSites({})
   featuredSites.value = featuredSites.value.data
+
+  mostVisitedSites.value = await getMostVisitedSites()
+  mostVisitedSites.value = mostVisitedSites.value.data
+
   carouselOptions.value = [
     {
       id: 'top-rated',
@@ -24,7 +30,7 @@ onBeforeMount(async () => {
     {
       id: 'most-visited',
       label: 'Más visitados',
-      sites: featuredSites.value.slice().reverse(),
+      sites: mostVisitedSites.value,
     },
     {
       id: 'new-additions',
