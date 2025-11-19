@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar/api',
 })
 
 export default api
