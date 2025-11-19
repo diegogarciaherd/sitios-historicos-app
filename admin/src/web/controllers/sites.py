@@ -40,6 +40,7 @@ from core.models.site_images import (
     validate_site_images_data,
     generate_data_for_update,
     generate_data_for_create,
+    delete_image_by_object_name,
 )
 
 
@@ -227,8 +228,11 @@ def edit_site(id):
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
+        images_to_delete = request.form.getlist("imagesToDelete[]")
+        data.pop("imagesToDelete[]", None)
+
         errors = validate_site_data(data)
-        imagesErrors = validate_site_images_data(request, id)
+        imagesErrors = validate_site_images_data(request, id, images_to_delete)
 
         # Si hay errores, mostrar el formulario con los errores
         if errors or imagesErrors:
@@ -250,7 +254,9 @@ def edit_site(id):
         # --- UPDATE CAMPOS ---
         update_site(id, **data)
 
-        images_data_update = generate_data_for_update(request, site.id)
+        images_data_update = generate_data_for_update(
+            request, site.id, images_to_delete
+        )
         images_data_create = generate_data_for_create(request, site.id)
 
         for img_data in images_data_update:
@@ -258,6 +264,10 @@ def edit_site(id):
 
         for new_img_data in images_data_create:
             create_site_image(site.id, **new_img_data)
+
+        if len(images_to_delete) > 0:
+            for object_name in images_to_delete:
+                delete_image_by_object_name(object_name)
 
         # --- TAGS ---
         selected_tags = tags.get_tags_by_ids(tag_ids)

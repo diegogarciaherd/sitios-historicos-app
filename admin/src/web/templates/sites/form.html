@@ -291,12 +291,17 @@
         <div>
             <h3>Imagenes</h3>
             {% if site_images %}
-            <div>
+            <div class="image-preview-container">
                 {% for image in site_images %}
-                <div class="image-preview">
+                <div class="image-preview" id="image-container-{{ image.object_name }}">
                     <img src="{{ image_url(image.object_name) }}" alt="{{ image.alt_text }}"/>
 
                     <div class="image-preview-inputs">
+                        <div class="image-preview-buttons">
+                            <button id="cancel-delete-{{ image.object_name }}" class="cancel-delete-img-btn" type="button">Cancelar</button>
+                            <button id="delete-img-btn-{{ image.object_name }}" class="delete-image-button" title="Eliminar imagen" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                        </div>
+
                         <fieldset class="image-preview-input-container">
                             <label for="alt-text-{{ image.object_name }}">Título/alt:</label>
                             
@@ -323,6 +328,8 @@
                     </div>
                 </div>
                 {% endfor %}
+
+                <p id="images-info-element"></p>
             </div>
             {% else %}
             <p>No hay imagenes disponibles.</p> 
@@ -346,7 +353,7 @@
                     Formatos permitidos: JPG, PNG, WEBP. Tamaño máximo por archivo: 5 MB.
                 </p>
 
-                <div class="image-preview-container"></div>
+                <div id="image-preview-container" class="image-preview-container"></div>
 
                 <p class="error"></p>
             </div>
@@ -512,6 +519,39 @@
             }
         }
 
+        imagesToDeleteElements = document.querySelectorAll('.image-preview.delete');
+        let imagesToDelete = [];
+        if (imagesToDeleteElements.length > 0){
+            imagesToDeleteElements.forEach(elem => {
+                const imgId = elem.id.replace('image-container-', '');
+                imagesToDelete.push(imgId);
+            });
+
+            // Si hay imagenes para eliminar, las agregamos al formulario con el campo imagesToDelete[], el cual será un array con los object_name de las imagenes a eliminar
+
+            const deleteSelect = document.createElement('select');
+            deleteSelect.name = 'imagesToDelete[]';
+            deleteSelect.multiple = true;
+            deleteSelect.style.display = 'none';
+            imagesToDelete.forEach(imgId => {
+                const option = document.createElement('option');
+                option.value = imgId;
+                option.selected = true;
+                deleteSelect.appendChild(option);
+            });
+            document.querySelector('form').appendChild(deleteSelect);
+
+
+
+            // Agregamos el input hidden con las imagenes a eliminar
+            /* const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = 'imagesToDelete[]';
+            
+            deleteInput.value = imagesToDelete.join(',');
+            document.querySelector('form').appendChild(deleteInput); */
+        }
+
            
         if (!isValid) { 
             e.preventDefault();
@@ -675,6 +715,48 @@
         errorContainer.innerHTML = '';
     }
 
+    document.querySelectorAll('.delete-image-button').forEach(button => {
+        button.addEventListener('click', () => {
+            clearImageErrors()
+            imgToDelete = button.id.replace('delete-img-btn-', '');
+
+            // Verificar que la imagen seleccionada no este marcada como portada
+            // En caso de estarlo, no permitir su eliminación
+            const isCoverInput = document.getElementById(`is-cover-${imgToDelete}`);
+            if (isCoverInput && isCoverInput.checked) {
+                showImageError('No se puede eliminar una imagen marcada como portada. Primero desmarquela y luego intente eliminarla.');
+                return;
+            }
+
+            // Marcamos la imagen para ser eliminada
+            const imageToDeleteContainer = document.getElementById(`image-container-${imgToDelete}`);
+            imageToDeleteContainer.classList.add('delete');
+            // Ocultamos el botón de eliminar y mostramos el de cancelar
+            document.getElementById(`delete-img-btn-${imgToDelete}`).style.display = 'none';
+            document.getElementById(`cancel-delete-${imgToDelete}`).style.display = 'block';
+            const messageElement = document.getElementById('images-info-element')
+            messageElement.textContent = `Se van a eliminar ${document.querySelectorAll('.image-preview.delete').length} imagen(es).`;
+        })
+    })
+
+    document.querySelectorAll('.cancel-delete-img-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            
+            const imgToDelete = button.id.replace('cancel-delete-', '');
+            const imageToDeleteContainer = document.getElementById(`image-container-${imgToDelete}`);
+            imageToDeleteContainer.classList.remove('delete');
+            document.getElementById(`delete-img-btn-${imgToDelete}`).style.display = 'block';
+            document.getElementById(`cancel-delete-${imgToDelete}`).style.display = 'none';
+            messageElement = document.getElementById('images-info-element')
+            const deletedImagesCount = document.querySelectorAll('.image-preview.delete').length;
+            if (deletedImagesCount > 0){
+                messageElement.textContent = `Se van a eliminar ${deletedImagesCount} imagen(es).`;
+            }else{
+                messageElement.textContent = '';
+            }
+        })
+    })
+
     /*
         Validaciones para la carga de imágenes
     */
@@ -717,7 +799,7 @@
 
         // En este punto, todas las validaciones sobre imagenes pasaron, así que procedemos a mostrar las vistas previas con sus inputs.
 
-        const previewContainer = document.querySelector('.image-preview-container');
+        const previewContainer = document.getElementById('image-preview-container');
         previewContainer.innerHTML = ''; // Limpiar vistas previas anteriores
 
         for (let i = 0; i < files.length; i++) {

@@ -98,14 +98,24 @@ def update_image_data(site_image_id: int, **kwargs):
     db.session.commit()
 
 
-def delete_image(image_id: int):
-    """Elimina una imagen de la base de datos.
+def delete_image_by_object_name(object_name):
+    """Elimina una imagen de la base de datos y de Minio.
 
     Args:
         image_id (int): ID de la imagen a eliminar.
     """
-    image = db.session.query(SiteImages).get(image_id)
+
+    image = (
+        db.session.query(SiteImages)
+        .filter(SiteImages.object_name == object_name)
+        .first()
+    )
+
     if image:
+        client_storage = current_app.storage
+        bucket_name = current_app.config.get("MINIO_BUCKET")
+        client_storage.remove_object(bucket_name, object_name)
+
         db.session.delete(image)
         db.session.commit()
 
@@ -126,17 +136,28 @@ def get_image_cover_by_site(site_id: int) -> SiteImages | None:
     )
 
 
-def generate_data_for_update(request, site_id) -> list:
+def generate_data_for_update(request, site_id, images_to_ignore) -> list:
     """Genera una lista de diccionarios con los datos actualizados de las imágenes asociadas a un sitio histórico.
 
     Keyword arguments:
     request -- objeto de la solicitud que contiene los datos del formulario.
     site_id -- ID del sitio histórico.
+    images_to_ignore -- lista de nombres de objetos de imágenes que deben ser ignoradas durante la generación de datos.
+
     Return: lista de diccionarios con los datos actualizados de las imágenes.
     """
 
     data_for_update = []
     existing_images = get_images_by_site(site_id)
+
+    # Filtramos las imagenes a ignorar
+    if len(existing_images) > 0:
+        if len(images_to_ignore) > 0:
+            existing_images = [
+                img
+                for img in existing_images
+                if img.object_name not in images_to_ignore
+            ]
 
     if len(existing_images) > 0:
         for img in existing_images:
@@ -188,12 +209,13 @@ def generate_data_for_create(request, site_id) -> list:
     return data_for_create
 
 
-def validate_site_images_data(request, site_id) -> list:
+def validate_site_images_data(request, site_id, images_to_ignore) -> list:
     """Verifica que los datos de las imagenes a subir cumplan con las restricciones establecidas.
 
     Args:
         request: Objeto de la solicitud que contiene los datos de las imágenes.
         site_id: ID del sitio histórico, puede ser None si es un nuevo sitio.
+        images_to_ignore: Lista de nombres de objetos de imágenes que deben ser ignoradas durante la validación.
 
     Returns:
         list: Lista de errores encontrados durante la validación.
@@ -207,6 +229,16 @@ def validate_site_images_data(request, site_id) -> list:
     existing_images = []
     if site_id is not None:
         existing_images = get_images_by_site(site_id)
+        print("Existing images:", existing_images)
+        # Filtramos las imagenes a ignorar
+        if len(images_to_ignore) > 0:
+            existing_images = [
+                img
+                for img in existing_images
+                if img.object_name not in images_to_ignore
+            ]
+
+        print("Filtered existing images:", existing_images)
 
     # Si el sitio tiene imagenes guardadas, agregamos los inputs de las mismas al model_data_to_validate
     if len(existing_images) > 0:
