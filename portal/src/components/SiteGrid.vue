@@ -42,10 +42,13 @@ async function fetchSites() {
     const response = await getSites({
       page: props.page,
       per_page: perPage,
-      ...props.siteFilters,
+    ...props.siteFilters,
     })
-    sites.value = response.data || []
-    totalPages.value = response.meta?.total_pages || 1
+
+  sites.value = response.data || []
+  const total = response.meta?.total || 0
+  totalPages.value = Math.ceil(total / perPage)
+
   } finally {
     loading.value = false
   }

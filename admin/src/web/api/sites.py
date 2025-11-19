@@ -253,7 +253,7 @@ def get_sites_nearby():
 
     try:
         lat = float(params.get("lat", ""))
-        long = float(params.get("long", ""))
+        long = float(params.get("lng", ""))
         radius = float(params.get("radius", ""))
     except ValueError:
         errors["coords"] = "lat, long y radius deben ser numéricos."
