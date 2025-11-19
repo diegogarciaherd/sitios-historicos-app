@@ -223,3 +223,13 @@ scripts-postgres/
 
 # Minio Docker volume
 minio-local/data/
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+admin/.dockerignore
+portal/.dockerignore
+admin/.dockerfile 
+portal/.dockerfile 
+

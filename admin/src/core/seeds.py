@@ -19,7 +19,7 @@ def run():
     db.session.commit()
 
     # 🔹 Crear tags
-    tag_names = ["Histórico", "Cultural", "Religioso", "Gobierno", "Museo", "Monumento"]
+    tag_names = ["Histórico", "Cultural", "Religioso", "Gobierno", "Museo", "Monumento", "Natural", "Geológico", "Turismo"]
     tags_objs = []
     for name in tag_names:
         tag = Tag(name=name)
@@ -38,24 +38,11 @@ def run():
     sitios_data = [
         {
             "nombre": "Catedral de La Plata",
+            "ciudad": "La Plata",
             "descripcionBreve": "Imponente catedral neogótica.",
             "lat": -34.9214,
             "lng": -57.9544,
             "tags": ["Histórico", "Religioso"],
-        },
-        {
-            "nombre": "Teatro Colón",
-            "descripcionBreve": "Famoso teatro de ópera.",
-            "lat": -34.6014,
-            "lng": -58.3836,
-            "tags": ["Cultural", "Histórico"],
-        },
-        {
-            "nombre": "Casa Rosada",
-            "descripcionBreve": "Sede del Poder Ejecutivo.",
-            "lat": -34.6083,
-            "lng": -58.3700,
-            "tags": ["Gobierno", "Histórico"],
         },
         {
             "nombre": "Café Tortoni",
@@ -66,6 +53,7 @@ def run():
         },
         {
             "nombre": "Museo Nacional de Bellas Artes",
+            "ciudad": "La Plata",
             "descripcionBreve": "Museo de arte argentino.",
             "lat": -34.5873,
             "lng": -58.3975,
@@ -97,6 +85,7 @@ def run():
             "descripcionBreve": "Edificio histórico y arquitectónico.",
             "lat": -34.6080,
             "lng": -58.3810,
+            "provincia": "Chubut",
             "tags": ["Histórico"],
         },
         {
@@ -141,6 +130,116 @@ def run():
             "lng": -58.3800,
             "tags": ["Cultural"],
         },
+        {
+            "nombre": 'Casa Rosada',
+            "descripcionBreve": 'Sede del Poder Ejecutivo Nacional',
+            "ciudad": 'Buenos Aires',
+            "provincia": 'Buenos Aires',
+            "estado": EstadoConservacion.BUENO,
+            "lat": -34.6083,
+            "lng": -58.3700,
+            "tags": ['Gobierno', 'Histórico'],
+        },
+        {
+            "nombre": 'Catedral de Salta',
+            "descripcionBreve": 'Catedral de la ciudad de Salta',
+            "ciudad": 'Salta',
+            "provincia": 'Salta',
+            "estado": EstadoConservacion.BUENO,
+            "lat": -24.7821,
+            "lng": -65.4232,
+            "tags": ['Histórico', 'Religioso'],
+        },
+        {
+            "nombre": 'Parque General San Martín',
+            "descripcionBreve": 'Un hermoso parque en la ciudad de Mendoza',
+            "ciudad": 'Mendoza',
+            "provincia": 'Mendoza',
+            "estado": EstadoConservacion.REGULAR,
+            "lat": -32.8908,
+            "lng": -68.8272,
+            "tags": ['Cultural'],
+        },
+        {
+            "nombre": 'Casa Histórica de la Independencia',
+            "descripcionBreve": 'Lugar donde se declaró la independencia de Argentina',
+            "ciudad": 'San Miguel de Tucumán',
+            "provincia": 'Tucumán',
+            "estado": EstadoConservacion.MALO,
+            "lat": -26.8083,
+            "lng": -65.2176,
+            "tags": ['Histórico'],
+        },
+        {
+            "nombre": 'Teatro Colón',
+            "descripcionBreve": 'Uno de los teatros de ópera más importantes del mundo',
+            "ciudad": 'Buenos Aires',
+            "provincia": 'Buenos Aires',
+            "estado": EstadoConservacion.BUENO,
+            "lat": -34.6014,
+            "lng": -58.3836,
+            "tags": ['Cultural', 'Histórico'],
+        },
+        {
+            "nombre": 'Ruinas de San Ignacio Miní',
+            "descripcionBreve": 'Antigua misión jesuítica en Misiones',
+            "ciudad": 'San Ignacio',
+            "provincia": 'Misiones',
+            "estado": EstadoConservacion.REGULAR,
+            "lat": -27.1833,
+            "lng": -55.3333,
+            "tags": ['Histórico'],
+        },
+        {
+            "nombre": 'Cerro de los Siete Colores',
+            "descripcionBreve": 'Formación geológica única en Purmamarca',
+            "ciudad": 'Purmamarca',
+            "provincia": 'Jujuy',
+            "estado": EstadoConservacion.BUENO,
+            "lat": -23.9875,
+            "lng": -65.2625,
+            "tags": ['Natural', 'Geológico', 'Turismo'],
+        },
+        {
+            "nombre": 'Estancia Jesuítica de Alta Gracia',
+            "descripcionBreve": 'Patrimonio de la Humanidad en Córdoba',
+            "ciudad": 'Alta Gracia',
+            "provincia": 'Córdoba',
+            "estado": EstadoConservacion.REGULAR,
+            "lat": -31.6375,
+            "lng": -64.4175,
+            "tags": ['Histórico', 'Cultural', 'Religioso'],
+        },
+        {
+            "nombre": 'Quebrada de Humahuaca',
+            "descripcionBreve": 'Valle montañoso en Jujuy',
+            "ciudad": 'Humahuaca',
+            "provincia": 'Jujuy',
+            "estado": EstadoConservacion.BUENO,
+            "lat": -23.2061,
+            "lng": -65.3472,
+            "tags": ['Natural', 'Cultural', 'Turismo'],
+        },
+        {
+            "nombre": 'Salto Alegre',
+            "descripcionBreve": 'Impresionante cascada en la provincia de Misiones',
+            "ciudad": 'Aristóbulo del Valle',
+            "provincia": 'Misiones',
+            "estado": EstadoConservacion.BUENO,
+            "lat": -26.5833,
+            "lng": -54.8667,
+            "tags": ['Natural', 'Turismo'],
+        },
+        {
+            "nombre": 'Catedral de La Plata',
+            "descripcionBreve": "Imponente catedral neogótica.",
+            "ciudad": "La Plata",
+            "provincia": "Buenos Aires",
+            "estado": EstadoConservacion.BUENO,
+            "lat": -34.9214,
+            "lng": -57.9544,
+            "tags": ["Histórico", "Religioso"],
+        },
     ]
 
     # 🔹 Crear sitios y asociar tags
@@ -149,9 +248,9 @@ def run():
         sitio = SitioHistorico(
             nombre=s["nombre"],
             descripcionBreve=s["descripcionBreve"],
-            ciudad="Buenos Aires",
-            provincia="Buenos Aires",
-            estado=EstadoConservacion.BUENO,
+            ciudad=s["ciudad"] if "ciudad" in s else "Buenos Aires",
+            provincia=s["provincia"] if "provincia" in s else "Buenos Aires",
+            estado=s["estado"] if "estado" in s else EstadoConservacion.BUENO,
             localizacion=make_point(s["lat"], s["lng"]),
         )
         sitio.tags = [t for t in tags_objs if t.name in s["tags"]]

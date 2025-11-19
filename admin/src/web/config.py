@@ -9,6 +9,7 @@ class Config:
 
     TESTING = False
     SECRET_KEY = "your-secret-key"
+    CORS_ORIGINS = ["*"]
     SESSION_TYPE = "filesystem"
 
 
@@ -24,6 +25,9 @@ class ProductionConfig(Config):
 
     # Configuracion para PostgreSQL
     SQLALCHEMY_ENGINES = {"default": environ.get("DATABASE_URL")}
+
+    # Configuracion para Cors
+    CORS_ORIGINS = ["https://grupo45.proyecto2025.linti.unlp.edu.ar"]
 
 
 class DevelopmentConfig(Config):
@@ -48,7 +52,6 @@ class DevelopmentConfig(Config):
     SQLALCHEMY_ENGINES = {
         "default": f"{DB_SCHEME}://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     }
-
 
 class TestingConfig(Config):
     """Configuración para entorno de testing"""
