@@ -169,6 +169,7 @@ class SitioHistorico(Base):
 # Funciones helper de consulta / creación / actualización de sitios
 # --------------------------------------------------------------------
 
+
 def list_sites(page: int = 1, per_page: int = 10):
     """Lista todos los sitios históricos con paginación simple.
 
@@ -184,7 +185,11 @@ def list_sites(page: int = 1, per_page: int = 10):
 
 def list_sites_with_filters(filters: dict, page: int = 1, per_page: int = 10):
     """Lista sitios aplicando los filtros que vienen del portal público."""
-    query = db.session.query(SitioHistorico)
+    query = db.session.query(SitioHistorico).order_by(
+        SitioHistorico.fechaRegistro.desc(),  # ordena por fecha de registro, más recientes primero
+        SitioHistorico.nombre.asc(),  # ordena alfabéticamente por nombre A-Z
+        SitioHistorico.ciudad.asc(),
+    )
     query = apply_filters(query, filters)
     total = query.count()
     sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
