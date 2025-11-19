@@ -1,8 +1,9 @@
-{% extends "sites_layout.html" %}
-{% block title %}{{ site.nombre }} | Sitio Histórico{% endblock %}
-
-{% block head_styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/sites.css') }}">
+{% extends "sites_layout.html" %} {% block title %}{{ site.nombre }} | Sitio
+Histórico{% endblock %} {% block head_styles %}
+<link
+	rel="stylesheet"
+	href="{{ url_for('static', filename='css/sites.css') }}"
+/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -336,8 +337,6 @@
     </div>
   {% endif %}
 
-  <hr>
-
   <!-- Descripción -->
   <div class="description-section">
     <h3>Descripción completa</h3>
@@ -355,6 +354,41 @@
       <p class="muted text-center mt-4">Ubicación no disponible.</p>
     {% endif %}
   </div>
+
+  <!-- Imágenes -->
+	<h2>Imágenes</h2>
+	{% if site_images %}
+	<div class="site-images-container">
+		{% for image in site_images %}
+		<picture class="site-image">
+			<img src="{{ image_url(image.object_name)}}" alt="{{image.alt_text}}" />
+			<div class="site-image-info">
+				<div class="site-image-info-col">
+					<label>Descripción: </label>
+					<p>{{ image.description }}</p>
+				</div>
+
+				<div class="site-image-info-col">
+					<label>Título/alt:</label>
+					<p>{{ image.alt_text }}</p>
+				</div>
+
+				<div class="site-image-info-row">
+					<label>Numero de ordenamiento:</label>
+					<p>{{ image.order }}</p>
+				</div>
+
+				<div class="site-image-info-row">
+					<label>Es portada?</label>
+					<p>{% if image.is_cover %}Sí{% else %}No{% endif %}</p>
+				</div>
+			</div>
+		</picture>
+		{% endfor %}
+	</div>
+	{% else %}
+	<p class="text-muted text-center mt-4">No hay imágenes disponibles.</p>
+	{% endif %}
 
   <!-- Reseñas -->
   <section class="reviews-section">

@@ -114,7 +114,7 @@
         {% endif %}
     {% endwith %}
 
-    <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post">
+    <form id="siteForm" action="{% if site %}{{ url_for('sites.edit_site', id=site.id) }}{% else %}{{ url_for('sites.create_site') }}{% endif %}" method="post" enctype="multipart/form-data">
         <!-- Nombre -->
         <div class="form-group">
             <label for="nombre">Nombre (obligatorio)</label>
@@ -287,6 +287,81 @@
             </div>
         </div>
 
+        <!-- Input de imagenes -->
+        <div>
+            <h3>Imagenes</h3>
+            {% if site_images %}
+            <div class="image-preview-container">
+                {% for image in site_images %}
+                <div class="image-preview" id="image-container-{{ image.object_name }}">
+                    <img src="{{ image_url(image.object_name) }}" alt="{{ image.alt_text }}"/>
+
+                    <div class="image-preview-inputs">
+                        <div class="image-preview-buttons">
+                            <button id="cancel-delete-{{ image.object_name }}" class="cancel-delete-img-btn" type="button">Cancelar</button>
+                            <button id="delete-img-btn-{{ image.object_name }}" class="delete-image-button" title="Eliminar imagen" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                        </div>
+
+                        <fieldset class="image-preview-input-container">
+                            <label for="alt-text-{{ image.object_name }}">Título/alt:</label>
+                            
+                            <input type="text" id="alt-text-{{ image.object_name }}" name="alt-text-{{ image.object_name }}" required value="{{image.alt_text}}"/>
+                            <p id="alt-text-{{ image.object_name }}-error"></p>
+                        </fieldset>
+
+                        <fieldset class="image-preview-input-container">
+                            <label for="description-{{ image.object_name }}">Descripción:</label>
+                            <input type="text" id="description-{{ image.object_name }}" name="description-{{ image.object_name }}" value="{{image.description}}"/>
+                            <p id="description-{{ image.object_name }}-error"></p>
+                        </fieldset>
+
+                        <fieldset>
+                            <label for="order-{{ image.object_name }}">Orden:</label>
+                            <input type="number" id="order-{{ image.object_name }}" name="order-{{ image.object_name }}" required value="{{ image.order}}" min="1" max="10"/>
+                            <p id="order-{{ image.object_name }}-error"></p>
+                        </fieldset>
+
+                        <fieldset>
+                            <label for="is-cover-{{ image.object_name }}">¿Es imagen de portada?</label>
+                            <input type="checkbox" id="is-cover-{{ image.object_name }}" name="is-cover-{{ image.object_name }}" {% if image.is_cover %}checked{% endif %}/>
+                        </fieldset>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <p id="images-info-element"></p>
+            </div>
+            {% else %}
+            <p>No hay imagenes disponibles.</p> 
+            {% endif %}
+
+
+            {% if site_images|length < 10 %}
+            <div class="image-upload-container">
+                <div class="image-upload">
+                    <label for="image-upload-input">Subir imágenes:</label>
+                    <input
+                        type="file"
+                        multiple
+                        id="image-upload-input"
+                        accept=".jpg, .jpeg, .png, .webp"
+                        name="images"
+                    />
+                </div>
+
+                <p>
+                    Formatos permitidos: JPG, PNG, WEBP. Tamaño máximo por archivo: 5 MB.
+                </p>
+
+                <div id="image-preview-container" class="image-preview-container"></div>
+
+                <p class="error"></p>
+            </div>
+            {% endif %}
+
+            <div id="images-errors-container"></div>
+        </div>
+
         <div class="form-actions">
             <a href="{{ url_for('sites.list_all_sites') }}" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary">
@@ -319,12 +394,15 @@
       document.getElementById('lat').value = lat;
       document.getElementById('lng').value = lng;
   });
+
     // Validación completa del formulario
     document.getElementById('siteForm').addEventListener('submit', function(e) {
         clearAllErrors();
+        clearImageErrors();
         let isValid = true;
 
         // Validar todos los campos obligatorios
+
         const requiredFields = [
             { id: 'nombre', name: 'nombre del sitio' },
             { id: 'descripcionBreve', name: 'descripción breve' },
@@ -332,10 +410,27 @@
             { id: 'categoria', name: 'categoría' },
             { id: 'añoInauguracion', name: 'año de inauguración' }
         ];
+        
 
+        // Validaciones para la carga de imagenes
+        const imageInput = document.getElementById('image-upload-input');
+        if (imageInput.files.length > 0) {
+            for (let i = 0; i < imageInput.files.length; i++) {
+                const file = imageInput.files[i];
+
+                // Agregamos los inputs al array de campos requeridos para su posterior validación
+                requiredFields.push(...[
+                    { id: `alt-text-${file.name}`, name: `texto alternativo de la imagen ${file.name}` },
+                    { id: `order-${file.name}`, name: `orden de la imagen ${file.name}` }
+                ]);              
+            }
+        }
+
+
+        // validar que los campos requeridos no estén vacíos
         requiredFields.forEach(field => {
             const input = document.getElementById(field.id);
-            if (!input.value.trim()) {
+            if (!input.value || !input.value.trim()) {
                 showError(field.id, `El campo "${field.name}" es obligatorio`);
                 isValid = false;
             }
@@ -370,9 +465,95 @@
         if (descBreveInput.value.trim() && descBreveInput.value.length > 255) {
             showError('descripcionBreve', 'La descripción breve no puede exceder 255 caracteres');
             isValid = false;
+        }       
+
+
+        // Realizamos las validaciones de imagenes sobre todas las imagenes que hay en el html (por subir y las ya existentes)
+        const imagePreviews = document.querySelectorAll('.image-preview');
+        let coverInputsChecked = 0;
+        let orderValues = [];
+
+        if (imagePreviews.length > 0){
+            for (let preview of imagePreviews) {
+                const coverInput = preview.querySelector('input[type="checkbox"]');
+                if (coverInput.checked){
+                    coverInputsChecked += 1;
+                }
+
+                const orderInput = preview.querySelector('input[type="number"]');
+                const orderValue = orderInput.value;
+                orderValues.push(orderValue);
+                let orderCount = 0;
+
+                imagePreviews.forEach(otherPreview => {
+                    const otherOrderInput = otherPreview.querySelector('input[type="number"]');
+                    if (otherOrderInput.value === orderValue){
+                        orderCount += 1;
+                    }
+                })
+
+
+                if (orderCount > 1){
+                    showImageError(`El orden ${orderValue} se encuentra repetido en otra imagen.`);
+                    isValid = false;
+                    break;
+                }
+            }
+
+            const orderValuesSorted = orderValues.sort((a,b) => a - b)
+            for (let i = 0; i < orderValuesSorted.length; i++) {
+                if (parseInt(orderValuesSorted[i]) !== i + 1){
+                    showImageError(`El orden de las imágenes debe ser consecutivo sin saltos. Falta el orden ${i + 1}.`);
+                    isValid = false;
+                    break
+                }
+            }
+
+
+            if (coverInputsChecked === 0) {
+                showImageError('Debe haber al menos una imagen marcada como portada.');
+                isValid = false;
+            }else if (coverInputsChecked > 1){
+                showImageError('Solo puede haber una imagen marcada como portada.');
+                isValid = false;
+            }
         }
 
-        if (!isValid) {
+        imagesToDeleteElements = document.querySelectorAll('.image-preview.delete');
+        let imagesToDelete = [];
+        if (imagesToDeleteElements.length > 0){
+            imagesToDeleteElements.forEach(elem => {
+                const imgId = elem.id.replace('image-container-', '');
+                imagesToDelete.push(imgId);
+            });
+
+            // Si hay imagenes para eliminar, las agregamos al formulario con el campo imagesToDelete[], el cual será un array con los object_name de las imagenes a eliminar
+
+            const deleteSelect = document.createElement('select');
+            deleteSelect.name = 'imagesToDelete[]';
+            deleteSelect.multiple = true;
+            deleteSelect.style.display = 'none';
+            imagesToDelete.forEach(imgId => {
+                const option = document.createElement('option');
+                option.value = imgId;
+                option.selected = true;
+                deleteSelect.appendChild(option);
+            });
+            document.querySelector('form').appendChild(deleteSelect);
+
+
+
+            // Agregamos el input hidden con las imagenes a eliminar
+            /* const deleteInput = document.createElement('input');
+            deleteInput.type = 'hidden';
+            deleteInput.name = 'imagesToDelete[]';
+            
+            deleteInput.value = imagesToDelete.join(',');
+            document.querySelector('form').appendChild(deleteInput); */
+        }
+
+           
+        if (!isValid) { 
             e.preventDefault();
             // Scroll al primer error
             const firstError = document.querySelector('.error-message.active');
@@ -381,6 +562,7 @@
                 firstError.previousElementSibling.focus();
             }
         }
+                    
     });
 
     // Validación en tiempo real para mejor UX
@@ -489,6 +671,17 @@
         
         // Limpiar error del mapa
         document.getElementById('map').classList.remove('error');
+
+        // Limpiamos los errores de los inputs de las imagenes
+        document.querySelectorAll('.image-preview-inputs fieldset').forEach(elem => {
+            const input = elem.querySelector('input');
+            const error = elem.querySelector('p');
+            if(input) input.classList.remove('error');
+            if(error) {
+                error.textContent = '';
+                error.style.display = 'none';
+            }
+        })
     }
 
     // Tags interactivos
@@ -511,6 +704,138 @@
             }
         }
     });
+
+    function showImageError(message) {
+        const errorContainer = document.getElementById('images-errors-container');
+        errorContainer.innerHTML += `<p>Error: ${message}</p>`;
+    }
+
+    function clearImageErrors() {
+        const errorContainer = document.getElementById('images-errors-container');
+        errorContainer.innerHTML = '';
+    }
+
+    document.querySelectorAll('.delete-image-button').forEach(button => {
+        button.addEventListener('click', () => {
+            clearImageErrors()
+            imgToDelete = button.id.replace('delete-img-btn-', '');
+
+            // Verificar que la imagen seleccionada no este marcada como portada
+            // En caso de estarlo, no permitir su eliminación
+            const isCoverInput = document.getElementById(`is-cover-${imgToDelete}`);
+            if (isCoverInput && isCoverInput.checked) {
+                showImageError('No se puede eliminar una imagen marcada como portada. Primero desmarquela y luego intente eliminarla.');
+                return;
+            }
+
+            // Marcamos la imagen para ser eliminada
+            const imageToDeleteContainer = document.getElementById(`image-container-${imgToDelete}`);
+            imageToDeleteContainer.classList.add('delete');
+            // Ocultamos el botón de eliminar y mostramos el de cancelar
+            document.getElementById(`delete-img-btn-${imgToDelete}`).style.display = 'none';
+            document.getElementById(`cancel-delete-${imgToDelete}`).style.display = 'block';
+            const messageElement = document.getElementById('images-info-element')
+            messageElement.textContent = `Se van a eliminar ${document.querySelectorAll('.image-preview.delete').length} imagen(es).`;
+        })
+    })
+
+    document.querySelectorAll('.cancel-delete-img-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            
+            const imgToDelete = button.id.replace('cancel-delete-', '');
+            const imageToDeleteContainer = document.getElementById(`image-container-${imgToDelete}`);
+            imageToDeleteContainer.classList.remove('delete');
+            document.getElementById(`delete-img-btn-${imgToDelete}`).style.display = 'block';
+            document.getElementById(`cancel-delete-${imgToDelete}`).style.display = 'none';
+            messageElement = document.getElementById('images-info-element')
+            const deletedImagesCount = document.querySelectorAll('.image-preview.delete').length;
+            if (deletedImagesCount > 0){
+                messageElement.textContent = `Se van a eliminar ${deletedImagesCount} imagen(es).`;
+            }else{
+                messageElement.textContent = '';
+            }
+        })
+    })
+
+    /*
+        Validaciones para la carga de imágenes
+    */
+    document.getElementById('image-upload-input').addEventListener('change', () => {
+        const input = document.getElementById('image-upload-input');
+        const files = input.files;
+        const errorMsg = document.querySelector('.image-upload-container .error');
+        errorMsg.style.display = 'none';
+        errorMsg.textContent = '';
+
+        const allowedFormats = ['image/jpg', 'image/jpeg', 'image/png', 'image/webp'];
+        const maxSize = 5 * 1024 * 1024; // 5 MB
+        const maxImages = 10; // Máximo de imágenes permitidas
+        const existingImagesCount = {{ site_images|length if site_images else 0 }};
+
+        if (files.length + existingImagesCount > maxImages) {
+            errorMsg.textContent = `Error: El sitio no puede tener más de ${maxImages} imágenes.`;
+            input.value = '';
+            errorMsg.style.display = 'block';
+            return;
+        }
+
+        for (f of files) {
+            // Validar el formato de los archivos
+            if (!allowedFormats.includes(f.type)) {
+                errorMsg.textContent = 'Error: Formato no permitido. Solo se permiten JPG, PNG y WEBP.';
+                input.value = '';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Validar el tamaño de los archivos
+            if (f.size > maxSize) {
+                errorMsg.textContent = 'Error: El tamaño del archivo excede los 5 MB.';
+                input.value = '';
+                errorMsg.style.display = 'block';
+                return;
+            }
+        }
+
+        // En este punto, todas las validaciones sobre imagenes pasaron, así que procedemos a mostrar las vistas previas con sus inputs.
+
+        const previewContainer = document.getElementById('image-preview-container');
+        previewContainer.innerHTML = ''; // Limpiar vistas previas anteriores
+
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            const image_order = {{ site_images|length if site_images else 0 }} + i + 1;
+
+            previewContainer.innerHTML += `
+                <div class="image-preview">
+                    <img id="preview-${f.name}" src="${URL.createObjectURL(f)}" />
+
+                    <div class="image-preview-inputs">
+                        <fieldset class="image-preview-input-container">
+                            <label for="alt-text-${f.name}">Título/alt:</label>
+                            <input type="text" id="alt-text-${f.name}" name="alt-text-${f.name}" required/>
+                            <p id="alt-text-${f.name}-error"></p>
+                        </fieldset>
+                        <fieldset class="image-preview-input-container">
+                            <label for="description-${f.name}">Descripción:</label>
+                            <input type="text" id="description-${f.name}" name="description-${f.name}"/>
+                            <p id="description-${f.name}-error"></p>
+                        </fieldset>
+                        <fieldset>
+                            <label for="order-${f.name}">Orden:</label>
+                            <input type="number" id="order-${f.name}" name="order-${f.name}" required value="${image_order}" min="1" max="10"/>
+                            <p id="order-${f.name}-error"></p>
+                        </fieldset>
+                        <fieldset>
+                            <label for="is-cover-${f.name}">¿Es imagen de portada?</label>
+                            <input type="checkbox" id="is-cover-${f.name}" name="is-cover-${f.name}" />
+                        </fieldset>
+                    </div>
+                </div>
+            `;
+        }
+
+    })
 </script>
 {% endif %}
 {% endblock %}
