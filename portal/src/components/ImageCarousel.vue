@@ -177,7 +177,7 @@ onBeforeUnmount(() => {
                 <RouterLink
                   class="px-5 py-3 md:px-12 md:py-4 text-white bg-sky-950 rounded-lg text-sm md:text-base"
                   to="/"
-                  >Explorar →</RouterLink
+                  >Explorar</RouterLink
                 >
               </div>
             </div>
@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
         class="card"
         :class="{ main: pos === 0, next: pos === 1, next2: pos === 2 }"
       >
-        <SiteCard :site="images[idx]?.sitio" @click="goTo(idx)" />
+        <SiteCard :site="images[idx]?.sitio" @click="goTo(idx)" class="cursor-pointer" />
       </div>
     </div>
 

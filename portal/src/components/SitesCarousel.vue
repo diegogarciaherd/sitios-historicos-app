@@ -186,6 +186,7 @@ onBeforeUnmount(() => {
           <DetailedSiteCard
             v-if="sites[card.index]"
             :site="sites[card.index]"
+            :classes="'w-35 h-50 md:w-60 md:h-80'"
             @click="
               card.index === current
                 ? $router.push(`/sites/${sites[card.index]?.id || ''}`)

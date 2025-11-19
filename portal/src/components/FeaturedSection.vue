@@ -14,6 +14,7 @@ const selectedCarousel = ref()
 
 onBeforeMount(async () => {
   featuredSites.value = await getSites({})
+  featuredSites.value = featuredSites.value.data
   console.log('Fetched sites:', featuredSites.value)
   carouselOptions.value = [
     {

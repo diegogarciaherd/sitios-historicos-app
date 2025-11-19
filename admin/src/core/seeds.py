@@ -43,9 +43,11 @@ def run():
             "lat": -34.9214,
             "lng": -57.9544,
             "tags": ["Histórico", "Religioso"],
+            "estado": EstadoConservacion.REGULAR,
         },
         {
             "nombre": "Café Tortoni",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Café histórico más antiguo.",
             "lat": -34.6083,
             "lng": -58.3700,
@@ -61,6 +63,7 @@ def run():
         },
         {
             "nombre": "Monumento a la Bandera",
+            "ciudad": "Rosario",
             "descripcionBreve": "Hito histórico de la ciudad.",
             "lat": -34.6080,
             "lng": -58.3700,
@@ -68,6 +71,7 @@ def run():
         },
         {
             "nombre": "Obelisco",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Símbolo de Buenos Aires.",
             "lat": -34.6037,
             "lng": -58.3816,
@@ -75,6 +79,7 @@ def run():
         },
         {
             "nombre": "Jardín Japonés",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Parque temático japonés.",
             "lat": -34.5590,
             "lng": -58.4290,
@@ -82,6 +87,7 @@ def run():
         },
         {
             "nombre": "Palacio Barolo",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Edificio histórico y arquitectónico.",
             "lat": -34.6080,
             "lng": -58.3810,
@@ -90,6 +96,7 @@ def run():
         },
         {
             "nombre": "Iglesia San Ignacio",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Antigua iglesia de Buenos Aires.",
             "lat": -34.6085,
             "lng": -58.3775,
@@ -97,6 +104,7 @@ def run():
         },
         {
             "nombre": "Museo Evita",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Museo dedicado a Eva Perón.",
             "lat": -34.6000,
             "lng": -58.4200,
@@ -104,6 +112,7 @@ def run():
         },
         {
             "nombre": "Palacio Legislativo",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Sede de la Legislatura porteña.",
             "lat": -34.6117,
             "lng": -58.3844,
@@ -111,6 +120,7 @@ def run():
         },
         {
             "nombre": "Plaza de Mayo",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Plaza histórica y centro político.",
             "lat": -34.6086,
             "lng": -58.3702,
@@ -118,6 +128,7 @@ def run():
         },
         {
             "nombre": "Cementerio Recoleta",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Lugar de descanso de grandes personalidades.",
             "lat": -34.5880,
             "lng": -58.3950,
@@ -125,6 +136,7 @@ def run():
         },
         {
             "nombre": "Avenida Corrientes",
+            "ciudad": "Buenos Aires",
             "descripcionBreve": "Avenida cultural y de teatros.",
             "lat": -34.6100,
             "lng": -58.3800,

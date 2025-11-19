@@ -4,6 +4,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  classes: {
+    type: String,
+    default: 'w-full aspect-4/5',
+  },
 })
 
 const stateColors = {
@@ -15,7 +19,7 @@ const stateColors = {
 
 <template>
   <div
-    class="site-card relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 w-full aspect-4/5"
+    :class="`site-card relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 ${classes}`"
   >
     <img
       :src="site.image"

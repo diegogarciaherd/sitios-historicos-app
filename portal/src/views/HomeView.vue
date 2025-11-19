@@ -14,7 +14,7 @@ const images = [
     alt: 'Paisaje 2',
   },
   {
-    src: 'https://www.argentina.gob.ar/sites/default/files/photo6uspa-ruta.jpeg',
+    src: 'https://resizer.iproimg.com/unsafe/1920x/filters:format(webp):quality(75):max_bytes(102400)/https://assets.iprofesional.com/assets/jpg/2024/11/587935.jpg',
     alt: 'Paisaje 3',
   },
   {
@@ -30,7 +30,7 @@ const images = [
     <ProvincesCarousel />
   </main>
   <FeaturedSection />
-  <div class="mb-16">
+  <div class="pb-16">
     <SiteViewCarousel :images="images" />
   </div>
 </template>

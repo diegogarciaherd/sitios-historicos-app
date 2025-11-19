@@ -27,6 +27,12 @@ import { RouterLink } from 'vue-router'
     </div>
     <nav class="flex items-center">
       <RouterLink
+        to="/sitios"
+        class="rounded-lg bg-sky-900 px-6 py-3 text-white text-lg hover:scale-105 transition-scale duration-300"
+      >
+        Sitios históricos
+      </RouterLink>
+      <RouterLink
         to="/login"
         class="ml-6 text-white text-lg hover:text-sky-300 transition-colors duration-300"
         >Iniciar sesión</RouterLink
