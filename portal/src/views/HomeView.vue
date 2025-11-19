@@ -30,9 +30,6 @@ const images = [
     <ProvincesCarousel />
   </main>
   <FeaturedSection />
-  <div class="pb-16">
-    <SiteViewCarousel :images="images" />
-  </div>
 </template>
 
 <style scoped></style>

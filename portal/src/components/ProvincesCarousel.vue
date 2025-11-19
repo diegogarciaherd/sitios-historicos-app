@@ -23,7 +23,6 @@ async function fetchSitios() {
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Frente_Iglesia_Catedral_desde_Plaza_Moreno.JPG/800px-Frente_Iglesia_Catedral_desde_Plaza_Moreno.JPG'
 
     sitioSalta.value = await getSites({ province: 'Salta' })
-    console.log(sitioSalta.value)
     sitioSalta.value = sitioSalta.value.data[0]
     sitioSalta.value.image =
       'https://upload.wikimedia.org/wikipedia/commons/8/8e/Catedral_de_Salta_1.jpg'

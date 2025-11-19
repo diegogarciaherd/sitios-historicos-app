@@ -12,9 +12,9 @@ const props = defineProps({
       city: '',
       province: '',
       tags: [],
-      order_by: ""  
-    })
-  }
+      order_by: '',
+    }),
+  },
 })
 
 const emit = defineEmits(['clear'])
@@ -22,20 +22,20 @@ const emit = defineEmits(['clear'])
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
 const selectedTags = ref(props.appliedFilters.tags || [])
-const orderBy = ref(props.appliedFilters.order_by || "")  
+const orderBy = ref(props.appliedFilters.order_by || '')
 const availableTags = ref([])
 
-const isOpen = ref(false)  
+const isOpen = ref(false)
 onMounted(async () => {
   const res = await getAllTags()
   availableTags.value = res.results || []
-  
+
   if (props.appliedFilters.tags?.length > 0) {
     selectedTags.value = props.appliedFilters.tags
-      .map(tagObj => {
+      .map((tagObj) => {
         if (tagObj && tagObj.id) return tagObj
         if (tagObj && tagObj.name) {
-          const found = availableTags.value.find(t => t.name === tagObj.name)
+          const found = availableTags.value.find((t) => t.name === tagObj.name)
           return found || null
         }
         return null
@@ -44,59 +44,59 @@ onMounted(async () => {
   }
 })
 
-watch(() => props.appliedFilters, (newFilters) => {
-  console.log('🔍 [SiteFilters] props.appliedFilters cambiaron:', newFilters)
-  
-  city.value = newFilters.city || ''
-  province.value = newFilters.province || ''
-  orderBy.value = newFilters.order_by || ""  
+watch(
+  () => props.appliedFilters,
+  (newFilters) => {
+    city.value = newFilters.city || ''
+    province.value = newFilters.province || ''
+    orderBy.value = newFilters.order_by || ''
 
-  console.log('🔍 [SiteFilters] orderBy después de watch:', orderBy.value)
-
-  if (newFilters.tags?.length > 0) {
-    selectedTags.value = newFilters.tags
-      .map(tagObj => {
-        if (tagObj && tagObj.id) return tagObj
-        if (tagObj && tagObj.name) {
-          const found = availableTags.value.find(t => t.name === tagObj.name)
-          return found || null
-        }
-        return null
-      })
-      .filter(Boolean)
-  } else {
-    selectedTags.value = []
-  }
-}, { deep: true })
+    if (newFilters.tags?.length > 0) {
+      selectedTags.value = newFilters.tags
+        .map((tagObj) => {
+          if (tagObj && tagObj.id) return tagObj
+          if (tagObj && tagObj.name) {
+            const found = availableTags.value.find((t) => t.name === tagObj.name)
+            return found || null
+          }
+          return null
+        })
+        .filter(Boolean)
+    } else {
+      selectedTags.value = []
+    }
+  },
+  { deep: true },
+)
 
 function getFilters() {
   const filters = {
-    city: city.value || "",
-    province: province.value || "",
-    order_by: orderBy.value || "",  
+    city: city.value || '',
+    province: province.value || '',
+    order_by: orderBy.value || '',
     tagsObjects: selectedTags.value || [],
-    tags: (selectedTags.value || []).map(t => {
-      if (typeof t === 'string') return t
-      return t?.name || ''
-    }).filter(name => name)
+    tags: (selectedTags.value || [])
+      .map((t) => {
+        if (typeof t === 'string') return t
+        return t?.name || ''
+      })
+      .filter((name) => name),
   }
-  
-  console.log('🔍 [SiteFilters] orderBy.value:', orderBy.value) 
-  console.log('🔍 [SiteFilters] getFilters():', filters)
+
   return filters
 }
 
 function clearFilters() {
   city.value = ''
   province.value = ''
-  orderBy.value = ''  
+  orderBy.value = ''
   selectedTags.value = []
   emit('clear')
 }
 
 defineExpose({
   getFilters,
-  clear: clearFilters
+  clear: clearFilters,
 })
 </script>
 
@@ -119,22 +119,13 @@ defineExpose({
     </button>
 
     <!-- Panel de filtros -->
-    <div
-      :class="[
-        'md:block',
-        isOpen ? 'block' : 'hidden'
-      ]"
-    >
+    <div :class="['md:block', isOpen ? 'block' : 'hidden']">
       <div class="space-y-4 border border-gray-300 rounded-lg p-4">
-        <h3 class="text-lg font-bold text-center text-gray-700 mb-2">
-          Filtros
-        </h3>
-        
+        <h3 class="text-lg font-bold text-center text-gray-700 mb-2">Filtros</h3>
+
         <!-- Ciudad -->
         <div>
-          <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
-            Ciudad
-          </label>
+          <label for="city" class="block text-sm font-medium text-gray-700 mb-2"> Ciudad </label>
           <input
             id="city"
             v-model="city"
@@ -157,9 +148,7 @@ defineExpose({
 
         <!-- Filtro de Tags -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Tags
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"> Tags </label>
           <TagFilter
             v-if="availableTags.length > 0"
             :tags="availableTags"

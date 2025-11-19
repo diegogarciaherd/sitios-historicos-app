@@ -21,13 +21,7 @@ const current = ref(0)
 const hovering = ref(false)
 let timerId = null
 
-const slides = computed(() =>
-  (props.images || []).map((img) =>
-    typeof img === 'string' ? { src: img, alt: '' } : { src: img?.src || '', alt: img?.alt || '' },
-  ),
-)
-
-const count = computed(() => slides.value.length)
+const count = computed(() => props.images.length)
 const canNavigate = computed(() => count.value > 1)
 
 function clampIndex(idx) {
@@ -156,7 +150,7 @@ onBeforeUnmount(() => {
     <div class="viewport">
       <div class="slides" @touchstart.passive="onTouchStart" @touchend.passive="onTouchEnd">
         <div
-          v-for="(slide, index) in slides"
+          v-for="(image, index) in images"
           :key="`slide-${index}`"
           class="slide"
           :class="{ active: index === current }"
@@ -164,7 +158,19 @@ onBeforeUnmount(() => {
           :aria-roledescription="'slide'"
           :aria-label="`${index + 1} de ${count}`"
         >
-          <img v-if="slide.src" :src="slide.src" :alt="slide.alt" draggable="false" />
+          <img
+            v-if="image.object_name"
+            :src="image.object_name"
+            :alt="image.alt"
+            class="main-image"
+            draggable="false"
+          />
+
+          <div
+            class="w-full flex justify-center bg-linear-to-t from-black/70 to-transparent absolute bottom-0 py-4"
+          >
+            <p v-if="image.description" class="text-white mt-2 px-4">"{{ image.description }}"</p>
+          </div>
         </div>
 
         <div v-if="count === 0" class="slide placeholder active" aria-hidden="true">
@@ -180,7 +186,7 @@ onBeforeUnmount(() => {
 
     <div v-if="showThumbnails && count > 0" class="thumbnails" role="tablist">
       <button
-        v-for="(slide, index) in slides"
+        v-for="(image, index) in images"
         :key="`thumb-${index}`"
         class="thumb"
         :class="{ active: index === current }"
@@ -190,7 +196,7 @@ onBeforeUnmount(() => {
         :aria-label="`Mostrar imagen ${index + 1}`"
         @click="goTo(index)"
       >
-        <img v-if="slide.src" :src="slide.src" :alt="slide.alt" draggable="false" />
+        <img v-if="image.object_name" :src="image.object_name" :alt="image.alt" draggable="false" />
       </button>
     </div>
   </section>
@@ -213,12 +219,14 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: #0f172a;
   min-height: 320px;
+  max-height: 70vh;
 }
 
 .slides {
   position: relative;
   width: 100%;
-  padding-top: 56.25%;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
 }
 
 .slide {
@@ -227,8 +235,11 @@ onBeforeUnmount(() => {
   opacity: 0;
   transition: opacity 320ms ease;
   pointer-events: none;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  max-height: 100%;
   background: #0b1220;
 }
 
@@ -237,10 +248,12 @@ onBeforeUnmount(() => {
   pointer-events: auto;
 }
 
-.slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.main-image {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 .placeholder .empty {
@@ -335,10 +348,11 @@ onBeforeUnmount(() => {
 
   .viewport {
     min-height: 240px;
+    max-height: 60vh;
   }
 
   .slides {
-    padding-top: 62.5%;
+    aspect-ratio: 4 / 3;
   }
 
   .thumb {
@@ -348,8 +362,13 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 480px) {
+  .viewport {
+    min-height: 200px;
+    max-height: 55vh;
+  }
+
   .slides {
-    padding-top: 70%;
+    aspect-ratio: 3 / 4;
   }
 
   .thumb {

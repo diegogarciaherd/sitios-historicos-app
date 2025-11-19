@@ -1,4 +1,7 @@
 <script setup>
+import { ref, onMounted } from 'vue'
+import { getSiteCoverImage } from '../api/sites'
+
 const props = defineProps({
   site: {
     type: Object,
@@ -15,6 +18,18 @@ const stateColors = {
   Regular: 'badge-warning',
   Malo: ' [--badge-color:red]',
 }
+
+const cover_image = ref('')
+
+onMounted(async () => {
+  try {
+    const imageUrl = await getSiteCoverImage(props.site.id)
+    cover_image.value = imageUrl
+  } catch (error) {
+    console.error('Error al cargar la imagen de portada:', error)
+    cover_image.value = '' // Fallback en caso de error
+  }
+})
 </script>
 
 <template>
@@ -22,7 +37,7 @@ const stateColors = {
     :class="`site-card relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 ${classes}`"
   >
     <img
-      :src="site.image"
+      :src="cover_image"
       :alt="site.nombre"
       class="absolute inset-0 w-full h-full object-cover z-0"
     />

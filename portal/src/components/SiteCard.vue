@@ -1,10 +1,28 @@
 <script setup>
+import { onMounted, ref } from 'vue'
+import { getSiteCoverImage } from '@/api/sites'
+
 const props = defineProps({
   site: {
     type: Object,
     required: true,
     // { nombre, descripcionBreve, image, ciudad }
   },
+})
+
+const image = ref('')
+
+async function loadImage() {
+  try {
+    const imgData = await getSiteCoverImage(props.site.id)
+    image.value = imgData
+  } catch (error) {
+    console.error('Error loading site cover image:', error)
+  }
+}
+
+onMounted(() => {
+  loadImage()
 })
 </script>
 
@@ -13,7 +31,7 @@ const props = defineProps({
     class="site-card rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 w-35 h-50 lg:w-80 lg:h-120"
   >
     <img
-      :src="site.image"
+      :src="image"
       :alt="site.nombre"
       class="h-full object-cover position-absolute z-0 mask-b-from-50% mask-to-100%"
     />
