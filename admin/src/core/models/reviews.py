@@ -1,43 +1,89 @@
-#admin/src/core/models/reviews.py
+# admin/src/core/models/reviews.py
 from __future__ import annotations
+
 from datetime import datetime
-from sqlalchemy import String, Integer, Text, DateTime, ForeignKey, Enum, Boolean
+from typing import Tuple, List, Optional
+
+from sqlalchemy import (
+    String,
+    Integer,
+    Text,
+    DateTime,
+    ForeignKey,
+    Enum,
+    Boolean,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from core.database import Base, db
 
 import enum
+
+
 class ReviewStatus(enum.Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
 
+
 class Review(Base):
     __tablename__ = "reviews"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True
+    )
 
-    site_id: Mapped[int] = mapped_column(ForeignKey("sitios_historicos.id"), nullable=False)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)  # opcional
+    site_id: Mapped[int] = mapped_column(
+        ForeignKey("sitios_historicos.id"), nullable=False
+    )
+    # Puede ser None si se permite reseña anónima
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
 
-    rating: Mapped[int] = mapped_column(Integer, nullable=False)        # 1..5
-    title:  Mapped[str] = mapped_column(String(120), nullable=False)
-    body:   Mapped[str] = mapped_column(Text, nullable=False)
+    # 1..5
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
 
-    status: Mapped[ReviewStatus] = mapped_column(Enum(ReviewStatus), default=ReviewStatus.PENDING, nullable=False)
+    status: Mapped[ReviewStatus] = mapped_column(
+        Enum(ReviewStatus),
+        default=ReviewStatus.PENDING,
+        nullable=False,
+    )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
 
     # Moderación
-    moderated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    moderated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    reject_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    moderated_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    moderated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
+    )
+    reject_reason: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
 
     # Relaciones (opcionales para backrefs)
-    site = relationship("SitioHistorico", back_populates="reviews", lazy="joined", innerjoin=True)
+    site = relationship(
+        "SitioHistorico",
+        back_populates="reviews",
+        lazy="joined",
+        innerjoin=True,
+    )
 
     def to_dict(self) -> dict:
-        """Convierte la reseña a un diccionario"""
+        """Convierte la reseña a un diccionario simple."""
         return {
             "id": self.id,
             "site_id": self.site_id,
@@ -46,65 +92,91 @@ class Review(Base):
             "title": self.title,
             "body": self.body,
             "status": (
-                self.status.value if isinstance(self.status, enum.Enum) else self.status
+                self.status.value
+                if isinstance(self.status, enum.Enum)
+                else self.status
             ),
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "moderated_by": self.moderated_by,
             "moderated_at": self.moderated_at,
+            "reject_reason": self.reject_reason,
         }
 
-def create_review(**kwargs):
+
+def create_review(**kwargs) -> Review:
     """
     Crea una nueva reseña a partir de los datos recibidos.
-
-    Args:
-        kwargs (dict): Los datos de la nueva reseña.
-    
-    Returns:
-        Review: La reseña creada.
     """
     review = Review(**kwargs)
     db.session.add(review)
     db.session.commit()
     return review
 
-def get_reviews_by_site_id(id: int, page=1, per_page=10):
+
+def get_reviews_by_site_id(
+    id: int, page: int = 1, per_page: int = 10
+) -> tuple[list[Review], int]:
     """
-    Devuelve una lista de todas las reseñas asociadas al sitio
-    con id.
-
-    Args:
-        id (int): La id del sitio historico.
-        page (int): La pagina a mostrar (optional).
-        per_page (int): La cantidad de elementos por pagina (optional).
-
-    Returns:
-        La lista con las reseñas del sitio historico "id".
+    Devuelve una lista paginada de reseñas (cualquier estado) para un sitio.
     """
     query = db.session.query(Review).filter_by(site_id=id)
     total = query.count()
-    reviews = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
+    reviews = (
+        query.offset((int(page) - 1) * int(per_page))
+        .limit(int(per_page))
+        .all()
+    )
     return reviews, total
 
-def get_review_by_id(id: int):
+
+def get_review_by_id(id: int) -> Optional[Review]:
     """
-    Devuelve una reseña por su clave primaria.
-
-    Args:
-        id (int): La id de la reseña.
-
-    Returns:
-        La reseña o None.
+    Devuelve una reseña por su clave primaria o None.
     """
     return db.session.query(Review).filter_by(id=id).first()
 
-def delete_review(id: int):
-    """
-    Elimina (fisico) una reseña de la base de datos.
 
-    Args:
-        id (int): La id de la reseña a ser eliminada.
+def delete_review(id: int) -> None:
+    """
+    Elimina (físico) una reseña de la base de datos.
     """
     db.session.query(Review).filter_by(id=id).delete()
     db.session.commit()
+
+
+# ---------- Helpers para vistas públicas ----------
+
+
+def get_approved_reviews_for_site(
+    site_id: int,
+) -> tuple[list[Review], int, Optional[float]]:
+    """
+    Devuelve las reseñas APROBADAS de un sitio, ordenadas de
+    más nueva a más vieja, junto con el total y el promedio de rating.
+    """
+    # Lista de reseñas aprobadas
+    reviews = (
+        db.session.query(Review)
+        .filter(
+            Review.site_id == site_id,
+            Review.status == ReviewStatus.APPROVED,
+        )
+        .order_by(Review.created_at.desc())
+        .all()
+    )
+
+    total = len(reviews)
+
+    # Promedio de rating (None si no hay reseñas)
+    avg = (
+        db.session.query(func.avg(Review.rating))
+        .filter(
+            Review.site_id == site_id,
+            Review.status == ReviewStatus.APPROVED,
+        )
+        .scalar()
+    )
+    avg_rating = round(float(avg), 1) if avg is not None else None
+
+    return reviews, total, avg_rating

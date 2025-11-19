@@ -1,4 +1,4 @@
-#admin/src/web/controllers/sites.py
+# admin/src/web/controllers/sites.py
 
 from __future__ import annotations
 
@@ -31,10 +31,21 @@ from core.models.sites import (
     delete_site_by_id,
     get_all_cities,
     get_all_provinces,
+    SitioHistorico,
 )
 from core.models import tags
 from core.models.site_history import SiteChange
 from core.services.site_history import log_site_change, diff_site, diff_tags
+from core.models.site_images import (
+    create_site_image,
+    get_images_by_site,
+    get_image_cover_by_site,
+    update_image_data,
+    validate_site_images_data,
+    generate_data_for_update,
+    generate_data_for_create,
+    delete_image_by_object_name,
+)
 from core.models.reviews import Review, ReviewStatus
 from sqlalchemy import func, or_
 
@@ -70,10 +81,10 @@ def list_all_sites():
 
     sites, total = list_sites_with_filters(query_params, page=page, per_page=per_page)
 
-    sites.sort(
+    """ sites.sort(
         key=lambda s: (s.fechaRegistro, s.nombre.lower(), s.ciudad.lower()),
-        reverse=True,
-    )
+        reverse=False,
+    ) """
 
     total_pages = (total + per_page - 1) // per_page
     pagination = {
@@ -91,7 +102,14 @@ def list_all_sites():
     provinces = [p[0] for p in get_all_provinces()]
     tags_list = [t.name for t in tags.get_all_tags()]
 
-    sitesJson = [site.to_dict() for site in sites]
+    # Agregamos la imagen de portada al objeto de sitio
+    for site in sites:
+        cover_image = get_image_cover_by_site(site.id)
+        site.cover_image = cover_image
+
+    sitesJson = [
+        site.to_dict() for site in sites
+    ]  # Sitios en formato JSON para guardar en el frontend, para luego poder exportarlos a CSV
 
     return render_template(
         "sites.html",
@@ -118,31 +136,41 @@ def create_site():
         data.pop("tags[]", None)
 
         errors = validate_site_data(data)
+        imagesErrors = validate_site_images_data(request, None)
 
-        if errors:
+        # Si hay errores, mostrar el formulario con los errores
+        if errors or imagesErrors:
+            # Mostrar cada error individualmente
+
             for error in errors:
                 flash(error, "error")
+
+            for error in imagesErrors:
+                flash(error, "error")
+
             return render_template(
                 "form.html",
                 site=None,
                 tags=all_tags,
                 selected_tag_ids=tag_ids,
-                form_data=data,
+                form_data=data,  # Mantener datos del formulario
             )
 
         try:
             site = create_sites(**data)
+
+            images_data_create = generate_data_for_create(request, site.id)
+            for new_img_data in images_data_create:
+                create_site_image(site.id, **new_img_data)
 
             if tag_ids:
                 selected_tags = tags.get_tags_by_ids(tag_ids)
                 tags.assign_tags(site, selected_tags)
 
             log_site_change(
-                site_id=site.id,
-                user_id=session.get("user_id"),
-                action="create",
+                site_id=site.id, user_id=session.get("user_id"), action="create"
             )
-            db.session.commit()
+            db.session.commit()  # persistimos el historial
 
             flash("Sitio creado correctamente", "success")
             return redirect(url_for("sites.list_all_sites"))
@@ -156,12 +184,8 @@ def create_site():
                 form_data=data,
             )
 
-    return render_template(
-        "form.html",
-        site=None,
-        tags=all_tags,
-        selected_tag_ids=[],
-    )
+    # GET request
+    return render_template("form.html", site=None, tags=all_tags, selected_tag_ids=[])
 
 
 @sites_bp.route("/editar_sitio/<int:id>", methods=["GET", "POST"])
@@ -174,11 +198,13 @@ def edit_site(id):
 
     all_tags = tags.get_all_tags()
     selected_tag_ids = [str(tag.id) for tag in site.tags]
+    site_images = get_images_by_site(site.id)
 
     if request.method == "POST":
         before = get_site(id)
 
         data = request.form.to_dict()
+
         data["visible"] = "visible" in request.form
         data["lat"] = request.form.get("lat")
         data["lng"] = request.form.get("lng")
@@ -186,22 +212,61 @@ def edit_site(id):
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
+        images_to_delete = request.form.getlist("imagesToDelete[]")
+        data.pop("imagesToDelete[]", None)
+
+        errors = validate_site_data(data)
+        imagesErrors = validate_site_images_data(request, id, images_to_delete)
+
+        # Si hay errores, mostrar el formulario con los errores
+        if errors or imagesErrors:
+            # Mostrar cada error individualmente
+            for error in errors:
+                flash(error, "error")
+
+            for error in imagesErrors:
+                flash(error, "error")
+
+            return render_template(
+                "form.html",
+                site=site,
+                tags=all_tags,
+                selected_tag_ids=selected_tag_ids,
+                site_images=site_images,
+            )
+
+        # --- UPDATE CAMPOS ---
         update_site(id, **data)
 
+        images_data_update = generate_data_for_update(
+            request, site.id, images_to_delete
+        )
+        images_data_create = generate_data_for_create(request, site.id)
+
+        for img_data in images_data_update:
+            update_image_data(img_data.pop("id"), **img_data)
+
+        for new_img_data in images_data_create:
+            create_site_image(site.id, **new_img_data)
+
+        if len(images_to_delete) > 0:
+            for object_name in images_to_delete:
+                delete_image_by_object_name(object_name)
+
+        # --- TAGS ---
         selected_tags = tags.get_tags_by_ids(tag_ids)
         tags.assign_tags(site, selected_tags)
 
         after = get_site(id)
 
-        changes = diff_site(before, after)
-        tag_changes = diff_tags(before, after)
+        # --- DIFFS ---
+        changes = diff_site(before, after)  # campos simples + coords + visible
+        tag_changes = diff_tags(before, after)  # cambios de set de tags
         changes.update(tag_changes)
 
+        # --- HISTORIAL + COMMIT ---
         log_site_change(
-            site_id=id,
-            user_id=session.get("user_id"),
-            action="update",
-            changes=changes,
+            site_id=id, user_id=session.get("user_id"), action="update", changes=changes
         )
         db.session.commit()
 
@@ -213,6 +278,7 @@ def edit_site(id):
         site=site,
         tags=all_tags,
         selected_tag_ids=selected_tag_ids,
+        site_images=site_images,
     )
 
 
@@ -258,12 +324,27 @@ def view_site(id):
     )
 
     # Promedio de rating (solo aprobadas)
-    avg_rating, total_reviews = db.session.query(
-        func.coalesce(func.avg(Review.rating), 0), func.count(Review.id)
-    ).filter(
-        Review.site_id == id, Review.status == ReviewStatus.APPROVED
-    ).one()
-    avg_rating = round(float(avg_rating), 1)
+    avg_rating, total_reviews = (
+        db.session.query(
+            func.coalesce(func.avg(Review.rating), 0),
+            func.count(Review.id),
+        )
+        .filter(
+            Review.site_id == id,
+            Review.status == ReviewStatus.APPROVED,
+        )
+        .one()
+    )
+
+    total_reviews = int(total_reviews)
+    # Si no hay reseñas, dejamos avg_rating en None para que el template
+    # muestre el mensaje "Todavía no hay reseñas..."
+    if total_reviews == 0:
+        avg_rating = None
+    else:
+        avg_rating = round(float(avg_rating), 1)
+
+    site_images = get_images_by_site(site.id)
 
     return render_template(
         "show_site.html",
@@ -273,6 +354,7 @@ def view_site(id):
         reviews=approved_reviews,
         avg_rating=avg_rating,
         total_reviews=total_reviews,
+        site_images=site_images,
     )
 
 
@@ -334,7 +416,7 @@ def view_history(id):
     """
     Historial de cambios de un sitio con filtros + paginación.
     """
-    from core.models.user import User
+    from core.models.user import User  # import local para evitar circulares
 
     q = (
         db.session.query(SiteChange, User)
@@ -369,7 +451,9 @@ def view_history(id):
     if d_from:
         q = q.filter(SiteChange.changed_at >= d_from)
     if d_to:
-        q = q.filter(SiteChange.changed_at < d_to.replace(hour=23, minute=59, second=59))
+        q = q.filter(
+            SiteChange.changed_at < d_to.replace(hour=23, minute=59, second=59)
+        )
 
     q = q.order_by(SiteChange.changed_at.desc())
 

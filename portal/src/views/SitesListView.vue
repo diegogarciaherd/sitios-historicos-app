@@ -17,6 +17,7 @@ const {
   handleClear,
   handlePageChange
 } = useSiteSearch()
+ 
 </script>
 
 <template>

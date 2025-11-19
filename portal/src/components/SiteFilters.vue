@@ -1,9 +1,9 @@
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import TagFilter from './TagFilter.vue'
 import { getAllTags } from '@/api/tags'
 import ProvinceSelect from './ProvinceSelect.vue'
-import OrderSelector from './OrderSelector.vue'
+import OrderFilters from './OrderFilters.vue'
 
 const props = defineProps({
   appliedFilters: {
@@ -11,34 +11,31 @@ const props = defineProps({
     default: () => ({
       city: '',
       province: '',
-      tags: [],        // ← objetos {id,name}
-      order_by: ""
-    })
-  }
+      tags: [],
+      order_by: '',
+    }),
+  },
 })
 
 const emit = defineEmits(['clear'])
 
 const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
-const selectedTags = ref(props.appliedFilters.tags || [])   // objetos completos
-const orderBy = ref(props.appliedFilters.order_by || "")
+const selectedTags = ref(props.appliedFilters.tags || [])
+const orderBy = ref(props.appliedFilters.order_by || '')
 const availableTags = ref([])
 
+const isOpen = ref(false)
 onMounted(async () => {
   const res = await getAllTags()
   availableTags.value = res.results || []
-  
-  // Después de cargar los tags, reconstruir los seleccionados desde props
-  // Esto es importante para cuando los tags vienen de la URL (solo tienen name)
+
   if (props.appliedFilters.tags?.length > 0) {
     selectedTags.value = props.appliedFilters.tags
-      .map(tagObj => {
-        // Si ya es un objeto con id, usarlo directamente
+      .map((tagObj) => {
         if (tagObj && tagObj.id) return tagObj
-        // Si solo tiene name, buscar el objeto completo en los tags disponibles
         if (tagObj && tagObj.name) {
-          const found = availableTags.value.find(t => t.name === tagObj.name)
+          const found = availableTags.value.find((t) => t.name === tagObj.name)
           return found || null
         }
         return null
@@ -47,44 +44,46 @@ onMounted(async () => {
   }
 })
 
-watch(() => props.appliedFilters, (newFilters) => {
-  city.value = newFilters.city || ''
-  province.value = newFilters.province || ''
+watch(
+  () => props.appliedFilters,
+  (newFilters) => {
+    city.value = newFilters.city || ''
+    province.value = newFilters.province || ''
+    orderBy.value = newFilters.order_by || ''
 
-  // reconstruir objetos completos desde nombres
-  if (newFilters.tags?.length > 0) {
-    selectedTags.value = newFilters.tags
-      .map(tagObj => {
-        // Si ya es un objeto con id, usarlo directamente
-        if (tagObj && tagObj.id) return tagObj
-        // Si solo tiene name, buscar el objeto completo en los tags disponibles
-        if (tagObj && tagObj.name) {
-          const found = availableTags.value.find(t => t.name === tagObj.name)
-          return found || null
-        }
-        return null
-      })
-      .filter(Boolean)
-  } else {
-    selectedTags.value = []
-  }
-
-  // mantener orden
-  orderBy.value = newFilters.order_by || ""
-}, { deep: true })
+    if (newFilters.tags?.length > 0) {
+      selectedTags.value = newFilters.tags
+        .map((tagObj) => {
+          if (tagObj && tagObj.id) return tagObj
+          if (tagObj && tagObj.name) {
+            const found = availableTags.value.find((t) => t.name === tagObj.name)
+            return found || null
+          }
+          return null
+        })
+        .filter(Boolean)
+    } else {
+      selectedTags.value = []
+    }
+  },
+  { deep: true },
+)
 
 function getFilters() {
-  return {
-    city: city.value || "",
-    province: province.value || "",
-    order_by: orderBy.value || "",
-    tagsObjects: selectedTags.value || [],         // ← objetos completos
-    tags: (selectedTags.value || []).map(t => {
-      // Asegurar que siempre tengamos el name
-      if (typeof t === 'string') return t
-      return t?.name || ''
-    }).filter(name => name) // ← nombres para URL + backend
+  const filters = {
+    city: city.value || '',
+    province: province.value || '',
+    order_by: orderBy.value || '',
+    tagsObjects: selectedTags.value || [],
+    tags: (selectedTags.value || [])
+      .map((t) => {
+        if (typeof t === 'string') return t
+        return t?.name || ''
+      })
+      .filter((name) => name),
   }
+
+  return filters
 }
 
 function clearFilters() {
@@ -97,14 +96,13 @@ function clearFilters() {
 
 defineExpose({
   getFilters,
-  clear: clearFilters
+  clear: clearFilters,
 })
 </script>
 
-
 <template>
   <div class="w-full">
-    <!-- Boton para abrir el panel de filtros en movil y cuando se achica la pantalla -->
+    <!-- Botón para móvil -->
     <button
       @click="isOpen = !isOpen"
       class="md:hidden w-full flex items-center justify-between p-4 bg-gray-800 text-white rounded-lg mb-4 hover:bg-gray-700 transition-colors"
@@ -120,23 +118,14 @@ defineExpose({
       </svg>
     </button>
 
-    <!-- Panel de filtros: acordeon en movil, siempre visible en desktop -->
-    <div
-      :class="[
-        'md:block',
-        isOpen ? 'block' : 'hidden'
-      ]"
-    >
+    <!-- Panel de filtros -->
+    <div :class="['md:block', isOpen ? 'block' : 'hidden']">
       <div class="space-y-4 border border-gray-300 rounded-lg p-4">
-        <h3 class="text-lg font-bold text-center text-gray-700 mb-2">
-          Filtros
-        </h3>
-        
+        <h3 class="text-lg font-bold text-center text-gray-700 mb-2">Filtros</h3>
+
         <!-- Ciudad -->
         <div>
-          <label for="city" class="block text-sm font-medium text-gray-700 mb-2">
-            Ciudad
-          </label>
+          <label for="city" class="block text-sm font-medium text-gray-700 mb-2"> Ciudad </label>
           <input
             id="city"
             v-model="city"
@@ -151,18 +140,15 @@ defineExpose({
           <label for="province" class="block text-sm font-medium text-gray-700 mb-2">
             Provincia
           </label>
-          <ProvinceSelect 
-          v-model="province" />
+          <ProvinceSelect v-model="province" />
         </div>
 
-        <OrderSelector v-model="orderBy" />
-
+        <!-- ✅ OrderSelector simplificado -->
+        <OrderFilters v-model="orderBy" />
 
         <!-- Filtro de Tags -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Tags
-          </label>
+          <label class="block text-sm font-medium text-gray-700 mb-2"> Tags </label>
           <TagFilter
             v-if="availableTags.length > 0"
             :tags="availableTags"
@@ -185,4 +171,3 @@ defineExpose({
     </div>
   </div>
 </template>
-
