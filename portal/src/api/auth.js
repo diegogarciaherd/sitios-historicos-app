@@ -6,10 +6,12 @@ import api from './base'
  * Espera email y password, y devuelve el payload del backend:
  * { access_token, expires_in, user: { id, name, last_name, email } }
  */
-export async function loginRequest(email, password) {
-  const response = await api.post('/auth/login', {
+
+export async function loginRequest (email, password) {
+  // Endpoint: POST /api/auth/
+  const response = await api.post('/auth/', {
     email,
-    password,
+    password
   })
   return response.data
 }
