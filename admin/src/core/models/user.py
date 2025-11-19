@@ -1,3 +1,4 @@
+# admin/src/core/models/user.py
 from core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import db
