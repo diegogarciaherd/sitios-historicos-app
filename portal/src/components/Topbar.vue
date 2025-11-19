@@ -22,7 +22,7 @@ const { isAuthenticated, currentUserEmail, logout } = useAuth()
 /**
  * Cierro sesión y vuelvo a la página principal del portal.
  */
-async function handleLogout () {
+async function handleLogout() {
   logout()
   try {
     await router.push({ name: 'home' })
@@ -35,14 +35,12 @@ async function handleLogout () {
 
 <template>
   <div
-    class="w-full flex items-center justify-between px-8 py-4 fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-slate-900 via-slate-900/80 to-transparent overflow-hidden"
+    class="w-full justify-between items-center px-8 py-4 flex fixed top-0 bg-transparent z-100 bg-linear-to-b from-gray-400 via-30% to-transparent overflow-hidden"
   >
     <!-- Logo + título, siempre lleva a la home -->
     <RouterLink class="flex flex-row items-center gap-3" to="/">
       <img src="@/assets/logo.png" alt="Logo" class="w-8" />
-      <h1
-        class="text-[1.5rem] text-white hover:text-sky-300 transition-colors duration-300"
-      >
+      <h1 class="text-[1.5rem] text-white hover:text-sky-300 transition-colors duration-300">
         Registro de sitios históricos
       </h1>
     </RouterLink>
@@ -73,21 +71,6 @@ async function handleLogout () {
         Sitios históricos
       </RouterLink>
 
-      <!-- Links estáticos -->
-      <RouterLink
-        to="/about"
-        class="ml-6 text-white text-lg hover:text-sky-300 transition-colors duration-300"
-      >
-        Acerca de
-      </RouterLink>
-
-      <RouterLink
-        to="/contact"
-        class="ml-6 text-white text-lg hover:text-sky-300 transition-colors duration-300"
-      >
-        Contacto
-      </RouterLink>
-
       <!-- Si NO estoy logueada, muestro solo "Iniciar sesión" -->
       <RouterLink
         v-if="!isAuthenticated"
@@ -98,10 +81,7 @@ async function handleLogout () {
       </RouterLink>
 
       <!-- Si estoy logueada, muestro Mis favoritos + Cerrar sesión -->
-      <div
-        v-else
-        class="ml-6 flex items-center gap-4"
-      >
+      <div v-else class="ml-6 flex items-center gap-4">
         <!-- Link a la vista de favoritos -->
         <RouterLink
           to="/favorites"
