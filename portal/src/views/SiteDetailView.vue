@@ -3,10 +3,11 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Topbar from '@/components/Topbar.vue'
-import { getSiteById } from '@/api/sites'
+import { getSiteById, getSiteCoverImage, getSiteImages } from '@/api/sites'
 import { getSiteReviews, createSiteReview } from '@/api/reviews'
 import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
 import { useAuth } from '@/composables/useAuth'
+import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,6 +30,7 @@ const creatingReview = ref(false)
 const createReviewError = ref('')
 
 const siteId = computed(() => Number(route.params.id))
+const siteImages = ref([])
 
 async function loadSite() {
   loadingSite.value = true
@@ -37,6 +39,7 @@ async function loadSite() {
   try {
     const data = await getSiteById(siteId.value)
     site.value = data
+    site.value.image = await getSiteCoverImage(siteId.value)
   } catch (error) {
     console.error('Error cargando sitio:', error)
     errorSite.value = 'No se pudo cargar el sitio.'
@@ -68,10 +71,19 @@ async function loadFavoriteState() {
   try {
     const favs = await getMyFavoritesRequest()
     if (Array.isArray(favs)) {
-      isFavorite.value = favs.some(f => f.site_id === siteId.value)
+      isFavorite.value = favs.some((f) => f.site_id === siteId.value)
     }
   } catch (error) {
     console.error('Error cargando estado de favorito:', error)
+  }
+}
+
+async function loadImages() {
+  try {
+    const images = await getSiteImages(siteId.value)
+    siteImages.value = images
+  } catch (error) {
+    console.error('Error cargando imágenes del sitio:', error)
   }
 }
 
@@ -133,13 +145,13 @@ const hasReviews = computed(() => reviews.value.length > 0)
 onMounted(async () => {
   await loadSite()
   if (site.value) {
-    await Promise.all([loadReviews(), loadFavoriteState()])
+    await Promise.all([loadReviews(), loadFavoriteState(), loadImages()])
   }
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+  <div class="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-white">
     <Topbar />
 
     <main class="max-w-5xl mx-auto pt-28 px-4 pb-12">
@@ -151,23 +163,28 @@ onMounted(async () => {
         {{ errorSite }}
       </section>
 
-      <section
-        v-else-if="site"
-        class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"
-      >
+      <section v-else-if="site" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <!-- Columna principal con la info del sitio -->
         <article class="lg:col-span-2 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
-          <h2 class="text-2xl md:text-3xl font-semibold text-sky-300">
-            {{ site.nombre }}
-          </h2>
+          <div class="flex">
+            <img
+              :src="site.image || ''"
+              :alt="site.nombre"
+              class="w-24 h-24 md:w-45 md:h-60 rounded-lg object-cover border border-slate-600"
+            />
 
-          <p class="mt-1 text-sm text-slate-300">
-            {{ site.ciudad }} - {{ site.provincia }}
-          </p>
+            <div class="col-span-2 ml-4">
+              <h2 class="text-2xl md:text-3xl font-semibold text-sky-300">
+                {{ site.nombre }}
+              </h2>
 
-          <p class="mt-3 text-sm text-slate-200">
-            {{ site.descripcionCompleta || site.descripcionBreve }}
-          </p>
+              <p class="mt-1 text-sm text-slate-300">{{ site.ciudad }} - {{ site.provincia }}</p>
+
+              <p class="mt-3 text-sm text-slate-200">
+                {{ site.descripcionCompleta || site.descripcionBreve }}
+              </p>
+            </div>
+          </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
             <span
@@ -195,22 +212,22 @@ onMounted(async () => {
 
           <p v-if="site.lat && site.lng" class="mt-3 text-xs text-slate-400">
             Ubicación aproximada:
-            <span class="font-mono">
-              {{ site.lat.toFixed(4) }}, {{ site.lng.toFixed(4) }}
-            </span>
+            <span class="font-mono"> {{ site.lat.toFixed(4) }}, {{ site.lng.toFixed(4) }} </span>
           </p>
         </article>
 
         <!-- Columna lateral: favorito + reseña rápida -->
         <aside class="space-y-4">
           <section class="bg-slate-900/70 rounded-xl border border-slate-700 p-4">
-            <h3 class="text-base font-semibold text-sky-300 mb-2">
-              Marcá este sitio
-            </h3>
+            <h3 class="text-base font-semibold text-sky-300 mb-2">Marcá este sitio</h3>
             <button
               type="button"
               class="w-full py-2 rounded text-sm font-semibold flex items-center justify-center gap-2 border transition-colors"
-              :class="isFavorite ? 'bg-sky-500 text-slate-900 border-sky-400' : 'bg-slate-800 text-slate-100 border-slate-600 hover:border-sky-400'"
+              :class="
+                isFavorite
+                  ? 'bg-sky-500 text-slate-900 border-sky-400'
+                  : 'bg-slate-800 text-slate-100 border-slate-600 hover:border-sky-400'
+              "
               @click="handleToggleFavorite"
               :disabled="loadingFavorite"
             >
@@ -225,19 +242,13 @@ onMounted(async () => {
           </section>
 
           <section class="bg-slate-900/70 rounded-xl border border-slate-700 p-4">
-            <h3 class="text-base font-semibold text-sky-300 mb-2">
-              Dejá tu reseña
-            </h3>
+            <h3 class="text-base font-semibold text-sky-300 mb-2">Dejá tu reseña</h3>
 
             <p v-if="!isAuthenticated" class="text-xs text-slate-300">
               Iniciá sesión para poder escribir una reseña sobre este sitio.
             </p>
 
-            <form
-              v-else
-              @submit.prevent="handleCreateReview"
-              class="space-y-3"
-            >
+            <form v-else @submit.prevent="handleCreateReview" class="space-y-3">
               <div>
                 <label class="block text-xs mb-1">Título</label>
                 <input
@@ -288,28 +299,22 @@ onMounted(async () => {
         </aside>
       </section>
 
+      <section class="flex flex-col mt-8 gap-6">
+        <h1 class="text-2xl">Imagenes</h1>
+        <SiteViewCarousel v-if="site" :images="siteImages" class="mt-8" />
+      </section>
       <!-- Sección de reseñas -->
-      <section
-        v-if="site"
-        class="mt-8 bg-slate-900/70 rounded-xl border border-slate-700 p-6"
-      >
-        <h3 class="text-lg font-semibold text-sky-300 mb-4">
-          Reseñas de otros usuarios
-        </h3>
+      <section v-if="site" class="mt-8 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
+        <h3 class="text-lg font-semibold text-sky-300 mb-4">Reseñas de otros usuarios</h3>
 
-        <p v-if="loadingReviews" class="text-sm text-slate-300">
-          Cargando reseñas...
-        </p>
+        <p v-if="loadingReviews" class="text-sm text-slate-300">Cargando reseñas...</p>
 
         <p v-else-if="!hasReviews" class="text-sm text-slate-300">
           Todavía no hay reseñas para este sitio. Podés ser la primera persona en contar tu
           experiencia.
         </p>
 
-        <div
-          v-else
-          class="space-y-4"
-        >
+        <div v-else class="space-y-4">
           <article
             v-for="review in reviews"
             :key="review.id"
@@ -319,9 +324,7 @@ onMounted(async () => {
               <h4 class="text-sm font-semibold text-white">
                 {{ review.title }}
               </h4>
-              <div class="text-xs text-sky-300">
-                ⭐ {{ review.rating }}/5
-              </div>
+              <div class="text-xs text-sky-300">⭐ {{ review.rating }}/5</div>
             </header>
             <p class="text-xs text-slate-200 whitespace-pre-line">
               {{ review.body }}

@@ -12,14 +12,13 @@ async function getSites(filters = {}) {
     console.error('Error fetching sites:', error)
   }
 }
-*/ 
+*/
 
 async function getSites(filters = {}) {
   // Construir query params manualmente para manejar arrays (tags)
-  console.log('📦 Filters recibidos en getSites:', filters)
   const params = new URLSearchParams()
-  
-  Object.keys(filters).forEach(key => {
+
+  Object.keys(filters).forEach((key) => {
     const value = filters[key]
     if (value !== null && value !== undefined && value !== '') {
       if (Array.isArray(value)) {
@@ -35,7 +34,6 @@ async function getSites(filters = {}) {
 
   try {
     const response = await api.get(`/sites?${params.toString()}`)
-    console.log('Response from /sites:', response.data)
     const data = response.data
     return data
   } catch (error) {
@@ -48,18 +46,50 @@ async function getSites(filters = {}) {
 }
 
 async function getSitesNearby({ lat, lng, radius }) {
-  return api.get("/sites/nearby", {
+  return api.get('/sites/nearby', {
     params: {
       lat,
       lng,
-      radius
+      radius,
     },
-    paramsSerializer: params =>
-      new URLSearchParams(params).toString()
+    paramsSerializer: (params) => new URLSearchParams(params).toString(),
   })
 }
 
-export { getSites, getSitesNearby }
+async function getSiteCoverImage(siteId) {
+  try {
+    const response = await api.get(`/site_images/${siteId}/cover`)
+    return response.data
+  } catch (error) {
+    console.error('Error fetching site cover image:', error)
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+    }
+  }
+}
 
+async function getSiteImages(siteId) {
+  try {
+    const response = await api.get(`/site_images/${siteId}`)
+    return response.data
+  } catch (error) {
+    console.error('Error fetching site images:', error)
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+    }
+  }
+}
 
+async function getSiteById(siteId) {
+  try {
+    const response = await api.get(`/sites/${siteId}`)
+    return response.data
+  } catch (error) {
+    console.error('Error fetching site by ID:', error)
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+    }
+  }
+}
 
+export { getSites, getSitesNearby, getSiteCoverImage, getSiteById, getSiteImages }

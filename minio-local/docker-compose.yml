@@ -1,25 +1,23 @@
-version: '3.8'
-
 services:
-  minio:
-    image: quay.io/minio/minio
-    container_name: minio
-    ports:
-      - '9000:9000'
-      - '9001:9001'
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: admin12345
-    command: server /data --console-address ":9001"
-    volumes:
-      - ./data:/data
-      - ./minio-init/public-read.json:/policies/public-read.json
+    minio:
+        image: quay.io/minio/minio
+        container_name: minio
+        ports:
+            - "9000:9000"
+            - "9001:9001"
+        environment:
+            MINIO_ROOT_USER: admin
+            MINIO_ROOT_PASSWORD: admin12345
+        command: server /data --console-address ":9001"
+        volumes:
+            - ./data:/data
+            - ./minio-init/public-read.json:/policies/public-read.json
 
-  minio-setup:
-    image: minio/mc
-    depends_on:
-      - minio
-    entrypoint: ['/bin/sh', '/scripts/create-bucket.sh']
-    volumes:
-      - ./minio-init/create-bucket.sh:/scripts/create-bucket.sh
-      - ./minio-init/public-read.json:/policies/public-read.json
+    minio-setup:
+        image: minio/mc
+        depends_on:
+            - minio
+        entrypoint: ["/bin/sh", "/scripts/create-bucket.sh"]
+        volumes:
+            - ./minio-init/create-bucket.sh:/scripts/create-bucket.sh
+            - ./minio-init/public-read.json:/policies/public-read.json

@@ -34,6 +34,20 @@ class SiteImages(Base):
 
         return f"<SiteImages site_id={self.site_id} object_name={self.object_name}>"
 
+    def to_dict(self) -> dict:
+        """Convierte la instancia de SiteImages a un diccionario."""
+
+        return {
+            "id": self.id,
+            "site_id": self.site_id,
+            "object_name": self.object_name,
+            "alt_text": self.alt_text,
+            "description": self.description,
+            "order": self.order,
+            "is_cover": self.is_cover,
+            "created_at": self.created_at.isoformat(),
+        }
+
 
 def create_site_image(site_id: int, **kwargs) -> SiteImages:
     """Crea una nueva instancia de SiteImages y almacena la imagen en Minio.
@@ -81,7 +95,7 @@ def get_images_by_site(site_id: int) -> list[SiteImages]:
     Returns:
         list[SiteImages]: Lista de instancias de SiteImages asociadas al sitio.
     """
-    return db.session.query(SiteImages).filter(SiteImages.site_id == site_id).all()
+    return db.session.query(SiteImages).filter(SiteImages.site_id == site_id).order_by(SiteImages.order.asc()).all()
 
 
 def update_image_data(site_image_id: int, **kwargs):
@@ -209,7 +223,7 @@ def generate_data_for_create(request, site_id) -> list:
     return data_for_create
 
 
-def validate_site_images_data(request, site_id, images_to_ignore) -> list:
+def validate_site_images_data(request, site_id, images_to_ignore=[]) -> list:
     """Verifica que los datos de las imagenes a subir cumplan con las restricciones establecidas.
 
     Args:
@@ -229,7 +243,6 @@ def validate_site_images_data(request, site_id, images_to_ignore) -> list:
     existing_images = []
     if site_id is not None:
         existing_images = get_images_by_site(site_id)
-        print("Existing images:", existing_images)
         # Filtramos las imagenes a ignorar
         if len(images_to_ignore) > 0:
             existing_images = [
@@ -237,8 +250,6 @@ def validate_site_images_data(request, site_id, images_to_ignore) -> list:
                 for img in existing_images
                 if img.object_name not in images_to_ignore
             ]
-
-        print("Filtered existing images:", existing_images)
 
     # Si el sitio tiene imagenes guardadas, agregamos los inputs de las mismas al model_data_to_validate
     if len(existing_images) > 0:

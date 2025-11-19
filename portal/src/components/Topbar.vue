@@ -5,6 +5,8 @@
  *
  * Acá muestro:
  * - Logo + link a la home.
+ * - Buscador simple con selector de criterio (nombre/provincia/ciudad).
+ * - Link a "Sitios históricos".
  * - Links estáticos a "Acerca de" y "Contacto".
  * - Y según si estoy logueada o no:
  *   - "Iniciar sesión" (si NO hay token)
@@ -33,21 +35,48 @@ async function handleLogout () {
 
 <template>
   <div
-    class="w-full flex items-center justify-between px-8 py-4 fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-slate-900 via-slate-900/80 to-transparent"
+    class="w-full flex items-center justify-between px-8 py-4 fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-slate-900 via-slate-900/80 to-transparent overflow-hidden"
   >
     <!-- Logo + título, siempre lleva a la home -->
     <RouterLink class="flex flex-row items-center gap-3" to="/">
       <img src="@/assets/logo.png" alt="Logo" class="w-8" />
-      <h1 class="text-[1.5rem] text-white hover:text-sky-300 transition-colors duration-300">
+      <h1
+        class="text-[1.5rem] text-white hover:text-sky-300 transition-colors duration-300"
+      >
         Registro de sitios históricos
       </h1>
     </RouterLink>
 
+    <!-- Buscador + selector (branch de tus compas) -->
+    <div class="relative right-2 w-[40%] hidden md:block">
+      <input
+        type="text"
+        class="flex w-full rounded-full bg-transparent border border-white/50 focus:border-white focus:bg-white/20 focus:outline-none transition-colors duration-300 text-white px-4 py-1 pr-28"
+        placeholder="Buscar..."
+      />
+      <select
+        class="absolute top-1/2 right-0 -translate-y-1/2 text-gray-600 bg-white outline-none border-none appearance-none pr-6 pl-3 py-1 rounded-r-full text-sm"
+      >
+        <option value="name" selected>Nombre</option>
+        <option value="province">Provincia</option>
+        <option value="city">Ciudad</option>
+      </select>
+    </div>
+
     <!-- Navegación principal -->
     <nav class="flex items-center">
+      <!-- Botón a la vista de sitios históricos (branch compas) -->
+      <RouterLink
+        to="/sitios"
+        class="rounded-lg bg-sky-900 px-6 py-3 text-white text-lg hover:scale-105 transition-transform duration-300"
+      >
+        Sitios históricos
+      </RouterLink>
+
+      <!-- Links estáticos -->
       <RouterLink
         to="/about"
-        class="text-white text-lg hover:text-sky-300 transition-colors duration-300"
+        class="ml-6 text-white text-lg hover:text-sky-300 transition-colors duration-300"
       >
         Acerca de
       </RouterLink>
@@ -99,5 +128,5 @@ async function handleLogout () {
 </template>
 
 <style scoped>
-/* Por ahora no necesito estilos extra, todo va por Tailwind. */
+/* Por ahora no necesito estilos extra, todo va con Tailwind. */
 </style>
