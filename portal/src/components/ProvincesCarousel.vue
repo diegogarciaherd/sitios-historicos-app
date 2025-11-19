@@ -19,23 +19,19 @@ async function fetchSitios() {
     // Obtengo el primer sitio de la provincia y le agrego una imagen.
     sitioBuenosAires.value = await getSites({ province: 'Buenos Aires' })
     sitioBuenosAires.value = sitioBuenosAires.value.data[0]
-    sitioBuenosAires.value.image =
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Frente_Iglesia_Catedral_desde_Plaza_Moreno.JPG/800px-Frente_Iglesia_Catedral_desde_Plaza_Moreno.JPG'
+    sitioBuenosAires.value.link = 'Buenos_Aires'
 
     sitioSalta.value = await getSites({ province: 'Salta' })
     sitioSalta.value = sitioSalta.value.data[0]
-    sitioSalta.value.image =
-      'https://upload.wikimedia.org/wikipedia/commons/8/8e/Catedral_de_Salta_1.jpg'
+    sitioSalta.value.link = 'Salta'
 
     sitioMendoza.value = await getSites({ province: 'Mendoza' })
     sitioMendoza.value = sitioMendoza.value.data[0]
-    sitioMendoza.value.image =
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Mendoza_-_Park_gate.jpg/1280px-Mendoza_-_Park_gate.jpg'
+    sitioMendoza.value.link = 'Mendoza'
 
     sitioTucuman.value = await getSites({ province: 'Tucumán' })
     sitioTucuman.value = sitioTucuman.value.data[0]
-    sitioTucuman.value.image =
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Tucuman-CasaIndependencia2.jpg/1280px-Tucuman-CasaIndependencia2.jpg'
+    sitioTucuman.value.link = 'Tucumán'
 
     slides.value = [
       {

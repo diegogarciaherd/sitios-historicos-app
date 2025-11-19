@@ -175,8 +175,8 @@ onBeforeUnmount(() => {
               </div>
               <div>
                 <RouterLink
-                  class="px-5 py-3 md:px-12 md:py-4 text-white bg-sky-950 rounded-lg text-sm md:text-base"
-                  to="/"
+                  class="px-5 py-3 md:px-12 md:py-4 text-white bg-sky-950 rounded-lg text-sm md:text-base pointer-events-auto"
+                  :to="`/sitios?province=${img.sitio.link}`"
                   >Explorar</RouterLink
                 >
               </div>

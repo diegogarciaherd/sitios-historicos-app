@@ -9,12 +9,12 @@ import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
 import { useAuth } from '@/composables/useAuth'
 import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
 import SiteMap from '@/components/SiteMap.vue'
-import { useSiteSearch } from '@/composables/useSiteSearch' 
+import { useSiteSearch } from '@/composables/useSiteSearch'
 
 const route = useRoute()
 const router = useRouter()
 const { isAuthenticated } = useAuth()
-const { goBackToList } = useSiteSearch() 
+const { goBackToList } = useSiteSearch()
 const site = ref(null)
 const loadingSite = ref(false)
 const errorSite = ref('')
@@ -146,7 +146,6 @@ async function handleCreateReview() {
 
 const hasReviews = computed(() => reviews.value.length > 0)
 
-
 onMounted(async () => {
   await loadSite()
   if (site.value) {
@@ -173,7 +172,6 @@ onMounted(async () => {
         <article class="lg:col-span-2 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
           <!-- Layout con imagen a la izquierda y contenido a la derecha -->
           <div class="flex flex-col md:flex-row gap-6">
-            
             <div class="md:w-1/3">
               <img
                 :src="site.image || ''"
@@ -182,7 +180,6 @@ onMounted(async () => {
               />
             </div>
 
-        
             <div class="md:w-2/3 space-y-4">
               <!-- Título y ubicación -->
               <div>
@@ -238,7 +235,9 @@ onMounted(async () => {
           </div>
 
           <!-- Accordion Descripción Completa -->
-          <div class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200">
+          <div
+            class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200"
+          >
             <button
               class="w-full text-left flex justify-between items-center font-semibold text-sky-300"
               @click="showFullDescription = !showFullDescription"
@@ -250,10 +249,7 @@ onMounted(async () => {
             </button>
 
             <transition name="fade">
-              <p
-                v-if="showFullDescription"
-                class="mt-3 text-slate-300 leading-relaxed"
-              >
+              <p v-if="showFullDescription" class="mt-3 text-slate-300 leading-relaxed">
                 {{ site.descripcionCompleta }}
               </p>
             </transition>
@@ -343,34 +339,49 @@ onMounted(async () => {
           <!-- Bton para volver a la lista con los querys-->
           <div class="mb-6">
             <button
-            @click="goBackToList"
-            class="inline-flex items-center gap-2 px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-xl transition-all duration-200 border border-slate-600 hover:border-sky-400 text-sm font-semibold group backdrop-blur-sm"
-          >
-          <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-          Volver al listado
-        </button>
-      </div>
+              @click="goBackToList"
+              class="inline-flex items-center gap-2 px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-xl transition-all duration-200 border border-slate-600 hover:border-sky-400 text-sm font-semibold group backdrop-blur-sm"
+            >
+              <svg
+                class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              Volver al listado
+            </button>
+          </div>
         </aside>
       </section>
 
       <!-- Mapa -->
-      <section v-if="site && site.lat && site.lng" class="mt-6 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
+      <section
+        v-if="site && site.lat && site.lng"
+        class="mt-6 bg-slate-900/70 rounded-xl border border-slate-700 p-6"
+      >
         <h1 class="text-xl font-semibold text-sky-300 mb-4">Ubicación</h1>
-          <SiteMap 
-            :key="`map-${site.lat}-${site.lng}`" 
-            :lat="site.lat" 
-            :lng="site.lng"
-            :nombre="site.nombre"
-            :descripcion-breve="site.descripcionBreve"
-            :ciudad="site.ciudad"
-            />
-        </section>
+        <SiteMap
+          :key="`map-${site.lat}-${site.lng}`"
+          :lat="site.lat"
+          :lng="site.lng"
+          :nombre="site.nombre"
+          :descripcion-breve="site.descripcionBreve"
+          :ciudad="site.ciudad"
+        />
+      </section>
 
       <!-- Carrusel de imágenes -->
-      <section class="flex flex-col mt-8 gap-6">
-        <h1 class="text-2xl">Imágenes</h1>
+      <section
+        class="flex flex-col mt-8 gap-6 bg-slate-900/70 rounded-xl border border-slate-700 p-6"
+      >
+        <h1 class="text-2xl text-sky-300">Imágenes</h1>
         <SiteViewCarousel v-if="site" :images="siteImages" class="mt-8" />
       </section>
 
@@ -411,7 +422,4 @@ onMounted(async () => {
   </div>
 </template>
 
-<style>
-  
-</style>
-
+<style></style>

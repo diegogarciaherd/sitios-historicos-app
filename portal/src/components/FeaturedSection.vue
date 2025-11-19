@@ -64,7 +64,7 @@ onBeforeMount(async () => {
           v-for="option in carouselOptions.value"
           :key="`carousel-${option.id}`"
           v-show="selectedCarousel.value === option.id"
-          :sites="option.sites"
+          :sites_function="() => getSites({})"
           :autoplay="false"
         />
       </div>

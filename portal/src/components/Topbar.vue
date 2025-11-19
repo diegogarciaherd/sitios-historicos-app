@@ -10,19 +10,38 @@
  * - Links estáticos a "Acerca de" y "Contacto".
  * - Y según si estoy logueada o no:
  *   - "Iniciar sesión" (si NO hay token)
- *   - "Mis favoritos" + "Cerrar sesión" (si SÍ hay token)
+ *   - Un menú de cuenta con accesos a favoritos y logout (si SÍ hay token)
  */
 
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const { isAuthenticated, currentUserEmail, logout } = useAuth()
 
+const accountMenuOpen = ref(false)
+const accountMenuRef = ref(null)
+
+function toggleAccountMenu() {
+  accountMenuOpen.value = !accountMenuOpen.value
+}
+
+function closeAccountMenu() {
+  accountMenuOpen.value = false
+}
+
+function handleDocumentClick(event) {
+  if (!accountMenuRef.value) return
+  if (accountMenuRef.value.contains(event.target)) return
+  accountMenuOpen.value = false
+}
+
 /**
  * Cierro sesión y vuelvo a la página principal del portal.
  */
 async function handleLogout() {
+  closeAccountMenu()
   logout()
   try {
     await router.push({ name: 'home' })
@@ -31,11 +50,19 @@ async function handleLogout() {
     console.error(e)
   }
 }
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
   <div
-    class="w-full justify-between items-center px-8 py-4 flex fixed top-0 bg-transparent z-100 bg-linear-to-b from-gray-400 via-30% to-transparent overflow-hidden"
+    class="w-full justify-between items-center px-8 py-4 flex fixed top-0 bg-transparent z-1000 bg-linear-to-b from-gray-400 via-30% to-transparent"
   >
     <!-- Logo + título, siempre lleva a la home -->
     <RouterLink class="flex flex-row items-center gap-3" to="/">
@@ -81,27 +108,47 @@ async function handleLogout() {
       </RouterLink>
 
       <!-- Si estoy logueada, muestro Mis favoritos + Cerrar sesión -->
-      <div v-else class="ml-6 flex items-center gap-4">
-        <!-- Link a la vista de favoritos -->
-        <RouterLink
-          to="/favorites"
-          class="text-white text-lg hover:text-sky-300 transition-colors duration-300"
-        >
-          Mis favoritos
-        </RouterLink>
-
-        <!-- Nombre / mail de referencia + botón de logout -->
-        <span class="text-sm text-slate-300 hidden md:inline">
-          {{ currentUserEmail || 'Mi perfil' }}
-        </span>
-
+      <div v-else class="ml-6 relative" ref="accountMenuRef">
         <button
           type="button"
-          class="text-white text-lg hover:text-red-400 transition-colors duration-300"
-          @click="handleLogout"
+          class="flex items-center gap-2 rounded-lg bg-slate-800/80 px-4 py-2 text-white text-sm md:text-base border border-slate-600 hover:border-sky-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 transition-colors duration-300"
+          @click.stop="toggleAccountMenu"
+          @keydown.escape.prevent="closeAccountMenu"
+          aria-haspopup="true"
+          :aria-expanded="accountMenuOpen"
         >
-          Cerrar sesión
+          Cuenta
         </button>
+
+        <div
+          v-if="accountMenuOpen"
+          class="absolute right-0 mt-2 w-52 rounded-xl border border-slate-700 bg-slate-900/95 shadow-lg py-2 z-50"
+          role="menu"
+        >
+          <p
+            class="px-4 pb-2 text-xs text-slate-400 border-b border-slate-700"
+            v-if="currentUserEmail"
+          >
+            Sesión iniciada como
+            <span class="block font-semibold text-slate-200">{{ currentUserEmail }}</span>
+          </p>
+          <RouterLink
+            to="/favorites"
+            class="block px-4 py-2 text-sm text-slate-100 hover:bg-slate-800 transition-colors duration-200"
+            role="menuitem"
+            @click="closeAccountMenu"
+          >
+            Mis favoritos
+          </RouterLink>
+          <button
+            type="button"
+            class="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-slate-800 transition-colors duration-200 cursor-pointer"
+            role="menuitem"
+            @click="handleLogout"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
     </nav>
   </div>
