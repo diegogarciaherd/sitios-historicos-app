@@ -34,6 +34,7 @@ def reset_db():
     )
     from core.models.tags import Tag
     from core.models.site_history import SiteChange
+    from core.models.site_images import SiteImages
     from core.models.reviews import Review
 
     print("Resetting database...")
