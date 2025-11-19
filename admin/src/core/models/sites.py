@@ -80,6 +80,9 @@ class SitioHistorico(Base):
         nullable=False,
     )
 
+    # Cantidad de veces que se obtuvo el sitio desde el portal público (para los mas visitados)
+    cantVisitas: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
     # -------------------------------
     # Relaciones con otras entidades
     # -------------------------------
@@ -162,6 +165,7 @@ class SitioHistorico(Base):
             ),
             "visible": self.visible,
             "tags": [tag.to_dict() for tag in self.tags],
+            "cantVisitas": self.cantVisitas,
         }
 
 
@@ -392,5 +396,25 @@ def get_sites_by_tag(tag_id: int):
     return (
         db.session.query(SitioHistorico)
         .filter(SitioHistorico.tags.any(id=tag_id))
+        .all()
+    )
+
+
+def increment_site_visit_count(site_id: int):
+    """Incrementa en 1 la cantidad de visitas del sitio histórico indicado."""
+    site = get_site(site_id)
+    if site:
+        site.cantVisitas += 1
+        db.session.commit()
+        return site
+    else:
+        raise ValueError(f"Sitio con id {site_id} no encontrado")
+
+
+def get_sites_by_visits():
+    """Devuelve los sitios históricos más visitados, ordenados por cantidad de visitas."""
+    return (
+        db.session.query(SitioHistorico)
+        .order_by(SitioHistorico.cantVisitas.desc())
         .all()
     )
