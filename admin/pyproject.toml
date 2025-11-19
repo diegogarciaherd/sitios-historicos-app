@@ -6,7 +6,6 @@ authors = [
     {name = "Diego Garcia Herd",email = "diegogarciaherd@hotmail.com.ar"},
     {name = "Valentin Paolini", email = "valenpaolini@hotmail.com"},
     {name = "Augusto Boschiazzo Marinelli", email = "augus2608@gmail.com"},
-    {name = "Nicolas Hermida", email = "nshermida101@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.12,<4"
