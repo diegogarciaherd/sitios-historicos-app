@@ -267,43 +267,47 @@
 </div>
 
 <script>
-	// ### Funcionalidad para los filtros ###
+	// Estado global para almacenar los filtros actuales
+	let currentFilters = {
+		city: '',
+		province: '',
+		status: '',
+		startDate: '',
+		endDate: '',
+		tags: [],
+		visibility: true,
+		search: ''
+	}
 
-	// Al cargar la página, establecer los valores de los filtros según los parámetros en la URL
+	// ### INICIALIZACIÓN ###
 	window.addEventListener('load', () => {
+		// Cargar filtros desde URL al iniciar
+		loadFiltersFromURL()
+		
+		// Configurar event listeners
+		setupEventListeners()
+		
+		// Configurar vista (grid/list)
+		setupViewToggle()
+	})
+
+	// Cargar filtros desde parámetros URL
+	function loadFiltersFromURL() {
 		const urlParams = new URLSearchParams(window.location.search)
-		const startDateInput = document.getElementById('startDate')
-		const endDateInput = document.getElementById('endDate')
-		const startDate = urlParams.get('startDate') || ''
-		const endDate = urlParams.get('endDate') || ''
+		
+		// Ciudad
+		const cityFilter = document.getElementById('cityFilter')
+		const city = urlParams.get('city') || 'all-cities'
+		cityFilter.value = city
+		currentFilters.city = city === 'all-cities' ? '' : city
 
-		startDateInput.value = startDate
-		endDateInput.value = endDate
+		// Provincia
+		const provinceFilter = document.getElementById('provinceFilter')
+		const province = urlParams.get('province') || 'all-states'
+		provinceFilter.value = province
+		currentFilters.province = province === 'all-states' ? '' : province
 
-		// Limitar fechas según los parámetros
-		if (startDate && !endDate) {
-			endDateInput.min = startDate
-			endDateInput.max = ''
-		} else if (!startDate && endDate) {
-			startDateInput.max = endDate
-			startDateInput.min = ''
-		} else if (startDate && endDate) {
-			endDateInput.min = startDate
-			startDateInput.max = endDate
-		} else {
-			startDateInput.min = ''
-			startDateInput.max = ''
-			endDateInput.min = ''
-			endDateInput.max = ''
-		}
-
-		document.getElementById('cityFilter').value =
-			urlParams.get('city') || 'all-cities'
-		document.getElementById('provinceFilter').value =
-			urlParams.get('province') || 'all-states'
-		document.getElementById('searchInput').value = urlParams.get('search') || ''
-		const visibility = urlParams.get('visibility')
-		document.getElementById('visibilidad').checked = visibility !== 'false'
+		// Estado de conservación
 		const status = urlParams.get('status') || 'Todos'
 		const statusButtons = document.getElementById('statusButtons')
 		statusButtons.querySelectorAll('button').forEach(btn => {
@@ -313,6 +317,18 @@
 				btn.classList.remove('active')
 			}
 		})
+		currentFilters.status = status === 'Todos' ? '' : status
+
+		// Fechas
+		const startDate = urlParams.get('startDate') || ''
+		const endDate = urlParams.get('endDate') || ''
+		document.getElementById('startDate').value = startDate
+		document.getElementById('endDate').value = endDate
+		currentFilters.startDate = startDate
+		currentFilters.endDate = endDate
+		updateDateLimits()
+
+		// Tags
 		const tags = urlParams.get('tags') ? urlParams.get('tags').split(',') : []
 		const tagsButtons = document.getElementById('tagsButtons')
 		if (tags.length === 0) {
@@ -329,217 +345,227 @@
 				}
 			})
 		}
-	})
+		currentFilters.tags = tags
 
-	// Funcion para limpiar los filtros (se ponen en sus valores por defecto) haciendo click en el boton "Limpiar filtros"
-	document.getElementById('clearFiltersBtn').addEventListener('click', () => {
-		// Limpiar filtro de ciudad
-		document.getElementById('cityFilter').value = 'all-cities'
+		// Visibilidad
+		const visibility = urlParams.get('visibility')
+		const isVisible = visibility !== 'false'
+		document.getElementById('visibilidad').checked = isVisible
+		currentFilters.visibility = isVisible
 
-		// Limpiar filtro de provincia
-		document.getElementById('provinceFilter').value = 'all-states'
+		// Búsqueda
+		const search = urlParams.get('search') || ''
+		document.getElementById('searchInput').value = search
+		currentFilters.search = search
+	}
 
-		// Limpiar filtro de estado de conservacion
-		const statusButtons = document.getElementById('statusButtons')
-		statusButtons.querySelectorAll('button').forEach(btn => {
-			btn.classList.remove('active')
-		})
-		statusButtons.querySelector('button').classList.add('active')
-
-		// Limpiar filtro de fecha
-		document.getElementById('startDate').value = ''
-		document.getElementById('endDate').value = ''
-
-		// Limpiar filtro de Tags
-		const tagsButtons = document.getElementById('tagsButtons')
-		tagsButtons.querySelectorAll('button').forEach(btn => {
-			btn.classList.remove('active')
-		})
-		tagsButtons.querySelector('button').classList.add('active')
-
-		// Limpiar filtro de visibilidad
-		document.getElementById('visibilidad').checked = true
-
-		// Limpiar filtro de busqueda
-		document.getElementById('searchInput').value = ''
-
-		// Recargar la página sin parámetros de filtro en la URL
-		const url = new URL(window.location)
-		url.searchParams.delete('city')
-		url.searchParams.delete('province')
-		url.searchParams.delete('status')
-		url.searchParams.delete('startDate')
-		url.searchParams.delete('endDate')
-		url.searchParams.delete('tags')
-		url.searchParams.delete('visibility')
-		url.searchParams.delete('search')
-		url.searchParams.delete('page') // Reiniciar a la primera página
-		window.location = url.href
-	})
-
-	// Filtro de busqueda
-	document.getElementById('searchBtn').addEventListener('click', () => {
-		const searchTerm = document.getElementById('searchInput').value.trim()
-		// Agregar el filtro a los parámetros de búsqueda en la URL
-		const url = new URL(window.location)
-		if (searchTerm) {
-			url.searchParams.set('search', searchTerm)
-		} else {
-			url.searchParams.delete('search')
-		}
-		url.searchParams.delete('page') // Reiniciar a la primera página
-		window.location = url.href
-	})
-
-	// Filtro de ciudades
-	document.getElementById('cityFilter').addEventListener('change', event => {
-		const selectedCity = event.target.value
-		// Agregar el filtro a los parámetros de búsqueda en la URL
-		const url = new URL(window.location)
-		if (selectedCity === 'all-cities') {
-			url.searchParams.delete('city')
-		} else {
-			url.searchParams.set('city', selectedCity)
-		}
-		url.searchParams.delete('page') // Reiniciar a la primera página
-		window.location = url.href
-	})
-
-	// Filtro de provincias
-	document
-		.getElementById('provinceFilter')
-		.addEventListener('change', event => {
-			const selectedProvince = event.target.value
-			const url = new URL(window.location)
-			if (selectedProvince === 'all-states') {
-				url.searchParams.delete('province')
-			} else {
-				url.searchParams.set('province', selectedProvince)
+	// Configurar todos los event listeners
+	function setupEventListeners() {
+		// BOTÓN DE BÚSQUEDA - Ahora aplica TODOS los filtros
+		document.getElementById('searchBtn').addEventListener('click', applyAllFilters)
+		
+		// Botón limpiar filtros
+		document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters)
+		
+		// Búsqueda con Enter
+		document.getElementById('searchInput').addEventListener('keypress', (e) => {
+			if (e.key === 'Enter') {
+				applyAllFilters()
 			}
-			url.searchParams.delete('page')
-			window.location = url.href
+		})
+		
+		// Filtros individuales (solo actualizan el estado, no aplican)
+		setupFilterListeners()
+	}
+
+	// Configurar listeners para filtros individuales
+	function setupFilterListeners() {
+		// Ciudad - solo actualiza estado
+		document.getElementById('cityFilter').addEventListener('change', (event) => {
+			const selectedCity = event.target.value
+			currentFilters.city = selectedCity === 'all-cities' ? '' : selectedCity
 		})
 
-	// Filtro de estado de conservacion
-	// Solo puede estar activo un boton a la vez
-	document
-		.getElementById('statusButtons')
-		.querySelectorAll('button')
-		.forEach(button => {
+		// Provincia - solo actualiza estado
+		document.getElementById('provinceFilter').addEventListener('change', (event) => {
+			const selectedProvince = event.target.value
+			currentFilters.province = selectedProvince === 'all-states' ? '' : selectedProvince
+		})
+
+		// Estado de conservación - solo actualiza estado
+		document.getElementById('statusButtons').querySelectorAll('button').forEach(button => {
 			button.addEventListener('click', () => {
+				const statusButtons = document.getElementById('statusButtons')
+				statusButtons.querySelectorAll('button').forEach(btn => {
+					btn.classList.remove('active')
+				})
+				button.classList.add('active')
+				
 				const status = button.textContent
-				const url = new URL(window.location)
-				if (status === 'Todos') {
-					url.searchParams.delete('status')
-				} else {
-					url.searchParams.set('status', status)
-				}
-				url.searchParams.delete('page')
-				window.location = url.href
+				currentFilters.status = status === 'Todos' ? '' : status
 			})
 		})
 
-	// Filtro de fechas
-	// Al cambiar cualquiera de los dos campos de fecha, se actualizan los parámetros en la URL
-	// Si alguno de los dos campos está vacío, se elimina el parámetro correspondiente
-	// Al cambiar cualquiera de las dos fechas, se debe limitar la otra fecha para que no pueda ser menor/menor a la seleccionada
-	document.getElementById('startDate').addEventListener('change', event => {
-		const startDate = event.target.value
-		const endDateInput = document.getElementById('endDate')
-		if (startDate) {
-			endDateInput.min = startDate
-		} else {
-			endDateInput.min = ''
-		}
-		const url = new URL(window.location)
-		if (startDate) {
-			url.searchParams.set('startDate', startDate)
-		} else {
-			url.searchParams.delete('startDate')
-		}
-		url.searchParams.delete('page') // Reiniciar a la primera página
-		window.location = url.href
-	})
-	document.getElementById('endDate').addEventListener('change', event => {
-		const endDate = event.target.value
-		const startDateInput = document.getElementById('startDate')
-		if (endDate) {
-			startDateInput.max = endDate
-		} else {
-			startDateInput.max = ''
-		}
-		const url = new URL(window.location)
-		if (endDate) {
-			url.searchParams.set('endDate', endDate)
-		} else {
-			url.searchParams.delete('endDate')
-		}
-		url.searchParams.delete('page') // Reiniciar a la primera página
-		window.location = url.href
-	})
+		// Fechas - solo actualiza estado y límites
+		document.getElementById('startDate').addEventListener('change', (event) => {
+			currentFilters.startDate = event.target.value
+			updateDateLimits()
+		})
 
-	// Filtros de tags
-	// Estos son múltiples, si "Sin tags" está activo, los demás no pueden estarlo
-	// Si alguno de los demás está activo, "Sin tags" no puede estarlo
-	document
-		.getElementById('tagsButtons')
-		.querySelectorAll('button')
-		.forEach(button => {
+		document.getElementById('endDate').addEventListener('change', (event) => {
+			currentFilters.endDate = event.target.value
+			updateDateLimits()
+		})
+
+		// Tags - solo actualiza estado
+		document.getElementById('tagsButtons').querySelectorAll('button').forEach(button => {
 			button.addEventListener('click', () => {
 				const tagsButtons = document.getElementById('tagsButtons')
 				const allButton = tagsButtons.querySelector('button')
+				
 				if (button.textContent === 'Sin tags') {
 					tagsButtons.querySelectorAll('button').forEach(btn => {
 						btn.classList.remove('active')
 					})
 					button.classList.add('active')
+					currentFilters.tags = []
 				} else {
 					button.classList.toggle('active')
 					allButton.classList.remove('active')
-					const anyActive = Array.from(
-						tagsButtons.querySelectorAll('button')
-					).some(btn => btn !== allButton && btn.classList.contains('active'))
-					if (!anyActive) {
+					
+					const activeTags = Array.from(tagsButtons.querySelectorAll('button'))
+						.filter(btn => btn !== allButton && btn.classList.contains('active'))
+						.map(btn => btn.textContent)
+					
+					currentFilters.tags = activeTags
+					
+					if (activeTags.length === 0) {
 						allButton.classList.add('active')
 					}
 				}
-
-				// Actualizar los parámetros de la URL
-				const url = new URL(window.location)
-				const activeTags = Array.from(tagsButtons.querySelectorAll('button'))
-					.filter(btn => btn.classList.contains('active') && btn !== allButton)
-					.map(btn => btn.textContent)
-				if (activeTags.length === 0) {
-					url.searchParams.delete('tags')
-				} else {
-					url.searchParams.set('tags', activeTags.join(','))
-				}
-				url.searchParams.delete('page') // Reiniciar a la primera página
-				window.location = url.href
 			})
 		})
 
-	// Filtro de visisibilidad
-	// Si esta en true, no se debe mandar el parametro, si esta en false, se manda visibility=false
-	document.getElementById('visibilidad').addEventListener('change', event => {
-		const isVisible = event.target.checked
-		const url = new URL(window.location)
-		if (isVisible) {
-			url.searchParams.delete('visibility')
-		} else {
-			url.searchParams.set('visibility', 'false')
-		}
-		url.searchParams.delete('page') // Reiniciar a la primera página
-		window.location = url.href
-	})
+		// Visibilidad - solo actualiza estado
+		document.getElementById('visibilidad').addEventListener('change', (event) => {
+			currentFilters.visibility = event.target.checked
+		})
 
-	// Funcionalidad de la barra de navegación
-	document.addEventListener('DOMContentLoaded', function () {
+		// Búsqueda - solo actualiza estado
+		document.getElementById('searchInput').addEventListener('input', (event) => {
+			currentFilters.search = event.target.value.trim()
+		})
+	}
+
+	// Actualizar límites de fechas
+	function updateDateLimits() {
+		const startDateInput = document.getElementById('startDate')
+		const endDateInput = document.getElementById('endDate')
+		
+		if (currentFilters.startDate) {
+			endDateInput.min = currentFilters.startDate
+		} else {
+			endDateInput.min = ''
+		}
+		
+		if (currentFilters.endDate) {
+			startDateInput.max = currentFilters.endDate
+		} else {
+			startDateInput.max = ''
+		}
+	}
+
+	// Aplicar TODOS los filtros (búsqueda + filtros)
+	function applyAllFilters() {
+		const url = new URL(window.location)
+		
+		// Limpiar parámetros existentes
+		url.search = ''
+		
+		// Agregar búsqueda de texto (si existe)
+		if (currentFilters.search) {
+			url.searchParams.set('search', currentFilters.search)
+		}
+		
+		// Agregar filtros de ubicación
+		if (currentFilters.city) url.searchParams.set('city', currentFilters.city)
+		if (currentFilters.province) url.searchParams.set('province', currentFilters.province)
+		
+		// Agregar filtro de estado
+		if (currentFilters.status) url.searchParams.set('status', currentFilters.status)
+		
+		// Agregar filtros de fecha
+		if (currentFilters.startDate) url.searchParams.set('startDate', currentFilters.startDate)
+		if (currentFilters.endDate) url.searchParams.set('endDate', currentFilters.endDate)
+		
+		// Agregar filtros de tags
+		if (currentFilters.tags.length > 0) url.searchParams.set('tags', currentFilters.tags.join(','))
+		
+		// Agregar filtro de visibilidad
+		if (!currentFilters.visibility) url.searchParams.set('visibility', 'false')
+		
+		// Siempre reiniciar a página 1 cuando se aplican nuevos filtros
+		url.searchParams.delete('page')
+		
+		console.log('Aplicando filtros:', currentFilters) // Para debugging
+		
+		// Navegar a la nueva URL
+		window.location = url.href
+	}
+
+	// Limpiar todos los filtros
+	function clearFilters() {
+		// Resetear estado
+		currentFilters = {
+			city: '',
+			province: '',
+			status: '',
+			startDate: '',
+			endDate: '',
+			tags: [],
+			visibility: true,
+			search: ''
+		}
+		
+		// Resetear UI
+		document.getElementById('cityFilter').value = 'all-cities'
+		document.getElementById('provinceFilter').value = 'all-states'
+		
+		// Estado de conservación
+		const statusButtons = document.getElementById('statusButtons')
+		statusButtons.querySelectorAll('button').forEach(btn => {
+			btn.classList.remove('active')
+		})
+		statusButtons.querySelector('button').classList.add('active')
+		
+		// Fechas
+		document.getElementById('startDate').value = ''
+		document.getElementById('endDate').value = ''
+		updateDateLimits()
+		
+		// Tags
+		const tagsButtons = document.getElementById('tagsButtons')
+		tagsButtons.querySelectorAll('button').forEach(btn => {
+			btn.classList.remove('active')
+		})
+		tagsButtons.querySelector('button').classList.add('active')
+		
+		// Visibilidad
+		document.getElementById('visibilidad').checked = true
+		
+		// Búsqueda
+		document.getElementById('searchInput').value = ''
+		
+		// Aplicar filtros vacíos (recargar sin parámetros)
+		applyAllFilters()
+	}
+
+	// Configurar toggle de vista (grid/list) 
+	function setupViewToggle() {
 		const gridViewBtn = document.getElementById('gridViewBtn')
 		const listViewBtn = document.getElementById('listViewBtn')
 		const sitesList = document.querySelector('.sites-list')
 
-		// Cambio de vista
 		gridViewBtn.addEventListener('click', function () {
 			sitesList.className = 'sites-list grid-view'
 			gridViewBtn.classList.add('active')
@@ -554,19 +580,16 @@
 			localStorage.setItem('sitesView', 'list')
 		})
 
-		// Cargar vista guardada
 		const savedView = localStorage.getItem('sitesView') || 'grid'
 		if (savedView === 'list') {
 			listViewBtn.click()
 		} else {
 			gridViewBtn.click()
 		}
-	})
+	}
 
-	// Funcion para exportar a CSV los sitios listados en la pagina.
+	// Funcion para exportar a CSV 
 	document.getElementById('exportCsvBtn').addEventListener('click', () => {
-		// Obtener la lista de sitios actualmente mostrados en la pagina.
-
 		const sitesDataElement = document.getElementById('sites-data')
 		let currentSites = sitesDataElement.getAttribute('data-sites')
 		currentSites = JSON.parse(currentSites)
@@ -577,7 +600,6 @@
 		}
 
 		const baseUrl = '{{ url_for("sites.export_csv") }}'
-		// Hacer un POST a baseUrl pasandole la lista de sitios actuales.
 		fetch(baseUrl, {
 			method: 'POST',
 			headers: {
@@ -587,7 +609,7 @@
 		})
 			.then(async response => {
 				const dispositionHeader = response.headers.get('Content-Disposition')
-				let filename = 'sitios_historicos.csv' // Nombre por defecto
+				let filename = 'sitios_historicos.csv'
 
 				if (dispositionHeader && dispositionHeader.includes('filename=')) {
 					const filenameMatch = dispositionHeader.match(/filename="?([^"]+)"?/)
@@ -599,7 +621,6 @@
 				return { blob: await response.blob(), filename: filename }
 			})
 			.then(({ blob, filename }) => {
-				// Descargar el archivo CSV
 				const url = window.URL.createObjectURL(blob)
 				const a = document.createElement('a')
 				a.href = url
@@ -611,11 +632,10 @@
 			.catch(err => console.log('Error al exportar CSV:', err))
 	})
 
+	// Auto-close alerts 
 	document.addEventListener('DOMContentLoaded', () => {
 		const alerts = document.querySelectorAll('.alert')
-
 		alerts.forEach(alert => {
-			// Desvanecer y eliminar luego de 4 segundos
 			setTimeout(() => {
 				alert.classList.remove('show')
 				alert.classList.add('fade')
