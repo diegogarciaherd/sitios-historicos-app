@@ -1,74 +1,93 @@
 # admin/src/core/models/site_history.py
+"""
+Modelo SiteChange: historial de cambios de un sitio histórico.
 
-from core.database import Base, db
-from sqlalchemy import Integer, String, Text, DateTime, Enum, ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
+Cada fila representa una modificación de un campo del sitio,
+incluyendo quién realizó el cambio y cuándo.
+"""
 
+from __future__ import annotations
 
-# ---------------------------------------------
-# Modelo de historial de cambios de sitios
-# ---------------------------------------------
-# Acá no se guarda el sitio en sí, sino cada cambio puntual:
-# - qué sitio fue
-# - quién lo tocó
-# - qué acción hizo (create / update / delete)
-# - qué campo cambió
-# - valor anterior y nuevo
-# - y el timestamp del cambio
-#
-# Esto después sirve para auditar quién hizo qué en el admin.
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import (
+    Integer,
+    String,
+    Text,
+    DateTime,
+    Enum,
+    ForeignKey,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from core.database import Base
+
+if TYPE_CHECKING:
+    # Solo para anotaciones de tipo, sin imports circulares
+    from core.models.sites import SitioHistorico
+    from core.models.user import User
 
 
 class SiteChange(Base):
-    """Registro de un cambio sobre un sitio histórico.
-
-    Cada fila representa UNA modificación atómica: un campo, una acción,
-    una fecha y, opcionalmente, el usuario que hizo el cambio.
-
-    No tiene relación con favoritos porque los favoritos son del usuario
-    sobre el sitio, no del cambio puntual.
-    """
-
     __tablename__ = "sites_history"
 
-    # PK del registro de cambio
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True
+    )
 
-    # FK al sitio histórico afectado
+    # ----------------------
+    # FK al sitio histórico
+    # ----------------------
     site_id: Mapped[int] = mapped_column(
         ForeignKey("sitios_historicos.id"),
-        index=True,
         nullable=False,
+        index=True
     )
 
-    # Usuario que hizo el cambio (puede ser None si viene de un proceso automático)
+    # ----------------------
+    # Usuario que hizo el cambio
+    # ----------------------
     user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"),
-        nullable=True,
+        nullable=True
     )
 
-    # Tipo de acción hecha sobre el sitio
+    # ----------------------
+    # Tipo de acción
+    # ----------------------
     action: Mapped[str] = mapped_column(
         Enum("create", "update", "delete", name="site_action"),
-        nullable=False,
+        nullable=False
     )
 
-    # Nombre del campo modificado (None cuando la acción es "create" o "delete" global)
+    # ----------------------
+    # Campo editado
+    # ----------------------
     field: Mapped[str | None] = mapped_column(String(64))
 
-    # Valor anterior del campo (si aplica)
     old_value: Mapped[str | None] = mapped_column(Text)
-
-    # Valor nuevo del campo (si aplica)
     new_value: Mapped[str | None] = mapped_column(Text)
 
-    # Momento en que se registró el cambio (lo llena la BD)
-    changed_at: Mapped[str] = mapped_column(
+    # ----------------------
+    # Fecha del cambio
+    # ----------------------
+    changed_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=func.now(),
-        nullable=False,
+        nullable=False
     )
 
-    def __repr__(self) -> str:
-        """Representación legible del cambio, útil para debug y logs."""
-        return f"<SiteChange {self.action} site={self.site_id} field={self.field}>"
+    # ----------------------
+    # Relaciones (opcionales)
+    # ----------------------
+    site: Mapped["SitioHistorico"] = relationship("SitioHistorico")
+    user: Mapped["User"] = relationship("User")
+
+
+
+    def __repr__(self):
+        return f"<SiteChange id={self.id} site={self.site_id} action={self.action}>"

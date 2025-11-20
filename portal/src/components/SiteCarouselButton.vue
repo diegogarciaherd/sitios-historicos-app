@@ -38,7 +38,7 @@ function select() {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 1rem;
+  padding: 1.2rem 2rem;
   border-radius: 999px;
   background-color: rgba(30, 41, 59, 0.35);
   color: #f8fafc;

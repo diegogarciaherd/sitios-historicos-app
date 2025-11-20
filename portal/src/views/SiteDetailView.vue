@@ -1,4 +1,5 @@
 <!-- src/views/SiteDetailView.vue -->
+<!-- src/views/SiteDetailView.vue -->
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -9,21 +10,32 @@ import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
 import { useAuth } from '@/composables/useAuth'
 import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
 import SiteMap from '@/components/SiteMap.vue'
-import { useSiteSearch } from '@/composables/useSiteSearch' 
+import { useSiteSearch } from '@/composables/useSiteSearch'
 
 const route = useRoute()
 const router = useRouter()
 const { isAuthenticated } = useAuth()
-const { goBackToList } = useSiteSearch() 
+
+const siteId = computed(() => Number(route.params.id))
+
+// Estado del sitio
 const site = ref(null)
-const loadingSite = ref(false)
-const errorSite = ref('')
+const loadingSite = ref(true)
+const siteError = ref('')
 
-const reviews = ref([])
-const loadingReviews = ref(false)
+// Imágenes
+const coverImage = ref(null)
+const siteImages = ref([])
+const loadingImages = ref(false)
 
+// Favoritos
 const isFavorite = ref(false)
 const loadingFavorite = ref(false)
+
+// Reseñas
+const reviews = ref([])
+const loadingReviews = ref(false)
+const hasReviews = computed(() => reviews.value.length > 0)
 
 const newReviewTitle = ref('')
 const newReviewBody = ref('')
@@ -31,41 +43,45 @@ const newReviewRating = ref(5)
 const creatingReview = ref(false)
 const createReviewError = ref('')
 
-const siteId = computed(() => Number(route.params.id))
-const siteImages = ref([])
+// Búsqueda (si tus compas lo usan)
+useSiteSearch()
 
-const showFullDescription = ref(false)
-
+/**
+ * Carga los datos del sitio.
+ */
 async function loadSite() {
   loadingSite.value = true
-  errorSite.value = ''
-
+  siteError.value = ''
   try {
     const data = await getSiteById(siteId.value)
-    site.value = data
-    site.value.image = await getSiteCoverImage(siteId.value)
+    site.value = data || null
+    coverImage.value = await getSiteCoverImage(siteId.value)
   } catch (error) {
     console.error('Error cargando sitio:', error)
-    errorSite.value = 'No se pudo cargar el sitio.'
+    siteError.value = 'No se pudo cargar la información del sitio.'
   } finally {
     loadingSite.value = false
   }
 }
 
-async function loadReviews() {
-  loadingReviews.value = true
-
+/**
+ * Carga las imágenes del sitio.
+ */
+async function loadImages() {
+  loadingImages.value = true
   try {
-    const data = await getSiteReviews(siteId.value)
-    // Si el backend devuelve [reviews, meta], usar data[0]; si es array directo, usar data
-    reviews.value = Array.isArray(data) ? data : Array.isArray(data[0]) ? data[0] : []
+    const images = await getSiteImages(siteId.value)
+    siteImages.value = images || []
   } catch (error) {
-    console.error('Error cargando reseñas:', error)
+    console.error('Error cargando imágenes del sitio:', error)
   } finally {
-    loadingReviews.value = false
+    loadingImages.value = false
   }
 }
 
+/**
+ * Carga el estado de favorito para este sitio.
+ */
 async function loadFavoriteState() {
   if (!isAuthenticated.value) {
     isFavorite.value = false
@@ -82,15 +98,9 @@ async function loadFavoriteState() {
   }
 }
 
-async function loadImages() {
-  try {
-    const images = await getSiteImages(siteId.value)
-    siteImages.value = images
-  } catch (error) {
-    console.error('Error cargando imágenes del sitio:', error)
-  }
-}
-
+/**
+ * Alterna el favorito del sitio actual.
+ */
 async function handleToggleFavorite() {
   if (!isAuthenticated.value) {
     router.push({ name: 'login' })
@@ -103,7 +113,7 @@ async function handleToggleFavorite() {
     if (typeof data.favorite === 'boolean') {
       isFavorite.value = data.favorite
     } else {
-      // fallback si el backend no devuelve el flag
+      // Fallback por si algún día cambia el backend
       isFavorite.value = !isFavorite.value
     }
   } catch (error) {
@@ -113,6 +123,24 @@ async function handleToggleFavorite() {
   }
 }
 
+/**
+ * Carga las reseñas del sitio.
+ */
+async function loadReviews() {
+  loadingReviews.value = true
+  try {
+    const data = await getSiteReviews(siteId.value)
+    reviews.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error cargando reseñas:', error)
+  } finally {
+    loadingReviews.value = false
+  }
+}
+
+/**
+ * Crea una nueva reseña para este sitio.
+ */
 async function handleCreateReview() {
   if (!isAuthenticated.value) {
     router.push({ name: 'login' })
@@ -131,10 +159,12 @@ async function handleCreateReview() {
 
     await createSiteReview(siteId.value, payload)
 
-    // Limpiamos el formulario y recargamos reseñas
+    // Limpio el formulario
     newReviewTitle.value = ''
     newReviewBody.value = ''
     newReviewRating.value = 5
+
+    // Recargo reseñas
     await loadReviews()
   } catch (error) {
     console.error('Error creando reseña:', error)
@@ -144,14 +174,12 @@ async function handleCreateReview() {
   }
 }
 
-const hasReviews = computed(() => reviews.value.length > 0)
-
-
+// Carga inicial
 onMounted(async () => {
   await loadSite()
-  if (site.value) {
-    await Promise.all([loadReviews(), loadFavoriteState(), loadImages()])
-  }
+  await loadImages()
+  await loadFavoriteState()
+  await loadReviews()
 })
 </script>
 
@@ -173,7 +201,6 @@ onMounted(async () => {
         <article class="lg:col-span-2 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
           <!-- Layout con imagen a la izquierda y contenido a la derecha -->
           <div class="flex flex-col md:flex-row gap-6">
-            
             <div class="md:w-1/3">
               <img
                 :src="site.image || ''"
@@ -182,7 +209,6 @@ onMounted(async () => {
               />
             </div>
 
-        
             <div class="md:w-2/3 space-y-4">
               <!-- Título y ubicación -->
               <div>
@@ -238,7 +264,9 @@ onMounted(async () => {
           </div>
 
           <!-- Accordion Descripción Completa -->
-          <div class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200">
+          <div
+            class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200"
+          >
             <button
               class="w-full text-left flex justify-between items-center font-semibold text-sky-300"
               @click="showFullDescription = !showFullDescription"
@@ -250,10 +278,7 @@ onMounted(async () => {
             </button>
 
             <transition name="fade">
-              <p
-                v-if="showFullDescription"
-                class="mt-3 text-slate-300 leading-relaxed"
-              >
+              <p v-if="showFullDescription" class="mt-3 text-slate-300 leading-relaxed">
                 {{ site.descripcionCompleta }}
               </p>
             </transition>
@@ -343,34 +368,49 @@ onMounted(async () => {
           <!-- Bton para volver a la lista con los querys-->
           <div class="mb-6">
             <button
-            @click="goBackToList"
-            class="inline-flex items-center gap-2 px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-xl transition-all duration-200 border border-slate-600 hover:border-sky-400 text-sm font-semibold group backdrop-blur-sm"
-          >
-          <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-          Volver al listado
-        </button>
-      </div>
+              @click="goBackToList"
+              class="inline-flex items-center gap-2 px-4 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white rounded-xl transition-all duration-200 border border-slate-600 hover:border-sky-400 text-sm font-semibold group backdrop-blur-sm"
+            >
+              <svg
+                class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              Volver al listado
+            </button>
+          </div>
         </aside>
       </section>
 
       <!-- Mapa -->
-      <section v-if="site && site.lat && site.lng" class="mt-6 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
+      <section
+        v-if="site && site.lat && site.lng"
+        class="mt-6 bg-slate-900/70 rounded-xl border border-slate-700 p-6"
+      >
         <h1 class="text-xl font-semibold text-sky-300 mb-4">Ubicación</h1>
-          <SiteMap 
-            :key="`map-${site.lat}-${site.lng}`" 
-            :lat="site.lat" 
-            :lng="site.lng"
-            :nombre="site.nombre"
-            :descripcion-breve="site.descripcionBreve"
-            :ciudad="site.ciudad"
-            />
-        </section>
+        <SiteMap
+          :key="`map-${site.lat}-${site.lng}`"
+          :lat="site.lat"
+          :lng="site.lng"
+          :nombre="site.nombre"
+          :descripcion-breve="site.descripcionBreve"
+          :ciudad="site.ciudad"
+        />
+      </section>
 
       <!-- Carrusel de imágenes -->
-      <section class="flex flex-col mt-8 gap-6">
-        <h1 class="text-2xl">Imágenes</h1>
+      <section
+        class="flex flex-col mt-8 gap-6 bg-slate-900/70 rounded-xl border border-slate-700 p-6"
+      >
+        <h1 class="text-2xl text-sky-300">Imágenes</h1>
         <SiteViewCarousel v-if="site" :images="siteImages" class="mt-8" />
       </section>
 
@@ -411,7 +451,4 @@ onMounted(async () => {
   </div>
 </template>
 
-<style>
-  
-</style>
-
+<style></style>
