@@ -39,7 +39,7 @@ async function fetchSites() {
           favorites: props.siteFilters.favorites,
         })
 
-        // axios response -> resp.data is the server JSON { data, meta }
+       
         const payload = resp.data || {}
         sites.value = payload.data || []
         const total = payload.meta?.total || 0

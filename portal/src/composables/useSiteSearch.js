@@ -119,8 +119,6 @@ export function useSiteSearch() {
       }
     })
 
-    // No forzamos modo estricto: los filtros de mapa pueden combinarse con otros filtros.
-    
     return combined
   })
 

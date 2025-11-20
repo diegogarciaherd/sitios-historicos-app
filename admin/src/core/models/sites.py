@@ -470,9 +470,6 @@ def apply_filters(query, filters: dict):
             case "name-desc":
                 query = query.order_by(SitioHistorico.nombre.desc())
 
-    # Note: spatial filters (lat/lng/radius) are handled at a higher level
-    # using ST_DWithin in the query builder. Do not attempt to call
-    # Query.filter() with raw lat/long keyword args (unsupported).
 
     return query
 
