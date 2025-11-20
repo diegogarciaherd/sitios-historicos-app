@@ -23,6 +23,9 @@ const { isAuthenticated, currentUserEmail, logout } = useAuth()
 const accountMenuOpen = ref(false)
 const accountMenuRef = ref(null)
 
+const searchbarOption = ref('name')
+const searchQuery = ref('')
+
 function toggleAccountMenu() {
   accountMenuOpen.value = !accountMenuOpen.value
 }
@@ -49,6 +52,13 @@ async function handleLogout() {
     // Si ya estoy en home, no pasa nada
     console.error(e)
   }
+}
+
+function handleSearch() {
+  const query = searchQuery.value.trim()
+  if (query === '') return
+
+  router.push(`/sitios?${searchbarOption.value}=${encodeURIComponent(query)}`)
 }
 
 onMounted(() => {
@@ -78,9 +88,12 @@ onBeforeUnmount(() => {
         type="text"
         class="flex w-full rounded-full bg-transparent border border-white/50 focus:border-white focus:bg-white/20 focus:outline-none transition-colors duration-300 text-white px-4 py-1 pr-28"
         placeholder="Buscar..."
+        v-model="searchQuery"
+        v-on:keyup.enter="handleSearch"
       />
       <select
         class="absolute top-1/2 right-0 -translate-y-1/2 text-gray-600 bg-white outline-none border-none appearance-none pr-6 pl-3 py-1 rounded-r-full text-sm"
+        v-model="searchbarOption"
       >
         <option value="name" selected>Nombre</option>
         <option value="province">Provincia</option>
