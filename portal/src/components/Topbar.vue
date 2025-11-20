@@ -146,12 +146,12 @@ onBeforeUnmount(() => {
             <span class="block font-semibold text-slate-200">{{ currentUserEmail }}</span>
           </p>
           <RouterLink
-            to="/favorites"
+            to="/perfil"
             class="block px-4 py-2 text-sm text-slate-100 hover:bg-slate-800 transition-colors duration-200"
             role="menuitem"
             @click="closeAccountMenu"
           >
-            Mis favoritos
+            Mi perfil
           </RouterLink>
           <button
             type="button"

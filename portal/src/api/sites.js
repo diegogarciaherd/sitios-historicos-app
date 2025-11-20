@@ -45,20 +45,8 @@ async function getSites(filters = {}) {
   }
 }
 
-async function getSitesNearby({
-  lat,
-  lng,
-  radius,
-  page,
-  per_page,
-  order_by,
-  tags,
-  city,
-  province,
-  search,
-  favorites,
-}) {
-  // Reuse the main /sites endpoint so spatial + non-spatial filters are handled in one place.
+async function getSitesNearby({ lat, lng, radius, page, per_page, order_by, tags, city, province, search, favorites }) {
+  
   const params = { lat, lng, radius }
   if (page !== undefined) params.page = page
   if (per_page !== undefined) params.per_page = per_page

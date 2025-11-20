@@ -4,16 +4,16 @@
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
 import { onBeforeMount, reactive, ref } from 'vue'
-import { getSites, getMostVisitedSites } from '@/api/sites'
+import { getSites } from '@/api/sites'
 import { useAuth } from '@/composables/useAuth'
 
 // featuredSites son todos los sitios que agarro y luego distribuyo en los disintos carruseles.
 // Más adelante, cada sección debería tener su propia llamada a la API para traer los sitios correspondientes.
-const featuredSites = ref([])
+/* const featuredSites = ref([]) */
 const carouselOptions = reactive([])
 const selectedCarousel = ref()
 
-const mostVisitedSites = ref([])
+/* const mostVisitedSites = ref([]) */
 
 const { isAuthenticated } = useAuth()
 
@@ -22,18 +22,17 @@ onBeforeMount(async () => {
     {
       id: 'top-rated',
       label: 'Mejor puntuados',
-      sites_function: () => getSites({ page: 1, per_page: 10, sort_by: 'rating', order: 'desc' }),
+      sites_function: () => getSites({ page: 1, per_page: 10, order_by: 'rating-5-1' }),
     },
     {
       id: 'most-visited',
       label: 'Más visitados',
-      sites_function: () => getMostVisitedSites(),
+      sites_function: () => getSites({ page: 1, per_page: 10, order_by: 'most-visited' }),
     },
     {
       id: 'new-additions',
       label: 'Nuevas incorporaciones',
-      sites_function: () =>
-        getSites({ page: 1, per_page: 10, sort_by: 'created_at', order: 'desc' }),
+      sites_function: () => getSites({ page: 1, per_page: 10, order_by: 'latest' }),
     },
   ]
   if (isAuthenticated.value) {

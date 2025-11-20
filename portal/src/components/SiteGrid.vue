@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { getSites, getSitesNearby } from '@/api/sites'
 import DetailedSiteCard from './DetailedSiteCard.vue'
 
@@ -17,6 +18,19 @@ const sites = ref([])
 const perPage = 4
 const totalPages = ref(1)
 const loading = ref(false)
+const router = useRouter()
+const route = useRoute()
+
+function openSite(site) {
+  try {
+    // Guardar el estado actual de filtros/página en sessionStorage para volver luego
+    const state = { query: route.query || {}, page: props.page || 1 }
+    sessionStorage.setItem('site_list_state', JSON.stringify(state))
+  } catch (e) {
+    console.warn('No se pudo guardar el estado del listado en sessionStorage', e)
+  }
+  router.push({ name: 'site-detail', params: { id: site.id } })
+}
 
 async function fetchSites() {
   loading.value = true
@@ -24,7 +38,7 @@ async function fetchSites() {
     // Si los filtros contienen lat y lng, hacemos una búsqueda estricta por mapa
     if (props.siteFilters && props.siteFilters.lat && props.siteFilters.lng) {
       try {
-        // forward pagination and other filters to the main /sites endpoint
+        // enviar paginacion a la api /getSites
         const resp = await getSitesNearby({
           lat: props.siteFilters.lat,
           lng: props.siteFilters.lng,
@@ -116,7 +130,7 @@ onMounted(fetchSites)
         v-for="site in sites"
         :key="site.id"
         :site="site"
-        @click="$router.push(`sitios/${site.id}`)"
+        @click="() => openSite(site)"
         class="cursor-pointer"
       />
     </div>

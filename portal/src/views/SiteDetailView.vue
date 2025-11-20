@@ -3,7 +3,7 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Topbar from '@/components/Topbar.vue'
+import Topbar from '@/components/TopbarPhone.vue'
 import { getSiteById, getSiteCoverImage, getSiteImages } from '@/api/sites'
 import { getSiteReviews, createSiteReview } from '@/api/reviews'
 import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
@@ -183,6 +183,25 @@ onMounted(async () => {
   await loadFavoriteState()
   await loadReviews()
 })
+
+function goBackToList() {
+  try {
+    const raw = sessionStorage.getItem('site_list_state')
+    if (raw) {
+      const state = JSON.parse(raw)
+      const query = state.query || {}
+      // Si no venía page en query, usar el guardado
+      if (!query.page && state.page) query.page = state.page
+      router.push({ name: 'sites-list', query })
+      return
+    }
+  } catch (e) {
+    console.warn('No se pudo leer el estado del listado desde sessionStorage', e)
+  }
+
+  // Fallback: volver en el history
+  router.back()
+}
 </script>
 
 <template>

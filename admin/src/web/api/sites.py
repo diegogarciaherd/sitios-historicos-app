@@ -1,5 +1,3 @@
-# admin/src/web/api/sites.py
-
 """
 API de Sitios
 -------------
@@ -12,7 +10,7 @@ Contiene los endpoints relacionados con sitios históricos, incluyendo:
 
 Este módulo es utilizado por la aplicación pública mediante JWT.
 """
-
+#admin/src/web/api/sites.py
 from core.database import db
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
@@ -23,10 +21,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from core.models.sites import (
     list_sites_with_filters,
-    create_sites,
     get_site,
     increment_site_visit_count,
-    get_sites_by_visits,
 )
 from core.models.tags import get_tags_by_ids, assign_tags
 from core.models.reviews import (
@@ -35,6 +31,7 @@ from core.models.reviews import (
     get_review_by_id,
     delete_review,
     ReviewStatus,
+    get_reviews_by_user_id,
 )
 
 # Nota: la lógica espacial ahora se maneja en `list_sites_with_filters` (PostGIS/ST_DWithin)
@@ -61,10 +58,11 @@ def check_filters(filters: dict) -> dict:
     valid_orders = {
         "rating-5-1",
         "rating-1-5",
-        "latest",
-        "oldest",
+        "latest",  # muestra los más nuevos primero
+        "oldest",  # muestra los más antiguos primero
         "name-asc",
         "name-desc",
+        "most-visited",
     }
 
     if "order_by" in filters and filters["order_by"]:
@@ -79,19 +77,35 @@ def check_filters(filters: dict) -> dict:
         except ValueError:
             errors["lat"] = "No es un número."
 
-    if "lng" in filters and filters["lng"]:
+    if "long" in filters and filters["long"]:
         try:
-            lng_val = float(filters["lng"])
-            if lng_val < -180 or lng_val > 180:
-                errors["lng"] = "Fuera de rango."
+            long_val = float(filters["long"])
+            if long_val < -180 or long_val > 180:
+                errors["long"] = "Fuera de rango."
         except ValueError:
-            errors["lng"] = "No es un número."
+            errors["long"] = "No es un número."
 
     if "radius" in filters and filters["radius"]:
         try:
-            float(filters["radius"])
+            int(filters["radius"])
         except ValueError:
             errors["radius"] = "No es un número."
+
+    if "page" in filters and filters["page"]:
+        try:
+            int(filters["page"])
+        except ValueError:
+            errors["page"] = "No es un número."
+
+    if "per_page" in filters and filters["per_page"]:
+        try:
+            per_page_int = int(filters["per_page"])
+            if per_page_int > 100:
+                filters["per_page"] = 100
+            elif per_page_int < 1:
+                errors["per_page"] = "Debe ser entre 1 y 100."
+        except ValueError:
+            errors["per_page"] = "No es un número."
 
     return errors
 
@@ -100,17 +114,17 @@ def check_filters(filters: dict) -> dict:
 #                           LISTADO Y FILTROS DE SITIOS
 # ----------------------------------------------------------------------
 @sites_api_bp.get("")
-def list_sites():
+def get_sites_by_criteria():
     """
-    Lista sitios históricos con filtros opcionales:
-    - Tags
-    - Orden
-    - Nombre
-    - Radio (lat, lng, radius)
+    Obtiene una lista de sitios filtrados por criterios opcionales.
 
-    Los filtros llegan vía querystring.
+    Los filtros posibles incluyen ordenamiento, latitud, longitud,
+    radio, paginación, etc.
+
+    Returns:
+        JSON con la lista de sitios y metadata.
     """
-    filters = request.args.to_dict(flat=True)
+    filters = request.args.to_dict()
     errors = check_filters(filters)
 
     if errors:
@@ -118,8 +132,8 @@ def list_sites():
             jsonify(
                 {
                     "error": {
-                        "code": "invalid_filters",
-                        "message": "Invalid filter parameters",
+                        "code": "invalid_query",
+                        "message": "Parameter validation failed.",
                         "details": errors,
                     }
                 }
@@ -127,64 +141,25 @@ def list_sites():
             400,
         )
 
-    # Filtro por tags si vienen
-    tag_ids = filters.get("tags")
-    tags = None
-    if tag_ids:
-        try:
-            tag_ids_list = [int(t) for t in tag_ids.split(",")]
-        except ValueError:
-            return (
-                jsonify(
-                    {
-                        "error": {
-                            "code": "invalid_filters",
-                            "message": "Tag IDs must be integers",
-                        }
-                    }
-                ),
-                400,
-            )
-        tags = get_tags_by_ids(tag_ids_list)
+    page = int(filters.get("page", 1) or 1)
+    per_page = int(filters.get("per_page", 10) or 10)
 
-    # Toda la lógica (incluyendo lat/lng/radius) la resuelve list_sites_with_filters
-    sites = list_sites_with_filters(filters, tags)
+    sites, total = list_sites_with_filters(filters, page, per_page)
+    sites_data = [site.to_dict() for site in sites]
 
-    data = [site.to_dict() for site in sites[0]]
-
-    return jsonify({"data": data}), 200
-
-
-# ----------------------------------------------------------------------
-#                           CREACIÓN DE SITIOS
-# ----------------------------------------------------------------------
-@sites_api_bp.post("/")
-@jwt_required()
-def create_site():
-    """
-    Crea uno o varios sitios históricos a partir de un JSON.
-    Este endpoint está pensado principalmente para la app privada.
-    """
-    payload = request.get_json() or {}
-
-    if isinstance(payload, list):
-        created_sites = create_sites(payload)
-    elif isinstance(payload, dict):
-        created_sites = [create_sites([payload])[0]]
-    else:
-        return (
-            jsonify(
-                {
-                    "error": {
-                        "code": "invalid_payload",
-                        "message": "Payload must be a list or dict",
-                    }
-                }
-            ),
-            400,
-        )
-
-    return jsonify([site.to_dict() for site in created_sites]), 201
+    return (
+        jsonify(
+            {
+                "data": sites_data,
+                "meta": {
+                    "page": page,
+                    "per_page": per_page,
+                    "total": total,
+                },
+            }
+        ),
+        200,
+    )
 
 
 # ----------------------------------------------------------------------
@@ -247,22 +222,91 @@ def toggle_favorite_api(site_id: int):
 @jwt_required()
 def get_my_favorites():
     """
-    Devuelve la lista de todos los sitios marcados como favoritos
-    por el usuario autenticado.
+    Devuelve los sitios marcados como favoritos por el usuario autenticado.
+
+    Compatibilidad:
+    - Si NO se envían parámetros de paginación/orden → devuelve una lista simple
+      (comportamiento anterior, usado por FavoritesView).
+    - Si se envían page/per_page/order o 'paginated' → devuelve { data, meta }.
     """
     user_id = int(get_jwt_identity())
-    favorites = db.session.query(Favorite).filter_by(user_id=user_id).all()
+    params = request.args.to_dict(flat=True)
+
+    # ¿El caller quiere paginación?
+    wants_pagination = any(
+        key in params for key in ("page", "per_page", "order", "paginated")
+    )
+
+    base_query = db.session.query(Favorite).filter_by(user_id=user_id)
+
+    if not wants_pagination:
+        favorites = base_query.all()
+        return (
+            jsonify(
+                [
+                    {
+                        "site_id": fav.site.id,
+                        "site_name": fav.site.nombre,
+                        "created_at": fav.created_at.isoformat(),
+                    }
+                    for fav in favorites
+                ]
+            ),
+            200,
+        )
+
+    # Con paginación
+    errors = check_pagination_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    page = int(params.get("page", 1) or 1)
+    per_page = int(params.get("per_page", 25) or 25)
+    order = params.get("order", "desc")
+
+    query = base_query
+    if order == "asc":
+        query = query.order_by(Favorite.created_at.asc())
+    else:
+        query = query.order_by(Favorite.created_at.desc())
+
+    total = query.count()
+    favorites = (
+        query.offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    data = [
+        {
+            "site_id": fav.site.id,
+            "site_name": fav.site.nombre,
+            "created_at": fav.created_at.isoformat(),
+        }
+        for fav in favorites
+    ]
 
     return (
         jsonify(
-            [
-                {
-                    "site_id": fav.site.id,
-                    "site_name": fav.site.nombre,
-                    "created_at": fav.created_at.isoformat(),
-                }
-                for fav in favorites
-            ]
+            {
+                "data": data,
+                "meta": {
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                },
+            }
         ),
         200,
     )
@@ -448,6 +492,66 @@ def create_site_review(site_id: int):
     return jsonify(review.to_dict()), 201
 
 
+@sites_api_bp.get("/users/me/reviews")
+@jwt_required()
+def get_my_reviews():
+    """
+    Devuelve las reseñas del usuario autenticado, con paginación
+    y orden por fecha (asc/desc). Pensado para el Perfil del Usuario.
+    """
+    user_id = int(get_jwt_identity())
+    params = request.args.to_dict(flat=True)
+
+    errors = check_pagination_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    page = int(params.get("page", 1) or 1)
+    per_page = int(params.get("per_page", 25) or 25)
+    order = params.get("order", "desc")
+
+    reviews, total = get_reviews_by_user_id(user_id, page, per_page, order)
+
+    data = []
+    for review in reviews:
+        body = review.body or ""
+        data.append(
+            {
+                "id": review.id,
+                "site_id": review.site_id,
+                "site_name": getattr(review.site, "nombre", None),
+                "rating": review.rating,
+                "created_at": review.created_at.isoformat(),
+                "excerpt": body[:160],
+            }
+        )
+
+    return (
+        jsonify(
+            {
+                "data": data,
+                "meta": {
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                },
+            }
+        ),
+        200,
+    )
+
+
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")
 def get_site_review_by_id(site_id: int, review_id: int):
     """
@@ -553,18 +657,3 @@ def delete_site_review_by_id(site_id: int, review_id: int):
     delete_review(reviews[review_id - 1].id)
     # 204: sin body
     return ("", 204)
-
-
-@sites_api_bp.get("/most_visited")
-def get_most_visited_sites():
-    """
-    Devuelve una lista de los sitios más visitados.
-
-    Returns:
-        JSON con lista de sitios.
-    """
-
-    most_visited_sites = get_sites_by_visits()
-    sites_data = [site.to_dict() for site in most_visited_sites]
-
-    return jsonify({"data": sites_data}), 200

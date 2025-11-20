@@ -1,4 +1,3 @@
-# admin/src/core/models/reviews.py
 from __future__ import annotations
 
 from datetime import datetime
@@ -121,6 +120,32 @@ def get_reviews_by_site_id(
     Devuelve una lista paginada de reseñas (cualquier estado) para un sitio.
     """
     query = db.session.query(Review).filter_by(site_id=id)
+    total = query.count()
+    reviews = (
+        query.offset((int(page) - 1) * int(per_page))
+        .limit(int(per_page))
+        .all()
+    )
+    return reviews, total
+
+
+def get_reviews_by_user_id(
+    user_id: int,
+    page: int = 1,
+    per_page: int = 25,
+    order: str = "desc",
+) -> tuple[list[Review], int]:
+    """
+    Devuelve una lista paginada de reseñas para un usuario dado,
+    ordenadas por fecha (asc/desc).
+    """
+    query = db.session.query(Review).filter(Review.user_id == user_id)
+
+    if order == "asc":
+        query = query.order_by(Review.created_at.asc())
+    else:
+        query = query.order_by(Review.created_at.desc())
+
     total = query.count()
     reviews = (
         query.offset((int(page) - 1) * int(per_page))

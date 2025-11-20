@@ -73,7 +73,7 @@ export function useSiteSearch() {
     if (appliedFilters.value.radius) {
       query.radius = appliedFilters.value.radius
     }
-    // Preserve map_search flag when there is a map selection
+    // Preservar el parámetro de búsqueda en mapa si existen lat/lng
     if (appliedFilters.value.lat && appliedFilters.value.lng) {
       query.map_search = '1'
     }
@@ -119,6 +119,8 @@ export function useSiteSearch() {
       }
     })
 
+    //  los filtros de mapa pueden combinarse con otros filtros.
+    
     return combined
   })
 
@@ -130,7 +132,7 @@ export function useSiteSearch() {
     console.log('🔍 [useSiteSearch] siteFiltersRef existe')
     const currentFilters = siteFiltersRef.value.getFilters()
     console.log('🔍 [useSiteSearch] filters desde SiteFilters:', currentFilters)
-    // Preserve any existing map params (lat/lng/radius) and favorites when applying new filters
+    // Preserva los filtros actuales y actualiza appliedFilters
     appliedFilters.value = {
       city: currentFilters.city || '',
       province: currentFilters.province || '',
@@ -152,6 +154,36 @@ export function useSiteSearch() {
 }
 
   function handleClear() {
+    // Limpiar solo los filtros no relacionados al mapa (preserva lat/lng/radius)
+    searchTerm.value = ''
+    searchBarRef.value?.clear()
+    siteFiltersRef.value?.clear()
+    appliedFilters.value = {
+      city: '',
+      province: '',
+      tags: [],
+      order_by: '',
+      // Prservar filtros de mapa
+      lat: appliedFilters.value.lat || '',
+      lng: appliedFilters.value.lng || '',
+      radius: appliedFilters.value.radius || ''
+    }
+    // Resetear página
+    page.value = 1
+    syncToUrl()
+  }
+
+  function handleClearMap() {
+    // Limpiar solo parámetros del mapa
+    appliedFilters.value.lat = ''
+    appliedFilters.value.lng = ''
+    appliedFilters.value.radius = ''
+    page.value = 1
+    syncToUrl()
+  }
+
+  function handleClearAll() {
+    // Limpiar todo: búsqueda, filtros y mapa
     searchTerm.value = ''
     searchBarRef.value?.clear()
     siteFiltersRef.value?.clear()
@@ -162,8 +194,9 @@ export function useSiteSearch() {
       order_by: '',
       lat: '',
       lng: '',
-      radius: ''  
+      radius: ''
     }
+    page.value = 1
     syncToUrl()
   }
 
@@ -230,6 +263,8 @@ export function useSiteSearch() {
     combinedFilters,
     handleSearch,
     handleClear,
+    handleClearMap,
+    handleClearAll,
     handlePageChange
   }
 }
