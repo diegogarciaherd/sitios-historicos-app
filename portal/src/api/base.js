@@ -11,8 +11,7 @@ import axios from 'axios'
  * que es donde corre Flask en desarrollo.
  */
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar'
+const API_BASE_URL = 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar'
 
 const api = axios.create({
   // Todas las rutas de este cliente van contra /api del backend
