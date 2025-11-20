@@ -29,17 +29,13 @@ class ReviewStatus(enum.Enum):
 class Review(Base):
     __tablename__ = "reviews"
 
-    id: Mapped[int] = mapped_column(
-        Integer, primary_key=True, autoincrement=True
-    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     site_id: Mapped[int] = mapped_column(
         ForeignKey("sitios_historicos.id"), nullable=False
     )
     # Puede ser None si se permite reseña anónima
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"), nullable=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
 
     # 1..5
     rating: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -66,12 +62,8 @@ class Review(Base):
     moderated_by: Mapped[int | None] = mapped_column(
         ForeignKey("users.id"), nullable=True
     )
-    moderated_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True
-    )
-    reject_reason: Mapped[str | None] = mapped_column(
-        String(255), nullable=True
-    )
+    moderated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reject_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Relaciones (opcionales para backrefs)
     site = relationship(
@@ -91,9 +83,7 @@ class Review(Base):
             "title": self.title,
             "body": self.body,
             "status": (
-                self.status.value
-                if isinstance(self.status, enum.Enum)
-                else self.status
+                self.status.value if isinstance(self.status, enum.Enum) else self.status
             ),
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -117,15 +107,15 @@ def get_reviews_by_site_id(
     id: int, page: int = 1, per_page: int = 10
 ) -> tuple[list[Review], int]:
     """
-    Devuelve una lista paginada de reseñas (cualquier estado) para un sitio.
+    Devuelve una lista paginada de reseñas aprobadas para un sitio.
     """
-    query = db.session.query(Review).filter_by(site_id=id)
-    total = query.count()
-    reviews = (
-        query.offset((int(page) - 1) * int(per_page))
-        .limit(int(per_page))
-        .all()
+    query = (
+        db.session.query(Review)
+        .filter_by(site_id=id)
+        .filter(Review.status == ReviewStatus.APPROVED)
     )
+    total = query.count()
+    reviews = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
     return reviews, total
 
 
@@ -139,7 +129,11 @@ def get_reviews_by_user_id(
     Devuelve una lista paginada de reseñas para un usuario dado,
     ordenadas por fecha (asc/desc).
     """
-    query = db.session.query(Review).filter(Review.user_id == user_id)
+    query = (
+        db.session.query(Review)
+        .filter(Review.user_id == user_id)
+        .filter(Review.status == ReviewStatus.APPROVED)
+    )
 
     if order == "asc":
         query = query.order_by(Review.created_at.asc())
@@ -147,11 +141,7 @@ def get_reviews_by_user_id(
         query = query.order_by(Review.created_at.desc())
 
     total = query.count()
-    reviews = (
-        query.offset((int(page) - 1) * int(per_page))
-        .limit(int(per_page))
-        .all()
-    )
+    reviews = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
     return reviews, total
 
 
