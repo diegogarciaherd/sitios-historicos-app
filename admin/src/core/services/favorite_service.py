@@ -1,4 +1,5 @@
 # admin/src/core/services/favorite_service.py
+
 from core.database import db
 from core.models.favorites import Favorite
 
@@ -26,6 +27,10 @@ def toggle_favorite(user_id: int, site_id: int) -> bool:
 
 
 def get_user_favorites(user_id: int):
+    """
+    Devuelve todos los favoritos del usuario ordenados del más nuevo
+    al más antiguo.
+    """
     return (
         db.session.query(Favorite)
         .filter_by(user_id=user_id)

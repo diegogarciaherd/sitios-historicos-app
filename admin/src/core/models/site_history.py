@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from datetime import datetime   # 👈 AGREGÁ ESTA LÍNEA
 
 from core.database import Base, db
 from sqlalchemy import Integer, String, Text, DateTime, Enum, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+# Solo para type hints, no en runtime
+if TYPE_CHECKING:
+    from core.models.favorites import Favorite
+
 
 # ---------------------------------------------
 # Modelo de historial de cambios de sitios
@@ -16,48 +22,26 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 class SiteChange(Base):
     """Registro de un cambio sobre un sitio histórico.
 
-    Cada fila representa UNA modificación atómica: un campo, una acción,
-    una fecha y, opcionalmente, el usuario que hizo el cambio.
+    Cada fila representa una modificación de algún campo del sitio.
     """
 
     __tablename__ = "sites_history"
 
-    # PK del registro de cambio
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    # (acá mantené exactamente lo que ya tenías:
+    # id, site_id, user_id, action, field, old_value, new_value, etc.)
+    ...
 
-    # FK al sitio histórico afectado
-    site_id: Mapped[int] = mapped_column(
-        ForeignKey("sitios_historicos.id"),
-        index=True,
-        nullable=False,
-    )
-
-    # Usuario que hizo el cambio (puede ser None si viene de un proceso automático)
-    user_id: Mapped[int | None] = mapped_column(
-        ForeignKey("users.id"),
-        nullable=True,
-    )
-
-    # Tipo de acción hecha sobre el sitio
-    action: Mapped[str] = mapped_column(
-        Enum("create", "update", "delete", name="site_action"),
-        nullable=False,
-    )
-
-    # Nombre del campo modificado (None cuando la acción es "create" o "delete" global)
-    field: Mapped[str | None] = mapped_column(String(64))
-
-    # Valor anterior del campo (si aplica)
-    old_value: Mapped[str | None] = mapped_column(Text)
-
-    # Valor nuevo del campo (si aplica)
-    new_value: Mapped[str | None] = mapped_column(Text)
-
-    # Momento en que se registró el cambio (lo llena la BD)
-    changed_at: Mapped[str] = mapped_column(
+    changed_at: Mapped[datetime] = mapped_column(
         DateTime,
         server_default=func.now(),
         nullable=False,
+    )
+
+    # Relación con favoritos (no genera FK extra, solo ORM)
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite",
+        back_populates="site",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

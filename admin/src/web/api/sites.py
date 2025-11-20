@@ -13,9 +13,13 @@ Contiene los endpoints relacionados con sitios históricos, incluyendo:
 Este módulo es utilizado por la aplicación pública mediante JWT.
 """
 
+from core.database import db
+from core.models.favorites import Favorite
+from core.models.sites import SitioHistorico
+from core.services.favorite_service import toggle_favorite
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from core.database import db
 
 from core.models.sites import (
     list_sites_with_filters,
@@ -32,9 +36,6 @@ from core.models.reviews import (
     delete_review,
     ReviewStatus,
 )
-from core.services.favorite_service import toggle_favorite
-from core.models.favorites import Favorite
-from core.models.sites import SitioHistorico
 
 # del branch de tus compas: búsqueda por radio
 from core.services.sites_services import get_sites_within_radius
@@ -239,6 +240,7 @@ def get_site_by_id(id: int):
 # ----------------------------------------------------------------------
 #                           FAVORITOS
 # ----------------------------------------------------------------------
+
 @sites_api_bp.post("/<int:site_id>/favorite")
 @jwt_required()
 def toggle_favorite_api(site_id: int):
@@ -252,35 +254,15 @@ def toggle_favorite_api(site_id: int):
     Requiere JWT.
     """
     user_id = get_jwt_identity()
-    site = get_site(site_id)
 
+    site = db.session.get(SitioHistorico, site_id)
     if not site:
-        return (
-            jsonify(
-                {
-                    "error": {
-                        "code": "not_found",
-                        "message": f"El sitio {site_id} no existe.",
-                    }
-                }
-            ),
-            404,
-        )
+        return jsonify({"error": "Sitio no encontrado"}), 404
 
     created = toggle_favorite(user_id, site_id)
 
-    return (
-        jsonify(
-            {
-                "message": (
-                    "Favorite created"
-                    if created
-                    else "Favorite removed"
-                )
-            }
-        ),
-        200,
-    )
+    return jsonify({"favorite": created, "site_id": site_id}), 200
+
 
 
 @sites_api_bp.get("/users/me/favorites")
@@ -289,12 +271,13 @@ def get_my_favorites():
     """
     Devuelve la lista de todos los sitios marcados como favoritos
     por el usuario autenticado.
-
-    Returns:
-        JSON con lista de favoritos.
     """
     user_id = get_jwt_identity()
-    favorites = db.session.query(Favorite).filter_by(user_id=user_id).all()
+    favorites = (
+        db.session.query(Favorite)
+        .filter_by(user_id=user_id)
+        .all()
+    )
 
     return (
         jsonify(
@@ -309,7 +292,6 @@ def get_my_favorites():
         ),
         200,
     )
-
 
 # ----------------------------------------------------------------------
 #                               REVIEWS
@@ -391,9 +373,9 @@ def get_site_reviews(id: int):
     Devuelve todas las reseñas asociadas a un sitio histórico identificado
     por la id ingresada en la URL.
 
-    Args:
-        id (int): La id del sitio histórico.
+    Lectura pública (no requiere JWT), como pide la consigna.
     """
+    # Si el sitio no existe, 404
     site = get_site(id)
     if not site:
         return (
@@ -451,11 +433,9 @@ def get_site_reviews(id: int):
 def create_site_review(site_id: int):
     """
     Crea una nueva reseña para el sitio histórico especificado.
-
-    El usuario debe estar autenticado (JWT).
+    Requiere usuario autenticado (JWT).
     """
     site = get_site(site_id)
-
     if not site:
         return (
             jsonify(
@@ -475,7 +455,6 @@ def create_site_review(site_id: int):
     params["user_id"] = user_id
 
     errors = check_review_post_params(params)
-
     if errors:
         return (
             jsonify(
@@ -492,6 +471,7 @@ def create_site_review(site_id: int):
 
     review = create_review(**params)
     return jsonify(review.to_dict()), 201
+
 
 
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")

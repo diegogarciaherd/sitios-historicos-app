@@ -16,7 +16,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
 
-# TYPE_CHECKING para evitar imports circulares en runtime
+# Solo para type hints, sin romper imports circulares
 if TYPE_CHECKING:
     from core.models.user import User
     from core.models.sites import SitioHistorico
@@ -51,6 +51,7 @@ class Favorite(Base):
         back_populates="favorites",
     )
 
+    # FAVORITOS se relaciona con el sitio principal
     site: Mapped["SitioHistorico"] = relationship(
         "SitioHistorico",
         back_populates="favorites",
