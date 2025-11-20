@@ -1,159 +1,188 @@
 <!-- src/views/SiteDetailView.vue -->
+<!-- src/views/SiteDetailView.vue -->
 <script setup>
-import { onMounted, ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import Topbar from '@/components/Topbar.vue'
-import { getSiteById, getSiteCoverImage, getSiteImages } from '@/api/sites'
-import { getSiteReviews, createSiteReview } from '@/api/reviews'
-import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
-import { useAuth } from '@/composables/useAuth'
-import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
-import SiteMap from '@/components/SiteMap.vue'
-import { useSiteSearch } from '@/composables/useSiteSearch' 
+  import { onMounted, ref, computed } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import Topbar from '@/components/Topbar.vue'
+  import { getSiteById, getSiteCoverImage, getSiteImages } from '@/api/sites'
+  import { getSiteReviews, createSiteReview } from '@/api/reviews'
+  import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
+  import { useAuth } from '@/composables/useAuth'
+  import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
+  import SiteMap from '@/components/SiteMap.vue'
+  import { useSiteSearch } from '@/composables/useSiteSearch'
 
-const route = useRoute()
-const router = useRouter()
-const { isAuthenticated } = useAuth()
-const { goBackToList } = useSiteSearch() 
-const site = ref(null)
-const loadingSite = ref(false)
-const errorSite = ref('')
+  const route = useRoute()
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
-const reviews = ref([])
-const loadingReviews = ref(false)
+  const siteId = computed(() => Number(route.params.id))
 
-const isFavorite = ref(false)
-const loadingFavorite = ref(false)
+  // Estado del sitio
+  const site = ref(null)
+  const loadingSite = ref(true)
+  const siteError = ref('')
 
-const newReviewTitle = ref('')
-const newReviewBody = ref('')
-const newReviewRating = ref(5)
-const creatingReview = ref(false)
-const createReviewError = ref('')
+  // Imágenes
+  const coverImage = ref(null)
+  const siteImages = ref([])
+  const loadingImages = ref(false)
 
-const siteId = computed(() => Number(route.params.id))
-const siteImages = ref([])
+  // Favoritos
+  const isFavorite = ref(false)
+  const loadingFavorite = ref(false)
 
-const showFullDescription = ref(false)
+  // Reseñas
+  const reviews = ref([])
+  const loadingReviews = ref(false)
+  const hasReviews = computed(() => reviews.value.length > 0)
 
-async function loadSite() {
-  loadingSite.value = true
-  errorSite.value = ''
+  const newReviewTitle = ref('')
+  const newReviewBody = ref('')
+  const newReviewRating = ref(5)
+  const creatingReview = ref(false)
+  const createReviewError = ref('')
 
-  try {
-    const data = await getSiteById(siteId.value)
-    site.value = data
-    site.value.image = await getSiteCoverImage(siteId.value)
-  } catch (error) {
-    console.error('Error cargando sitio:', error)
-    errorSite.value = 'No se pudo cargar el sitio.'
-  } finally {
-    loadingSite.value = false
-  }
-}
+  // Búsqueda (si tus compas lo usan)
+  useSiteSearch()
 
-async function loadReviews() {
-  loadingReviews.value = true
-
-  try {
-    const data = await getSiteReviews(siteId.value)
-    // Si el backend devuelve [reviews, meta], usar data[0]; si es array directo, usar data
-    reviews.value = Array.isArray(data) ? data : Array.isArray(data[0]) ? data[0] : []
-  } catch (error) {
-    console.error('Error cargando reseñas:', error)
-  } finally {
-    loadingReviews.value = false
-  }
-}
-
-async function loadFavoriteState() {
-  if (!isAuthenticated.value) {
-    isFavorite.value = false
-    return
-  }
-
-  try {
-    const favs = await getMyFavoritesRequest()
-    if (Array.isArray(favs)) {
-      isFavorite.value = favs.some((f) => f.site_id === siteId.value)
+  /**
+   * Carga los datos del sitio.
+   */
+  async function loadSite () {
+    loadingSite.value = true
+    siteError.value = ''
+    try {
+      const data = await getSiteById(siteId.value)
+      site.value = data || null
+      coverImage.value = await getSiteCoverImage(siteId.value)
+    } catch (error) {
+      console.error('Error cargando sitio:', error)
+      siteError.value = 'No se pudo cargar la información del sitio.'
+    } finally {
+      loadingSite.value = false
     }
-  } catch (error) {
-    console.error('Error cargando estado de favorito:', error)
-  }
-}
-
-async function loadImages() {
-  try {
-    const images = await getSiteImages(siteId.value)
-    siteImages.value = images
-  } catch (error) {
-    console.error('Error cargando imágenes del sitio:', error)
-  }
-}
-
-async function handleToggleFavorite() {
-  if (!isAuthenticated.value) {
-    router.push({ name: 'login' })
-    return
   }
 
-  loadingFavorite.value = true
-  try {
-    const data = await toggleFavoriteRequest(siteId.value)
-    if (typeof data.favorite === 'boolean') {
-      isFavorite.value = data.favorite
-    } else {
-      // fallback si el backend no devuelve el flag
-      isFavorite.value = !isFavorite.value
+  /**
+   * Carga las imágenes del sitio.
+   */
+  async function loadImages () {
+    loadingImages.value = true
+    try {
+      const images = await getSiteImages(siteId.value)
+      siteImages.value = images || []
+    } catch (error) {
+      console.error('Error cargando imágenes del sitio:', error)
+    } finally {
+      loadingImages.value = false
     }
-  } catch (error) {
-    console.error('Error alternando favorito:', error)
-  } finally {
-    loadingFavorite.value = false
-  }
-}
-
-async function handleCreateReview() {
-  if (!isAuthenticated.value) {
-    router.push({ name: 'login' })
-    return
   }
 
-  createReviewError.value = ''
-  creatingReview.value = true
-
-  try {
-    const payload = {
-      title: newReviewTitle.value,
-      body: newReviewBody.value,
-      rating: newReviewRating.value,
+  /**
+   * Carga el estado de favorito para este sitio.
+   */
+  async function loadFavoriteState () {
+    if (!isAuthenticated.value) {
+      isFavorite.value = false
+      return
     }
 
-    await createSiteReview(siteId.value, payload)
+    try {
+      const favs = await getMyFavoritesRequest()
+      if (Array.isArray(favs)) {
+        isFavorite.value = favs.some((f) => f.site_id === siteId.value)
+      }
+    } catch (error) {
+      console.error('Error cargando estado de favorito:', error)
+    }
+  }
 
-    // Limpiamos el formulario y recargamos reseñas
-    newReviewTitle.value = ''
-    newReviewBody.value = ''
-    newReviewRating.value = 5
+  /**
+   * Alterna el favorito del sitio actual.
+   */
+  async function handleToggleFavorite () {
+    if (!isAuthenticated.value) {
+      router.push({ name: 'login' })
+      return
+    }
+
+    loadingFavorite.value = true
+    try {
+      const data = await toggleFavoriteRequest(siteId.value)
+      if (typeof data.favorite === 'boolean') {
+        isFavorite.value = data.favorite
+      } else {
+        // Fallback por si algún día cambia el backend
+        isFavorite.value = !isFavorite.value
+      }
+    } catch (error) {
+      console.error('Error alternando favorito:', error)
+    } finally {
+      loadingFavorite.value = false
+    }
+  }
+
+  /**
+   * Carga las reseñas del sitio.
+   */
+  async function loadReviews () {
+    loadingReviews.value = true
+    try {
+      const data = await getSiteReviews(siteId.value)
+      reviews.value = Array.isArray(data) ? data : []
+    } catch (error) {
+      console.error('Error cargando reseñas:', error)
+    } finally {
+      loadingReviews.value = false
+    }
+  }
+
+  /**
+   * Crea una nueva reseña para este sitio.
+   */
+  async function handleCreateReview () {
+    if (!isAuthenticated.value) {
+      router.push({ name: 'login' })
+      return
+    }
+
+    createReviewError.value = ''
+    creatingReview.value = true
+
+    try {
+      const payload = {
+        title: newReviewTitle.value,
+        body: newReviewBody.value,
+        rating: newReviewRating.value
+      }
+
+      await createSiteReview(siteId.value, payload)
+
+      // Limpio el formulario
+      newReviewTitle.value = ''
+      newReviewBody.value = ''
+      newReviewRating.value = 5
+
+      // Recargo reseñas
+      await loadReviews()
+    } catch (error) {
+      console.error('Error creando reseña:', error)
+      createReviewError.value = 'No se pudo guardar la reseña.'
+    } finally {
+      creatingReview.value = false
+    }
+  }
+
+  // Carga inicial
+  onMounted(async () => {
+    await loadSite()
+    await loadImages()
+    await loadFavoriteState()
     await loadReviews()
-  } catch (error) {
-    console.error('Error creando reseña:', error)
-    createReviewError.value = 'No se pudo guardar la reseña.'
-  } finally {
-    creatingReview.value = false
-  }
-}
-
-const hasReviews = computed(() => reviews.value.length > 0)
-
-
-onMounted(async () => {
-  await loadSite()
-  if (site.value) {
-    await Promise.all([loadReviews(), loadFavoriteState(), loadImages()])
-  }
-})
+  })
 </script>
+
 
 <template>
   <div class="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-white">

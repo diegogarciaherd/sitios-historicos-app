@@ -1,17 +1,20 @@
 # admin/src/core/models/user.py
+from __future__ import annotations
+
 from core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import db
 from core.services.bcrypt import bcrypt
-from core.database import Base
 from typing import TYPE_CHECKING, ClassVar, List
 from core.models.auth import UserRole, LogicallyDeletedUser
 from datetime import datetime
 from sqlalchemy import DateTime
-from core.models.favorites import Favorite
 
+# No importamos Favorite en runtime para evitar import circular
 if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
+    from core.models.favorites import Favorite
+
 
 class User(Base):
     '''Modelo de usuario
@@ -38,17 +41,18 @@ class User(Base):
     )
     role_id: ClassVar[int]
     deleted: ClassVar[bool]
+
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="user",
         cascade="all, delete-orphan",
     )
 
-    favorites: Mapped[List[Favorite]] = relationship(
-    "Favorite",
-    back_populates="user",
-    cascade="all, delete-orphan"
-    )   
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         '''Representación en string del Usuario'''

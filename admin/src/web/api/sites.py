@@ -15,6 +15,7 @@ Este módulo es utilizado por la aplicación pública mediante JWT.
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from core.database import db
 
 from core.models.sites import (
     list_sites_with_filters,
@@ -79,75 +80,38 @@ def check_filters(filters: dict) -> dict:
         except ValueError:
             errors["lat"] = "No es un número."
 
-    if "long" in filters and filters["long"]:
+    if "lng" in filters and filters["lng"]:
         try:
-            long_val = float(filters["long"])
-            if long_val < -180 or long_val > 180:
-                errors["long"] = "Fuera de rango."
+            lng_val = float(filters["lng"])
+            if lng_val < -180 or lng_val > 180:
+                errors["lng"] = "Fuera de rango."
         except ValueError:
-            errors["long"] = "No es un número."
+            errors["lng"] = "No es un número."
 
     if "radius" in filters and filters["radius"]:
         try:
-            int(filters["radius"])
+            float(filters["radius"])
         except ValueError:
             errors["radius"] = "No es un número."
 
-    if "page" in filters and filters["page"]:
-        try:
-            int(filters["page"])
-        except ValueError:
-            errors["page"] = "No es un número."
-
-    if "per_page" in filters and filters["per_page"]:
-        try:
-            per_page_int = int(filters["per_page"])
-            if per_page_int > 100:
-                filters["per_page"] = 100
-            elif per_page_int < 1:
-                errors["per_page"] = "Debe ser entre 1 y 100."
-        except ValueError:
-            errors["per_page"] = "No es un número."
-
-    return errors
-
-
-def validate_post_data(data: dict) -> list[str]:
-    """
-    Valida los datos necesarios para crear un sitio histórico.
-
-    Args:
-        data (dict): Datos enviados por JSON.
-
-    Returns:
-        list[str]: Lista de errores encontrados.
-    """
-    errors: list[str] = []
-    required_fields = ["nombre", "estado", "tags", "lat", "lng"]
-
-    for rf in required_fields:
-        value = data.get(rf)
-        if value is None or (isinstance(value, str) and not value.strip()):
-            errors.append(f"El campo {rf} es requerido.")
-
     return errors
 
 
 # ----------------------------------------------------------------------
-#                           ENDPOINTS DE SITIOS
+#                           LISTADO Y FILTROS DE SITIOS
 # ----------------------------------------------------------------------
-@sites_api_bp.get("")
-def get_sites_by_criteria():
+@sites_api_bp.get("/")
+def list_sites():
     """
-    Obtiene una lista de sitios filtrados por criterios opcionales.
+    Lista sitios históricos con filtros opcionales:
+    - Tags
+    - Orden
+    - Nombre
+    - Radio (lat, lng, radius)
 
-    Los filtros posibles incluyen ordenamiento, latitud, longitud,
-    radio, paginación, etc.
-
-    Returns:
-        JSON con la lista de sitios y metadata.
+    Los filtros llegan vía querystring.
     """
-    filters = request.args.to_dict()
+    filters = request.args.to_dict(flat=True)
     errors = check_filters(filters)
 
     if errors:
@@ -155,8 +119,8 @@ def get_sites_by_criteria():
             jsonify(
                 {
                     "error": {
-                        "code": "invalid_query",
-                        "message": "Parameter validation failed.",
+                        "code": "invalid_filters",
+                        "message": "Invalid filter parameters",
                         "details": errors,
                     }
                 }
@@ -164,135 +128,112 @@ def get_sites_by_criteria():
             400,
         )
 
-    page = int(filters.get("page", 1) or 1)
-    per_page = int(filters.get("per_page", 10) or 10)
+    # Filtro por tags si vienen
+    tag_ids = filters.get("tags")
+    tags = None
+    if tag_ids:
+        try:
+            tag_ids_list = [int(t) for t in tag_ids.split(",")]
+        except ValueError:
+            return (
+                jsonify(
+                    {
+                        "error": {
+                            "code": "invalid_filters",
+                            "message": "Tag IDs must be integers",
+                        }
+                    }
+                ),
+                400,
+            )
+        tags = get_tags_by_ids(tag_ids_list)
 
-    sites, total = list_sites_with_filters(filters, page, per_page)
-    sites_data = [site.to_dict() for site in sites]
+    # Filtro por radio (lat, lng, radius)
+    if filters.get("lat") and filters.get("lng") and filters.get("radius"):
+        try:
+            lat = float(filters["lat"])
+            lng = float(filters["lng"])
+            radius = float(filters["radius"])
+        except ValueError:
+            return (
+                jsonify(
+                    {
+                        "error": {
+                            "code": "invalid_filters",
+                            "message": "lat, lng y radius deben ser numéricos",
+                        }
+                    }
+                ),
+                400,
+            )
 
-    return (
-        jsonify(
-            {
-                "data": sites_data,
-                "meta": {
-                    "page": page,
-                    "per_page": per_page,
-                    "total": total,
-                },
-            }
-        ),
-        200,
-    )
+        sites = get_sites_within_radius(lat, lng, radius, filters, tags)
+    else:
+        sites = list_sites_with_filters(filters, tags)
+
+    data = [site.to_dict() for site in sites]
+
+    return jsonify({"data": data}), 200
 
 
-@sites_api_bp.post("")
+# ----------------------------------------------------------------------
+#                           CREACIÓN DE SITIOS
+# ----------------------------------------------------------------------
+@sites_api_bp.post("/")
 @jwt_required()
 def create_site():
     """
-    Crea un nuevo sitio histórico.
-
-    Requiere autenticación JWT.
-
-    Returns:
-        201 si se creó correctamente.
+    Crea uno o varios sitios históricos a partir de un JSON.
+    Este endpoint está pensado principalmente para la app privada.
     """
-    data = request.get_json() or {}
-    errors = validate_post_data(data)
+    payload = request.get_json() or {}
 
-    if errors:
+    if isinstance(payload, list):
+        created_sites = create_sites(payload)
+    elif isinstance(payload, dict):
+        created_sites = [create_sites([payload])[0]]
+    else:
         return (
             jsonify(
                 {
                     "error": {
-                        "code": "invalid_query",
-                        "message": "Parameter validation failed.",
-                        "details": errors,
+                        "code": "invalid_payload",
+                        "message": "Payload must be a list or dict",
                     }
                 }
             ),
             400,
         )
 
-    tags = data.pop("tags")
-    site = create_sites(**data)
-    selected_tags = get_tags_by_ids(tags)
-    assign_tags(site, selected_tags)
-
-    return jsonify(site.to_dict()), 201
+    return jsonify([site.to_dict() for site in created_sites]), 201
 
 
+# ----------------------------------------------------------------------
+#                           OBTENCIÓN POR ID
+# ----------------------------------------------------------------------
 @sites_api_bp.get("/<int:id>")
 def get_site_by_id(id: int):
     """
-    Devuelve los datos de un sitio histórico según su ID.
-
-    Args:
-        id (int): ID del sitio.
-
-    Returns:
-        JSON con el sitio o error 404 si no existe.
+    Devuelve un sitio histórico por su ID.
     """
     site = get_site(id)
-    if site:
-        try:
-            increment_site_visit_count(id)
-        except ValueError:
-            pass
-        return jsonify(site.to_dict()), 200
 
-    return (
-        jsonify(
-            {
-                "error": {
-                    "code": "not_found",
-                    "message": "No existe un sitio con ese id.",
-                }
-            }
-        ),
-        404,
-    )
-
-
-# ----------------------------------------------------------------------
-#                       BÚSQUEDA POR RADIO (branch compas)
-# ----------------------------------------------------------------------
-@sites_api_bp.get("/nearby")
-def get_sites_nearby():
-    """
-    Devuelve sitios cercanos a una coordenada dada un radio en km.
-
-    Espera query params:
-        lat (float): latitud
-        long (float): longitud
-        radius (int/float): radio en kilómetros
-    """
-    params = request.args.to_dict()
-    errors = {}
-
-    try:
-        lat = float(params.get("lat", ""))
-        long = float(params.get("lng", ""))
-        radius = float(params.get("radius", ""))
-    except ValueError:
-        errors["coords"] = "lat, long y radius deben ser numéricos."
-
-    if errors:
+    if not site:
         return (
             jsonify(
                 {
                     "error": {
-                        "code": "invalid_query",
-                        "message": "Parámetros inválidos.",
-                        "details": errors,
+                        "code": "not_found",
+                        "message": f"El sitio {id} no existe.",
                     }
                 }
             ),
-            400,
+            404,
         )
 
-    sites = get_sites_within_radius(lat, long, radius)
-    data = [s.to_dict() for s in sites]
-    return jsonify(data), 200
+    increment_site_visit_count(site)
+
+    return jsonify(site.to_dict()), 200
 
 
 # ----------------------------------------------------------------------
@@ -309,22 +250,37 @@ def toggle_favorite_api(site_id: int):
     - Si no lo marcó → se crea.
 
     Requiere JWT.
-
-    Args:
-        site_id (int): ID del sitio a marcar/desmarcar.
-
-    Returns:
-        JSON con estado actual del favorito.
     """
     user_id = get_jwt_identity()
+    site = get_site(site_id)
 
-    exists = SitioHistorico.query.get(site_id)
-    if not exists:
-        return jsonify({"error": "Sitio no encontrado"}), 404
+    if not site:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "not_found",
+                        "message": f"El sitio {site_id} no existe.",
+                    }
+                }
+            ),
+            404,
+        )
 
     created = toggle_favorite(user_id, site_id)
 
-    return jsonify({"favorite": created, "site_id": site_id}), 200
+    return (
+        jsonify(
+            {
+                "message": (
+                    "Favorite created"
+                    if created
+                    else "Favorite removed"
+                )
+            }
+        ),
+        200,
+    )
 
 
 @sites_api_bp.get("/users/me/favorites")
@@ -338,7 +294,7 @@ def get_my_favorites():
         JSON con lista de favoritos.
     """
     user_id = get_jwt_identity()
-    favorites = Favorite.query.filter_by(user_id=user_id).all()
+    favorites = db.session.query(Favorite).filter_by(user_id=user_id).all()
 
     return (
         jsonify(
@@ -411,18 +367,10 @@ def check_review_post_params(params: dict) -> dict:
     else:
         errors["rating"] = "El puntaje es obligatorio."
 
-    if "title" in params and isinstance(params["title"], str):
-        params["title"] = params["title"].strip()
-        if not params["title"]:
-            errors["title"] = "El título es obligatorio."
-    else:
+    if "title" in params and not params["title"]:
         errors["title"] = "El título es obligatorio."
 
-    if "body" in params and isinstance(params["body"], str):
-        params["body"] = params["body"].strip()
-        if not params["body"]:
-            errors["body"] = "La descripción es obligatoria."
-    else:
+    if "body" in params and not params["body"]:
         errors["body"] = "La descripción es obligatoria."
 
     if "status" in params:
@@ -438,7 +386,6 @@ def check_review_post_params(params: dict) -> dict:
 
 
 @sites_api_bp.get("/<int:id>/reviews")
-@jwt_required()
 def get_site_reviews(id: int):
     """
     Devuelve todas las reseñas asociadas a un sitio histórico identificado
@@ -461,7 +408,7 @@ def get_site_reviews(id: int):
             404,
         )
 
-    pagination = request.args.to_dict()
+    pagination = request.args.to_dict(flat=True)
     errors = check_pagination_params(pagination)
 
     if errors:
@@ -489,9 +436,9 @@ def get_site_reviews(id: int):
             {
                 "data": reviews_data,
                 "meta": {
-                    "page": page,
-                    "per_page": per_page if per_page else total,
                     "total": total,
+                    "page": page,
+                    "per_page": per_page,
                 },
             }
         ),
@@ -503,14 +450,12 @@ def get_site_reviews(id: int):
 @jwt_required()
 def create_site_review(site_id: int):
     """
-    Crea una nueva reseña para el sitio histórico recibido en la URL.
-    La id del sitio histórico se recibe por URL, y los datos de la
-    reseña en el cuerpo tipo JSON.
+    Crea una nueva reseña para el sitio histórico especificado.
 
-    Args:
-        site_id (int): La id del sitio histórico.
+    El usuario debe estar autenticado (JWT).
     """
     site = get_site(site_id)
+
     if not site:
         return (
             jsonify(
@@ -524,8 +469,11 @@ def create_site_review(site_id: int):
             404,
         )
 
+    user_id = get_jwt_identity()
     params = request.get_json() or {}
     params["site_id"] = site_id
+    params["user_id"] = user_id
+
     errors = check_review_post_params(params)
 
     if errors:
@@ -547,15 +495,12 @@ def create_site_review(site_id: int):
 
 
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")
-@jwt_required()
 def get_site_review_by_id(site_id: int, review_id: int):
     """
     Devuelve la reseña especificada para el sitio histórico especificado.
 
     ATENCIÓN:
     Cada sitio histórico puede tener ninguna o más reseñas asociadas.
-    Esta función primero trae todas las reseñas del sitio y luego usa
-    `review_id` como índice (1-based) dentro de esa lista.
     """
     site = get_site(site_id)
     if not site:
@@ -598,7 +543,8 @@ def get_site_review_by_id(site_id: int, review_id: int):
             500,
         )
 
-    return jsonify(reviews[review_id - 1].to_dict()), 200
+    review = reviews[review_id - 1]
+    return jsonify(review.to_dict()), 200
 
 
 @sites_api_bp.delete("/<int:site_id>/reviews/<int:review_id>")
@@ -661,7 +607,7 @@ def get_most_visited_sites():
     Devuelve una lista de los sitios más visitados.
 
     Returns:
-        JSON con la lista de sitios más visitados.
+        JSON con lista de sitios.
     """
 
     most_visited_sites = get_sites_by_visits()

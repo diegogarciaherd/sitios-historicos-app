@@ -5,18 +5,23 @@
  * - Hace login contra la API de Flask: POST /api/auth/
  * - Guarda el JWT en localStorage.
  * - Expone estado reactivo para saber si hay usuario logueado.
+ *
+ * La idea es que desde cualquier componente pueda preguntar:
+ *   - isAuthenticated → boolean
+ *   - currentUser / currentUserEmail → datos básicos
+ *   - login(email, password)
+ *   - logout()
  */
 
 import { ref, computed, watchEffect } from 'vue'
 import axios from 'axios'
 
-// URL base de la API (sin /api al final, lo agregamos después en cada llamada)
+// URL base de la API (sin /api al final, lo agrego a mano donde haga falta)
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
-// Estado global simple en memoria
+// Estado global simple en memoria (para todo el portal)
 const token = ref(localStorage.getItem('jwt') || null)
-// Solo guardo el mail del usuario en localStorage, el resto puede venir del backend
 const currentUserEmail = ref(localStorage.getItem('currentUserEmail') || null)
 const currentUser = ref(null)
 
@@ -24,6 +29,8 @@ const isAuthenticated = computed(() => !!token.value)
 
 /**
  * Setea o limpia el header Authorization de axios a partir del token actual.
+ * No afecta a la instancia `api` que vive en src/api/base.js, pero me sirve
+ * si en algún momento uso axios "global".
  */
 function setAxiosAuthHeader (jwt) {
   if (jwt) {
@@ -36,7 +43,7 @@ function setAxiosAuthHeader (jwt) {
 // Inicializo axios con el token que haya en localStorage
 setAxiosAuthHeader(token.value)
 
-// Cada vez que cambie el token, actualizo el header de axios
+// Cada vez que cambie el token, actualizo el header de axios global
 watchEffect(() => {
   setAxiosAuthHeader(token.value)
 })
@@ -60,15 +67,18 @@ async function login (email, password) {
     const jwt = data.access_token || data.token
 
     if (!jwt) {
+      // El backend debería devolver siempre access_token/token cuando el login es correcto
       return {
         ok: false,
         message: 'El servidor no devolvió un token válido.'
       }
     }
 
+    // Guardo token en memoria + localStorage
     token.value = jwt
     localStorage.setItem('jwt', jwt)
 
+    // Guardo info básica de usuario (email + lo que venga en data.user)
     const userFromBackend = data.user || {}
     currentUser.value = {
       id: data.user_id ?? userFromBackend.id ?? null,
@@ -83,11 +93,13 @@ async function login (email, password) {
     return { ok: true }
   } catch (error) {
     console.error('Error en login:', error)
+
     let message = 'No se pudo iniciar sesión.'
 
     if (error.response?.status === 401) {
       message = 'Credenciales inválidas.'
     } else if (error.response?.data?.error?.message) {
+      // El backend a veces devuelve un array de mensajes, a veces un string
       const raw = error.response.data.error.message
       message = Array.isArray(raw) ? raw.join(' ') : raw
     }
@@ -98,7 +110,6 @@ async function login (email, password) {
     }
   }
 }
-
 
 /**
  * Cierra la sesión del usuario:

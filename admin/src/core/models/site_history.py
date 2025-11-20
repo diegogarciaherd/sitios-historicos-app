@@ -1,22 +1,16 @@
 # admin/src/core/models/site_history.py
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from core.database import Base, db
 from sqlalchemy import Integer, String, Text, DateTime, Enum, ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
-
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # ---------------------------------------------
 # Modelo de historial de cambios de sitios
 # ---------------------------------------------
-# Acá no se guarda el sitio en sí, sino cada cambio puntual:
-# - qué sitio fue
-# - quién lo tocó
-# - qué acción hizo (create / update / delete)
-# - qué campo cambió
-# - valor anterior y nuevo
-# - y el timestamp del cambio
-#
-# Esto después sirve para auditar quién hizo qué en el admin.
 
 
 class SiteChange(Base):
@@ -24,9 +18,6 @@ class SiteChange(Base):
 
     Cada fila representa UNA modificación atómica: un campo, una acción,
     una fecha y, opcionalmente, el usuario que hizo el cambio.
-
-    No tiene relación con favoritos porque los favoritos son del usuario
-    sobre el sitio, no del cambio puntual.
     """
 
     __tablename__ = "sites_history"

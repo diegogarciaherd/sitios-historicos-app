@@ -17,12 +17,14 @@ export async function getSiteReviews (siteId) {
   const response = await api.get(`/sites/${siteId}/reviews`)
   const payload = response.data
 
-  if (Array.isArray(payload)) {
-    return payload
-  }
-
+  // Caso "ideal": viene con envoltorio { data: [...] }
   if (payload && Array.isArray(payload.data)) {
     return payload.data
+  }
+
+  // Si por alguna razón el backend devolviera directamente un array:
+  if (Array.isArray(payload)) {
+    return payload
   }
 
   return []
