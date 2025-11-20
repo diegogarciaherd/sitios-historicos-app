@@ -23,6 +23,7 @@ const city = ref(props.appliedFilters.city || '')
 const province = ref(props.appliedFilters.province || '')
 const selectedTags = ref(props.appliedFilters.tags || [])
 const orderBy = ref(props.appliedFilters.order_by || '')
+const favorites = ref(props.appliedFilters.favorites || false)
 const availableTags = ref([])
 
 const isOpen = ref(false)
@@ -50,6 +51,7 @@ watch(
     city.value = newFilters.city || ''
     province.value = newFilters.province || ''
     orderBy.value = newFilters.order_by || ''
+    favorites.value = newFilters.favorites || false 
 
     if (newFilters.tags?.length > 0) {
       selectedTags.value = newFilters.tags
@@ -91,6 +93,7 @@ function clearFilters() {
   province.value = ''
   orderBy.value = ''
   selectedTags.value = []
+  favorites.value = false
   emit('clear')
 }
 

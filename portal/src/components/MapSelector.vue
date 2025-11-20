@@ -34,7 +34,7 @@
           :disabled="!selectedLocation || searching"
           class="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition"
         >
-          <span v-if="!searching">Buscar</span>
+          <span v-if="!searching">Buscar por localizacion</span>
           <span v-else>Buscando...</span>
         </button>
 
