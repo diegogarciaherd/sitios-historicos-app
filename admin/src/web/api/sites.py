@@ -1,8 +1,8 @@
 # admin/src/web/api/sites.py
 
 """
-API Sites
----------
+API de Sitios
+-------------
 Contiene los endpoints relacionados con sitios históricos, incluyendo:
 - Listado y filtros.
 - Creación de sitios.
@@ -35,8 +35,7 @@ from core.services.favorite_service import toggle_favorite
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
 
-# del branch de tus compas: búsqueda por radio
-from core.services.sites_services import get_sites_within_radius
+# Nota: la lógica espacial ahora se maneja en `list_sites_with_filters` (PostGIS/ST_DWithin)
 
 
 # Blueprint principal con prefijo único
@@ -254,45 +253,14 @@ def get_site_by_id(id: int):
 
 
 # ----------------------------------------------------------------------
-#                       BÚSQUEDA POR RADIO (branch compas)
-# ----------------------------------------------------------------------
-@sites_api_bp.get("/nearby")
-def get_sites_nearby():
-    """
-    Devuelve sitios cercanos a una coordenada dada un radio en km.
-
-    Espera query params:
-        lat (float): latitud
-        lng (float): longitud
-        radius (int/float): radio en kilómetros
-    """
-    params = request.args.to_dict()
-    errors = {}
-
-    try:
-        lat = float(params.get("lat", ""))
-        long = float(params.get("lng", ""))
-        radius = float(params.get("radius", ""))
-    except ValueError:
-        errors["coords"] = "lat, lng y radius deben ser numéricos."
-
-    if errors:
-        return (
-            jsonify(
-                {
-                    "error": {
-                        "code": "invalid_query",
-                        "message": "Parámetros inválidos.",
-                        "details": errors,
-                    }
-                }
-            ),
-            400,
-        )
-
-    sites = get_sites_within_radius(lat, long, radius)
-    data = [s.to_dict() for s in sites]
-    return jsonify(data), 200
+# Nota: anteriormente existía un endpoint `/nearby` para búsquedas por radio.
+# Se eliminó para centralizar la lógica en el endpoint principal
+# `GET /api/sites` que ahora acepta `lat`, `lng` y `radius` como parámetros
+# y combina la restricción espacial con el resto de filtros (tags, ciudad,
+# provincia, favoritos, ordenamiento y paginación).
+# Si se necesita compatibilidad hacia atrás, podemos agregar una
+# redirección desde `/nearby` a `/api/sites`, pero por ahora la ruta fue
+# removida para evitar duplicación de comportamiento.
 
 
 # ----------------------------------------------------------------------
