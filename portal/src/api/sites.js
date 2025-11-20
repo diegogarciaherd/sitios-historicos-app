@@ -45,14 +45,33 @@ async function getSites(filters = {}) {
   }
 }
 
-async function getSitesNearby({ lat, lng, radius }) {
-  return api.get('/sites/nearby', {
-    params: {
-      lat,
-      lng,
-      radius,
-    },
-    paramsSerializer: (params) => new URLSearchParams(params).toString(),
+async function getSitesNearby({
+  lat,
+  lng,
+  radius,
+  page,
+  per_page,
+  order_by,
+  tags,
+  city,
+  province,
+  search,
+  favorites,
+}) {
+  // Reuse the main /sites endpoint so spatial + non-spatial filters are handled in one place.
+  const params = { lat, lng, radius }
+  if (page !== undefined) params.page = page
+  if (per_page !== undefined) params.per_page = per_page
+  if (order_by !== undefined) params.order_by = order_by
+  if (tags !== undefined) params.tags = Array.isArray(tags) ? tags.join(',') : tags
+  if (city !== undefined) params.city = city
+  if (province !== undefined) params.province = province
+  if (search !== undefined) params.search = search
+  if (favorites !== undefined) params.favorites = favorites
+
+  return api.get('/sites', {
+    params,
+    paramsSerializer: (p) => new URLSearchParams(p).toString(),
   })
 }
 
@@ -92,4 +111,23 @@ async function getSiteById(siteId) {
   }
 }
 
-export { getSites, getSitesNearby, getSiteCoverImage, getSiteById, getSiteImages }
+async function getMostVisitedSites() {
+  try {
+    const response = await api.get('/sites/most_visited')
+    return response.data
+  } catch (error) {
+    console.error('Error fetching most visited sites:', error)
+    if (error.response) {
+      console.error('Error response:', error.response.data)
+    }
+  }
+}
+
+export {
+  getSites,
+  getSitesNearby,
+  getSiteCoverImage,
+  getSiteById,
+  getSiteImages,
+  getMostVisitedSites,
+}

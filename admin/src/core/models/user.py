@@ -1,17 +1,20 @@
 # admin/src/core/models/user.py
+from __future__ import annotations
+
 from core.database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.database import db
 from core.services.bcrypt import bcrypt
-from core.database import Base
 from typing import TYPE_CHECKING, ClassVar, List
 from core.models.auth import UserRole, LogicallyDeletedUser
 from datetime import datetime
 from sqlalchemy import DateTime
-from core.models.favorites import Favorite
 
+# No importamos Favorite en runtime para evitar import circular
 if TYPE_CHECKING:
     from core.models.feature_flags_history import FeatureFlagHistory
+    from core.models.favorites import Favorite
+
 
 class User(Base):
     '''Modelo de usuario
@@ -31,24 +34,25 @@ class User(Base):
     email: Mapped[str] = mapped_column(nullable=False)
     name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
-    password: Mapped[str] = mapped_column(nullable=False)
+    password: Mapped[str] = mapped_column(nullable=True)
     active: Mapped[bool] = mapped_column(nullable=True, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
     role_id: ClassVar[int]
     deleted: ClassVar[bool]
+
     feature_flags_history: Mapped["FeatureFlagHistory"] = relationship(
         "FeatureFlagHistory",
         back_populates="user",
         cascade="all, delete-orphan",
     )
 
-    favorites: Mapped[List[Favorite]] = relationship(
-    "Favorite",
-    back_populates="user",
-    cascade="all, delete-orphan"
-    )   
+    favorites: Mapped[list["Favorite"]] = relationship(
+        "Favorite",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         '''Representación en string del Usuario'''
@@ -216,4 +220,10 @@ def list_all_users() -> list[User]:
 
     return query
 
-
+def create_user_from_google_auth(data: dict):
+    data["last_name"] = " "
+    user = User(**data)
+    db.session.add(user)
+    db.session.commit()
+    new_user_id = read_user_by_email(data["email"]).id
+    UserRole.create_entry(new_user_id, 4)

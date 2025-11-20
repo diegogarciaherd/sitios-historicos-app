@@ -4,7 +4,8 @@
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
 import { onBeforeMount, reactive, ref } from 'vue'
-import { getSites } from '@/api/sites'
+import { getSites, getMostVisitedSites } from '@/api/sites'
+import { useAuth } from '@/composables/useAuth'
 
 // featuredSites son todos los sitios que agarro y luego distribuyo en los disintos carruseles.
 // Más adelante, cada sección debería tener su propia llamada a la API para traer los sitios correspondientes.
@@ -12,31 +13,35 @@ const featuredSites = ref([])
 const carouselOptions = reactive([])
 const selectedCarousel = ref()
 
+const mostVisitedSites = ref([])
+
+const { isAuthenticated } = useAuth()
+
 onBeforeMount(async () => {
-  featuredSites.value = await getSites({})
-  featuredSites.value = featuredSites.value.data
   carouselOptions.value = [
     {
       id: 'top-rated',
       label: 'Mejor puntuados',
-      sites: featuredSites.value,
+      sites_function: () => getSites({ page: 1, per_page: 10, sort_by: 'rating', order: 'desc' }),
     },
     {
       id: 'most-visited',
       label: 'Más visitados',
-      sites: featuredSites.value.slice().reverse(),
+      sites_function: () => getMostVisitedSites(),
     },
     {
       id: 'new-additions',
       label: 'Nuevas incorporaciones',
-      sites: featuredSites.value.slice(0, 5),
-    },
-    {
-      id: 'favorites',
-      label: 'Favoritos',
-      sites: featuredSites.value.slice(3, 7).reverse(),
+      sites_function: () =>
+        getSites({ page: 1, per_page: 10, sort_by: 'created_at', order: 'desc' }),
     },
   ]
+  if (isAuthenticated.value) {
+    carouselOptions.value.push({
+      id: 'favorites',
+      label: 'Favoritos',
+    })
+  }
   selectedCarousel.value = ref(carouselOptions.value[0]?.id ?? null)
 })
 </script>
@@ -64,7 +69,7 @@ onBeforeMount(async () => {
           v-for="option in carouselOptions.value"
           :key="`carousel-${option.id}`"
           v-show="selectedCarousel.value === option.id"
-          :sites="option.sites"
+          :sites_function="option.sites_function"
           :autoplay="false"
         />
       </div>

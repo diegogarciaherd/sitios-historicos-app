@@ -1,11 +1,11 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import DetailedSiteCard from './DetailedSiteCard.vue'
 
 const props = defineProps({
-  sites: {
-    type: Array,
-    default: () => [],
+  sites_function: {
+    type: Function,
+    required: true,
   },
   autoplay: { type: Boolean, default: true },
   interval: { type: Number, default: 4500 },
@@ -22,8 +22,10 @@ const current = ref(0)
 const hovering = ref(false)
 let timerId = null
 
-const count = computed(() => props.sites?.length || 0)
+const sites = ref([])
+const count = computed(() => sites.value?.length || 0)
 const canNavigate = computed(() => count.value > 1)
+const isLoading = ref(false)
 
 function clampIndex(i) {
   if (count.value === 0) return 0
@@ -60,6 +62,41 @@ function stopAutoplay() {
   if (timerId) {
     clearInterval(timerId)
     timerId = null
+  }
+}
+
+function normalizeSites(payload) {
+  if (!payload) return []
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload.data)) return payload.data
+  if (Array.isArray(payload?.data?.data)) return payload.data.data
+  return []
+}
+
+async function fetchSites() {
+  if (typeof props.sites_function !== 'function') {
+    sites.value = []
+    return
+  }
+
+  isLoading.value = true
+  stopAutoplay()
+
+  try {
+    const result = await props.sites_function()
+    const normalized = normalizeSites(result)
+    sites.value = normalized
+    if (current.value >= normalized.length) {
+      current.value = clampIndex(0)
+    }
+  } catch (error) {
+    console.error('Error fetching sites for carousel:', error)
+    sites.value = []
+    current.value = 0
+  } finally {
+    isLoading.value = false
+    await nextTick()
+    startAutoplay()
   }
 }
 
@@ -151,8 +188,15 @@ watch(count, (newCount, oldCount) => {
   if (newCount !== oldCount) startAutoplay()
 })
 
+watch(
+  () => props.sites_function,
+  () => {
+    fetchSites()
+  },
+)
+
 onMounted(() => {
-  startAutoplay()
+  fetchSites()
 })
 
 onBeforeUnmount(() => {
@@ -223,7 +267,12 @@ onBeforeUnmount(() => {
       <button type="button" class="arrow next" aria-label="Siguiente" @click="next">›</button>
     </div>
   </section>
-  <div v-else class="text-center text-gray-500 py-16">No hay sitios para mostrar.</div>
+  <div v-else>
+    <div v-if="isLoading" class="text-center text-gray-400 py-16 text-sm">
+      Cargando sitios destacados...
+    </div>
+    <div v-else class="text-center text-gray-500 py-16">No hay sitios para mostrar.</div>
+  </div>
 </template>
 
 <style scoped>

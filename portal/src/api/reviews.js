@@ -3,12 +3,31 @@ import api from './base'
 
 /**
  * Trae las reseñas de un sitio.
+ *
+ * El backend devuelve:
+ * {
+ *   data: [ { id, title, body, rating, ... }, ... ],
+ *   meta: { ... }
+ * }
+ *
+ * Acá normalizo y devuelvo directamente el array de reseñas,
+ * así el resto del código trabaja siempre con un array simple.
  */
 export async function getSiteReviews(siteId) {
   const response = await api.get(`/sites/${siteId}/reviews`)
-  // En tu backend puede venir como [reviews, meta] o directamente array; por ahora
-  // asumimos array simple de reseñas. Si cambia el formato, se ajusta acá.
-  return response.data
+  const payload = response.data
+
+  // Caso "ideal": viene con envoltorio { data: [...] }
+  if (payload && Array.isArray(payload.data)) {
+    return payload.data
+  }
+
+  // Si por alguna razón el backend devolviera directamente un array:
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  return []
 }
 
 /**
@@ -16,6 +35,7 @@ export async function getSiteReviews(siteId) {
  * params debe incluir al menos: { title, body, rating }
  */
 export async function createSiteReview(siteId, params) {
+  console.log('Creating review with params:', params)
   const response = await api.post(`/sites/${siteId}/reviews`, params)
   return response.data
 }
