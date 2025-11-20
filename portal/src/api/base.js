@@ -9,9 +9,11 @@ import axios from 'axios'
  *
  * Si no está definida, por defecto apuntamos a http://localhost:5000,
  * que es donde corre Flask en desarrollo.
+ *
+ * En main tiene que estar: 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar'
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+const API_BASE_URL = 'http://localhost:5000'
 
 const api = axios.create({
   // Todas las rutas de este cliente van contra /api del backend

@@ -111,23 +111,4 @@ async function getSiteById(siteId) {
   }
 }
 
-async function getMostVisitedSites() {
-  try {
-    const response = await api.get('/sites/most_visited')
-    return response.data
-  } catch (error) {
-    console.error('Error fetching most visited sites:', error)
-    if (error.response) {
-      console.error('Error response:', error.response.data)
-    }
-  }
-}
-
-export {
-  getSites,
-  getSitesNearby,
-  getSiteCoverImage,
-  getSiteById,
-  getSiteImages,
-  getMostVisitedSites,
-}
+export { getSites, getSitesNearby, getSiteCoverImage, getSiteById, getSiteImages }

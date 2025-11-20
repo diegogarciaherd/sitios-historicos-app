@@ -71,6 +71,8 @@ async function loadImages() {
   loadingImages.value = true
   try {
     const images = await getSiteImages(siteId.value)
+    const coverImage = await getSiteCoverImage(siteId.value)
+    site.value.image = coverImage
     siteImages.value = images || []
   } catch (error) {
     console.error('Error cargando imágenes del sitio:', error)

@@ -32,7 +32,7 @@ async function handleSubmit() {
 
 onMounted(() => {
   window.google.accounts.id.initialize({
-    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '', // acá vas a tener que poner el client id de google, entre las comillas
     callback: (response) => {
       handleCredentialResponse(response).then(() => {
         if (isAuthenticated.value) {
@@ -50,7 +50,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+  <div class="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-white">
     <Topbar />
 
     <main class="max-w-md mx-auto pt-28 px-4 pb-12">
