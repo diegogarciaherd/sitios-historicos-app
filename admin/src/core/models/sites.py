@@ -191,7 +191,7 @@ def list_sites(page: int = 1, per_page: int = 10):
 
 def list_sites_with_filters(filters: dict, page: int = 1, per_page: int = 10):
     """Lista sitios aplicando los filtros que vienen del portal público.
-        
+
 
     Esta función delega trabajo a dos helpers:
     - build_filtered_query(filters): construye la query SQLAlchemy aplicando
@@ -316,6 +316,7 @@ def delete_site_by_id(id: int) -> SitioHistorico:
     db.session.commit()
     return site
 
+
 def build_filtered_query(filters: dict):
     """Construye y devuelve una SQLAlchemy query aplicando filtros base.
 
@@ -338,7 +339,9 @@ def build_filtered_query(filters: dict):
             # Usar ST_DistanceSphere para comparar en metros (compatible con geometrías en SRID=4326)
             # ST_DWithin con geometrías en 4326 espera unidades en grados, por eso usamos
             # ST_DistanceSphere que devuelve distancia en metros.
-            query = query.filter(func.ST_DistanceSphere(SitioHistorico.localizacion, point) <= radius_m)
+            query = query.filter(
+                func.ST_DistanceSphere(SitioHistorico.localizacion, point) <= radius_m
+            )
         except (ValueError, TypeError):
             pass
 
@@ -350,7 +353,9 @@ def build_filtered_query(filters: dict):
     if fav_user:
         try:
             fav_uid = int(fav_user)
-            query = query.join(Favorite, Favorite.site_id == SitioHistorico.id).filter(Favorite.user_id == fav_uid)
+            query = query.join(Favorite, Favorite.site_id == SitioHistorico.id).filter(
+                Favorite.user_id == fav_uid
+            )
         except (ValueError, TypeError):
             # Si viene algo inválido, simplemente ignoramos ese filtro
             pass
@@ -374,10 +379,19 @@ def apply_order_and_paginate(query, filters: dict, page: int = 1, per_page: int 
     if order_by in ("rating-5-1", "rating-1-5"):
         order_desc = order_by == "rating-5-1"
         q = (
-            db.session.query(SitioHistorico, func.coalesce(func.avg(Review.rating), 0).label("avg_rating"))
-            .outerjoin(Review, (Review.site_id == SitioHistorico.id) & (Review.status == ReviewStatus.APPROVED))
+            db.session.query(
+                SitioHistorico,
+                func.coalesce(func.avg(Review.rating), 0).label("avg_rating"),
+            )
+            .outerjoin(
+                Review,
+                (Review.site_id == SitioHistorico.id)
+                & (Review.status == ReviewStatus.APPROVED),
+            )
             .group_by(SitioHistorico.id)
-            .filter(SitioHistorico.id.in_(query.with_entities(SitioHistorico.id).subquery()))
+            .filter(
+                SitioHistorico.id.in_(query.with_entities(SitioHistorico.id).subquery())
+            )
         )
         if order_desc:
             q = q.order_by(func.coalesce(func.avg(Review.rating), 0).desc())
@@ -401,6 +415,7 @@ def apply_order_and_paginate(query, filters: dict, page: int = 1, per_page: int 
 
     sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
     return sites, total
+
 
 def apply_filters(query, filters: dict):
     """Aplica sobre la query los filtros que llegan desde el portal público.
@@ -461,7 +476,7 @@ def apply_filters(query, filters: dict):
 
     # Ordenamiento configurable desde el portal
     if "order_by" in filters and filters["order_by"]:
-    # Limpia orden previo
+        # Limpia orden previo
         query = query.order_by(None)
         print(filters["order_by"])
         match filters["order_by"]:
@@ -473,7 +488,8 @@ def apply_filters(query, filters: dict):
                 query = query.order_by(SitioHistorico.nombre.asc())
             case "name-desc":
                 query = query.order_by(SitioHistorico.nombre.desc())
-
+            case "most-visited":
+                query = query.order_by(SitioHistorico.cantVisitas.desc())
 
     return query
 
@@ -496,12 +512,3 @@ def increment_site_visit_count(site_id: int):
         return site
     else:
         raise ValueError(f"Sitio con id {site_id} no encontrado")
-
-
-def get_sites_by_visits():
-    """Devuelve los sitios históricos más visitados, ordenados por cantidad de visitas."""
-    return (
-        db.session.query(SitioHistorico)
-        .order_by(SitioHistorico.cantVisitas.desc())
-        .all()
-    )
