@@ -106,6 +106,7 @@ def _get(source: Any, key: str) -> Any:
     """
     if isinstance(source, dict):
         return source.get(key, None)
+
     return getattr(source, key, None)
 
 
@@ -158,10 +159,8 @@ def diff_site(before: Any, after: Any) -> dict[str, tuple[object, object]]:
     # Coordenadas agrupadas (si existen)
     old_lat, old_lng = _get(before, "lat"), _get(before, "lng")
     new_lat, new_lng = _get(after, "lat"), _get(after, "lng")
-    if (
-        str(old_lat) != str(new_lat)
-        or str(old_lng) != str(new_lng)
-    ):
+    if str(old_lat) != str(new_lat) or str(old_lng) != str(new_lng):
+
         def _pair(lat, lng):
             # Si falta alguno, devolvemos None para evitar "None, None" confuso
             if lat is None or lng is None:
@@ -181,9 +180,10 @@ def diff_tags(before: Any, after: Any) -> dict[str, tuple[object, object]]:
     Acepta objetos SQLAlchemy con relación .tags ya cargada. Si no hay relación
     o no está cargada, devolverá {}.
     """
+
     def _names(sitio) -> list[str]:
         try:
-            return sorted([t.name for t in getattr(sitio, "tags", [])])
+            return [t["name"] for t in sitio["tags"]]
         except Exception:
             return []
 
