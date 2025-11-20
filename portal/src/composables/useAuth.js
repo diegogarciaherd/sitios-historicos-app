@@ -57,21 +57,18 @@ async function login (email, password) {
     })
 
     const data = response.data || {}
-    const jwt = data.access_token
+    const jwt = data.access_token || data.token
 
     if (!jwt) {
-      // El backend debería devolver siempre access_token cuando el login es correcto
       return {
         ok: false,
         message: 'El servidor no devolvió un token válido.'
       }
     }
 
-    // Guardo token
     token.value = jwt
     localStorage.setItem('jwt', jwt)
 
-    // Guardo info básica de usuario (email + lo que venga en data.user)
     const userFromBackend = data.user || {}
     currentUser.value = {
       id: data.user_id ?? userFromBackend.id ?? null,
@@ -86,13 +83,11 @@ async function login (email, password) {
     return { ok: true }
   } catch (error) {
     console.error('Error en login:', error)
-
     let message = 'No se pudo iniciar sesión.'
 
     if (error.response?.status === 401) {
       message = 'Credenciales inválidas.'
     } else if (error.response?.data?.error?.message) {
-      // El backend a veces devuelve un array de mensajes, a veces un string
       const raw = error.response.data.error.message
       message = Array.isArray(raw) ? raw.join(' ') : raw
     }
@@ -103,6 +98,7 @@ async function login (email, password) {
     }
   }
 }
+
 
 /**
  * Cierra la sesión del usuario:
