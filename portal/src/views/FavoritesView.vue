@@ -83,16 +83,17 @@ onMounted(loadFavorites)
             :key="fav.site_id"
             class="bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center border border-slate-700"
           >
-            <div>
-              <h2 class="font-semibold">
-                {{ fav.site_name }}
-              </h2>
-              <p class="text-xs text-slate-400">
-                Marcado el:
-                {{ new Date(fav.created_at).toLocaleString() }}
-              </p>
-            </div>
-
+            <RouterLink :to="{ name: 'site-detail', params: { id: fav.site_id } }">
+              <div>
+                <h2 class="font-semibold">
+                  {{ fav.site_name }}
+                </h2>
+                <p class="text-xs text-slate-400">
+                  Marcado el:
+                  {{ new Date(fav.created_at).toLocaleString() }}
+                </p>
+              </div>
+            </RouterLink>
             <!-- Futuro: podríamos agregar un botón para ir al detalle del sitio -->
             <!--
             <RouterLink
