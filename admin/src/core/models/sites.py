@@ -335,7 +335,10 @@ def build_filtered_query(filters: dict):
             lng_f = float(lng)
             radius_m = float(radius) * 1000.0
             point = func.ST_SetSRID(func.ST_MakePoint(lng_f, lat_f), 4326)
-            query = query.filter(func.ST_DWithin(SitioHistorico.localizacion, point, radius_m))
+            # Usar ST_DistanceSphere para comparar en metros (compatible con geometrías en SRID=4326)
+            # ST_DWithin con geometrías en 4326 espera unidades en grados, por eso usamos
+            # ST_DistanceSphere que devuelve distancia en metros.
+            query = query.filter(func.ST_DistanceSphere(SitioHistorico.localizacion, point) <= radius_m)
         except (ValueError, TypeError):
             pass
 
