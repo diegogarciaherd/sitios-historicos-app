@@ -621,6 +621,10 @@
 	border: 2px solid #dc3545;
 }
 
+.image-preview.replace {
+	border: 2px solid #2867f0ff;
+}
+
 .image-preview-inputs {
 	display: flex;
 	flex-direction: column;
@@ -756,7 +760,7 @@
 	align-items: center;
 }
 
-.cancel-delete-img-btn {
+.cancel-action-img-btn {
 	display: none;
 	background: #e7e7e7ff;
 	border: none;
@@ -775,4 +779,16 @@
 	text-align: start;
 	color: #2867f0ff;
 	font-size: 1rem;
+}
+
+.replace-image-btn {
+	background: transparent;
+	border: none;
+	color: #2867f0ff;
+	cursor: pointer;
+	padding: 0;
+
+	&:hover {
+		color: #1a4ed1ff;
+	}
 }

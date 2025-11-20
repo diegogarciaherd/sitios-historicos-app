@@ -45,6 +45,8 @@ from core.models.site_images import (
     generate_data_for_update,
     generate_data_for_create,
     delete_image_by_object_name,
+    valdiate_images_to_replace,
+    replace_site_image,
 )
 from core.models.reviews import Review, ReviewStatus
 from sqlalchemy import func, or_
@@ -212,6 +214,11 @@ def edit_site(id):
         tag_ids = request.form.getlist("tags[]")
         data.pop("tags[]", None)
 
+        imagesToReplace = request.form.getlist("imagesToReplace[]")
+        data.pop("imagesToReplace[]", None)
+
+        images_to_replace_errors = valdiate_images_to_replace(request, imagesToReplace)
+
         images_to_delete = request.form.getlist("imagesToDelete[]")
         data.pop("imagesToDelete[]", None)
 
@@ -219,12 +226,15 @@ def edit_site(id):
         imagesErrors = validate_site_images_data(request, id, images_to_delete)
 
         # Si hay errores, mostrar el formulario con los errores
-        if errors or imagesErrors:
+        if errors or len(imagesErrors) > 0 or len(images_to_replace_errors) > 0:
             # Mostrar cada error individualmente
             for error in errors:
                 flash(error, "error")
 
             for error in imagesErrors:
+                flash(error, "error")
+
+            for error in images_to_replace_errors:
                 flash(error, "error")
 
             return render_template(
@@ -252,6 +262,10 @@ def edit_site(id):
         if len(images_to_delete) > 0:
             for object_name in images_to_delete:
                 delete_image_by_object_name(object_name)
+
+        if len(imagesToReplace) > 0:
+            for object_name in imagesToReplace:
+                replace_site_image(object_name, request)
 
         # --- TAGS ---
         selected_tags = tags.get_tags_by_ids(tag_ids)
