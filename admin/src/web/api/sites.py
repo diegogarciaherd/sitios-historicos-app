@@ -10,7 +10,8 @@ Contiene los endpoints relacionados con sitios históricos, incluyendo:
 
 Este módulo es utilizado por la aplicación pública mediante JWT.
 """
-#admin/src/web/api/sites.py
+
+# admin/src/web/api/sites.py
 from core.database import db
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
@@ -143,6 +144,8 @@ def get_sites_by_criteria():
 
     page = int(filters.get("page", 1) or 1)
     per_page = int(filters.get("per_page", 10) or 10)
+
+    print("--- filters: ", filters)
 
     sites, total = list_sites_with_filters(filters, page, per_page)
     sites_data = [site.to_dict() for site in sites]
@@ -282,11 +285,7 @@ def get_my_favorites():
         query = query.order_by(Favorite.created_at.desc())
 
     total = query.count()
-    favorites = (
-        query.offset((page - 1) * per_page)
-        .limit(per_page)
-        .all()
-    )
+    favorites = query.offset((page - 1) * per_page).limit(per_page).all()
 
     data = [
         {

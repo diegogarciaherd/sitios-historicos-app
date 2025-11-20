@@ -3,7 +3,7 @@
 from core.database import Base, db
 import enum
 from datetime import datetime
-from sqlalchemy import String, Text, Integer, DateTime, Boolean, Enum, func
+from sqlalchemy import String, Text, Integer, DateTime, Boolean, Enum, func, cast, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
@@ -84,6 +84,9 @@ class SitioHistorico(Base):
 
     # Cantidad de veces que se obtuvo el sitio desde el portal público (para los mas visitados)
     cantVisitas: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    puntuacionTotal: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    cantidadResenas: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # -------------------------------
     # Relaciones con otras entidades
@@ -309,6 +312,15 @@ def get_site(id: int) -> SitioHistorico | None:
     return db.session.query(SitioHistorico).filter(SitioHistorico.id == id).first()
 
 
+def update_rating_counters(site_id: int, rating: int) -> None:
+    """Actualiza los contadores de puntuación total y cantidad de reseñas de un sitio."""
+    site = get_site(site_id)
+    if site:
+        site.puntuacionTotal += rating
+        site.cantidadResenas += 1
+        db.session.commit()
+
+
 def delete_site_by_id(id: int) -> SitioHistorico:
     """Elimina físicamente un sitio histórico por id."""
     site = get_site(id)
@@ -378,27 +390,26 @@ def apply_order_and_paginate(query, filters: dict, page: int = 1, per_page: int 
     order_by = filters.get("order_by")
     if order_by in ("rating-5-1", "rating-1-5"):
         order_desc = order_by == "rating-5-1"
-        q = (
-            db.session.query(
-                SitioHistorico,
-                func.coalesce(func.avg(Review.rating), 0).label("avg_rating"),
-            )
-            .outerjoin(
-                Review,
-                (Review.site_id == SitioHistorico.id)
-                & (Review.status == ReviewStatus.APPROVED),
-            )
-            .group_by(SitioHistorico.id)
-            .filter(
-                SitioHistorico.id.in_(query.with_entities(SitioHistorico.id).subquery())
-            )
-        )
-        if order_desc:
-            q = q.order_by(func.coalesce(func.avg(Review.rating), 0).desc())
-        else:
-            q = q.order_by(func.coalesce(func.avg(Review.rating), 0).asc())
 
-        rows = q.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
+        rating_expr = cast(SitioHistorico.puntuacionTotal, Float) / func.nullif(
+            cast(SitioHistorico.cantidadResenas, Float), 0
+        )
+
+        q = db.session.query(SitioHistorico, rating_expr.label("avg_rating")).filter(
+            SitioHistorico.id.in_(query.with_entities(SitioHistorico.id).subquery())
+        )
+
+        if order_desc:
+            q = q.order_by(rating_expr.desc())
+        else:
+            q = q.order_by(rating_expr.asc())
+
+        rows = (
+            q.filter(SitioHistorico.cantidadResenas > 0)
+            .offset((int(page) - 1) * int(per_page))
+            .limit(int(per_page))
+            .all()
+        )
         sites = [r[0] for r in rows]
         return sites, total
 
@@ -489,6 +500,13 @@ def apply_filters(query, filters: dict):
                 query = query.order_by(SitioHistorico.nombre.desc())
             case "most-visited":
                 query = query.order_by(SitioHistorico.cantVisitas.desc())
+            case "rating-5-1":
+                query = query.filter(SitioHistorico.cantidadResenas > 0).order_by(
+                    (
+                        cast(SitioHistorico.puntuacionTotal, Float)
+                        / cast(SitioHistorico.cantidadResenas, Float)
+                    ).desc()
+                )
 
     return query
 

@@ -23,16 +23,19 @@ onBeforeMount(async () => {
       id: 'top-rated',
       label: 'Mejor puntuados',
       sites_function: () => getSites({ page: 1, per_page: 10, order_by: 'rating-5-1' }),
+      link_to: '/sitios?order_by=rating-5-1',
     },
     {
       id: 'most-visited',
       label: 'Más visitados',
       sites_function: () => getSites({ page: 1, per_page: 10, order_by: 'most-visited' }),
+      link_to: '/sitios?order_by=most-visited',
     },
     {
       id: 'new-additions',
       label: 'Nuevas incorporaciones',
       sites_function: () => getSites({ page: 1, per_page: 10, order_by: 'latest' }),
+      link_to: '/sitios?order_by=latest',
     },
   ]
   if (isAuthenticated.value) {
@@ -71,6 +74,7 @@ onBeforeMount(async () => {
           v-show="selectedCarousel.value === option.id"
           :sites_function="option.sites_function"
           :autoplay="false"
+          :link_to="option.link_to"
         />
       </div>
     </div>

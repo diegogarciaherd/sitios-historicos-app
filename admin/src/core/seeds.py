@@ -57,6 +57,8 @@ def run():
             "tags": ["Histórico", "Religioso"],
             "estado": EstadoConservacion.REGULAR,
             "cantVisitas": 100,
+            "puntuacionTotal": 400,
+            "cantidadResenas": 100,
         },
         {
             "nombre": "Café Tortoni",
@@ -68,6 +70,8 @@ def run():
             "lng": -58.3700,
             "tags": ["Cultural", "Histórico"],
             "cantVisitas": 95,
+            "puntuacionTotal": 450,
+            "cantidadResenas": 100,
         },
         {
             "nombre": "Museo Nacional de Bellas Artes",
@@ -79,6 +83,8 @@ def run():
             "lng": -58.3975,
             "tags": ["Museo", "Cultural"],
             "cantVisitas": 90,
+            "puntuacionTotal": 420,
+            "cantidadResenas": 100,
         },
         {
             "nombre": "Monumento a la Bandera",
@@ -336,6 +342,8 @@ def run():
             añoInauguracion=s["añoInauguracion"],
             categoria=s["categoria"],
             cantVisitas=s["cantVisitas"] if "cantVisitas" in s else 0,
+            puntuacionTotal=s["puntuacionTotal"] if "puntuacionTotal" in s else 0,
+            cantidadResenas=s["cantidadResenas"] if "cantidadResenas" in s else 0,
         )
         sitio.tags = [t for t in tags_objs if t.name in s["tags"]]
 
