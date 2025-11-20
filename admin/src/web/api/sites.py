@@ -1,5 +1,3 @@
-# admin/src/web/api/sites.py
-
 """
 API de Sitios
 -------------
@@ -12,7 +10,7 @@ Contiene los endpoints relacionados con sitios históricos, incluyendo:
 
 Este módulo es utilizado por la aplicación pública mediante JWT.
 """
-
+#admin/src/web/api/sites.py
 from core.database import db
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
@@ -35,6 +33,7 @@ from core.models.reviews import (
     get_review_by_id,
     delete_review,
     ReviewStatus,
+    get_reviews_by_user_id,
 )
 
 # Nota: la lógica espacial ahora se maneja en `list_sites_with_filters` (PostGIS/ST_DWithin)
@@ -247,22 +246,91 @@ def toggle_favorite_api(site_id: int):
 @jwt_required()
 def get_my_favorites():
     """
-    Devuelve la lista de todos los sitios marcados como favoritos
-    por el usuario autenticado.
+    Devuelve los sitios marcados como favoritos por el usuario autenticado.
+
+    Compatibilidad:
+    - Si NO se envían parámetros de paginación/orden → devuelve una lista simple
+      (comportamiento anterior, usado por FavoritesView).
+    - Si se envían page/per_page/order o 'paginated' → devuelve { data, meta }.
     """
     user_id = int(get_jwt_identity())
-    favorites = db.session.query(Favorite).filter_by(user_id=user_id).all()
+    params = request.args.to_dict(flat=True)
+
+    # ¿El caller quiere paginación?
+    wants_pagination = any(
+        key in params for key in ("page", "per_page", "order", "paginated")
+    )
+
+    base_query = db.session.query(Favorite).filter_by(user_id=user_id)
+
+    if not wants_pagination:
+        favorites = base_query.all()
+        return (
+            jsonify(
+                [
+                    {
+                        "site_id": fav.site.id,
+                        "site_name": fav.site.nombre,
+                        "created_at": fav.created_at.isoformat(),
+                    }
+                    for fav in favorites
+                ]
+            ),
+            200,
+        )
+
+    # Con paginación
+    errors = check_pagination_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    page = int(params.get("page", 1) or 1)
+    per_page = int(params.get("per_page", 25) or 25)
+    order = params.get("order", "desc")
+
+    query = base_query
+    if order == "asc":
+        query = query.order_by(Favorite.created_at.asc())
+    else:
+        query = query.order_by(Favorite.created_at.desc())
+
+    total = query.count()
+    favorites = (
+        query.offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    data = [
+        {
+            "site_id": fav.site.id,
+            "site_name": fav.site.nombre,
+            "created_at": fav.created_at.isoformat(),
+        }
+        for fav in favorites
+    ]
 
     return (
         jsonify(
-            [
-                {
-                    "site_id": fav.site.id,
-                    "site_name": fav.site.nombre,
-                    "created_at": fav.created_at.isoformat(),
-                }
-                for fav in favorites
-            ]
+            {
+                "data": data,
+                "meta": {
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                },
+            }
         ),
         200,
     )
@@ -446,6 +514,66 @@ def create_site_review(site_id: int):
 
     review = create_review(**params)
     return jsonify(review.to_dict()), 201
+
+
+@sites_api_bp.get("/users/me/reviews")
+@jwt_required()
+def get_my_reviews():
+    """
+    Devuelve las reseñas del usuario autenticado, con paginación
+    y orden por fecha (asc/desc). Pensado para el Perfil del Usuario.
+    """
+    user_id = int(get_jwt_identity())
+    params = request.args.to_dict(flat=True)
+
+    errors = check_pagination_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    page = int(params.get("page", 1) or 1)
+    per_page = int(params.get("per_page", 25) or 25)
+    order = params.get("order", "desc")
+
+    reviews, total = get_reviews_by_user_id(user_id, page, per_page, order)
+
+    data = []
+    for review in reviews:
+        body = review.body or ""
+        data.append(
+            {
+                "id": review.id,
+                "site_id": review.site_id,
+                "site_name": getattr(review.site, "nombre", None),
+                "rating": review.rating,
+                "created_at": review.created_at.isoformat(),
+                "excerpt": body[:160],
+            }
+        )
+
+    return (
+        jsonify(
+            {
+                "data": data,
+                "meta": {
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                },
+            }
+        ),
+        200,
+    )
 
 
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")

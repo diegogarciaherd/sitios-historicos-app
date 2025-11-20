@@ -36,6 +36,13 @@ const router = createRouter({
       props: true
     },
 
+    // Perfil del usuario autenticado (mis reseñas + mis favoritos)
+    {
+      path: '/perfil',
+      name: 'profile',
+      component: () => import('@/views/UserProfileView.vue')
+    },
+
     // Login público (acá el usuario obtiene el JWT)
     {
       path: '/login',
@@ -43,7 +50,7 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue')
     },
 
-    // Mis sitios favoritos (solo accesible estando logueado)
+    // Mis sitios favoritos (vista existente)
     {
       path: '/favoritos',
       name: 'favorites',
