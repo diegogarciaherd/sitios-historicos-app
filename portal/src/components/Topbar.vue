@@ -23,7 +23,7 @@ const { isAuthenticated, currentUserEmail, logout } = useAuth()
 const accountMenuOpen = ref(false)
 const accountMenuRef = ref(null)
 
-const searchbarOption = ref('name')
+const searchbarOption = ref('search')
 const searchQuery = ref('')
 
 function toggleAccountMenu() {
@@ -95,7 +95,7 @@ onBeforeUnmount(() => {
         class="absolute top-1/2 right-0 -translate-y-1/2 text-gray-600 bg-white outline-none border-none appearance-none pr-6 pl-3 py-1 rounded-r-full text-sm"
         v-model="searchbarOption"
       >
-        <option value="name" selected>Nombre</option>
+        <option value="search" selected>Nombre</option>
         <option value="province">Provincia</option>
         <option value="city">Ciudad</option>
       </select>
