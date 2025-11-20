@@ -203,7 +203,7 @@ def edit_site(id):
     site_images = get_images_by_site(site.id)
 
     if request.method == "POST":
-        before = get_site(id)
+        before = get_site(id).to_dict()
 
         data = request.form.to_dict()
 
@@ -271,7 +271,7 @@ def edit_site(id):
         selected_tags = tags.get_tags_by_ids(tag_ids)
         tags.assign_tags(site, selected_tags)
 
-        after = get_site(id)
+        after = get_site(id).to_dict()
 
         # --- DIFFS ---
         changes = diff_site(before, after)  # campos simples + coords + visible
