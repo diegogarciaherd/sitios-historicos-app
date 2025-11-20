@@ -3,13 +3,15 @@
 from core.database import Base, db
 import enum
 from datetime import datetime
-from sqlalchemy import String, Text, Integer, DateTime, Boolean, Enum
+from sqlalchemy import String, Text, Integer, DateTime, Boolean, Enum, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Table, Column
 from geoalchemy2 import Geometry
 from geoalchemy2.elements import WKTElement
 from geoalchemy2.shape import to_shape
 from core.models.tags import Tag
+from core.models.reviews import Review, ReviewStatus
+from core.models.favorites import Favorite
 
 from typing import TYPE_CHECKING
 
@@ -188,15 +190,18 @@ def list_sites(page: int = 1, per_page: int = 10):
 
 
 def list_sites_with_filters(filters: dict, page: int = 1, per_page: int = 10):
-    """Lista sitios aplicando los filtros que vienen del portal público."""
-    query = db.session.query(SitioHistorico).order_by(
-        SitioHistorico.fechaRegistro.desc(),  # ordena por fecha de registro, más recientes primero
-        SitioHistorico.nombre.asc(),  # ordena alfabéticamente por nombre A-Z
-        SitioHistorico.ciudad.asc(),
-    )
-    query = apply_filters(query, filters)
-    total = query.count()
-    sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
+    """Lista sitios aplicando los filtros que vienen del portal público.
+        
+
+    Esta función delega trabajo a dos helpers:
+    - build_filtered_query(filters): construye la query SQLAlchemy aplicando
+      filtros espaciales y no espaciales (tags, city, province, visibility, favorites).
+    - apply_order_and_paginate(query, filters, page, per_page): aplica ordenamiento
+      (incluyendo orden por rating agregada) y paginación.
+    """
+    query = build_filtered_query(filters)
+    sites, total = apply_order_and_paginate(query, filters, page, per_page)
+
     return sites, total
 
 
@@ -311,6 +316,87 @@ def delete_site_by_id(id: int) -> SitioHistorico:
     db.session.commit()
     return site
 
+def build_filtered_query(filters: dict):
+    """Construye y devuelve una SQLAlchemy query aplicando filtros base.
+
+    - Spatial (ST_DWithin) si vienen lat/lng/radius
+    - Filtros de texto, tags, ciudad, provincia, visibility (usando apply_filters)
+    - Filtro de favoritos si viene `favorites_user_id` (join con favorites)
+    """
+    query = db.session.query(SitioHistorico)
+
+    # Spatial filter
+    lat = filters.get("lat")
+    lng = filters.get("lng")
+    radius = filters.get("radius")
+    if lat and lng and radius:
+        try:
+            lat_f = float(lat)
+            lng_f = float(lng)
+            radius_m = float(radius) * 1000.0
+            point = func.ST_SetSRID(func.ST_MakePoint(lng_f, lat_f), 4326)
+            # Usar ST_DistanceSphere para comparar en metros (compatible con geometrías en SRID=4326)
+            # ST_DWithin con geometrías en 4326 espera unidades en grados, por eso usamos
+            # ST_DistanceSphere que devuelve distancia en metros.
+            query = query.filter(func.ST_DistanceSphere(SitioHistorico.localizacion, point) <= radius_m)
+        except (ValueError, TypeError):
+            pass
+
+    # Non-spatial filters
+    query = apply_filters(query, filters)
+
+    # Filtro de favoritos (si viene)
+    fav_user = filters.get("favorites_user_id") or filters.get("favorites")
+    if fav_user:
+        try:
+            fav_uid = int(fav_user)
+            query = query.join(Favorite, Favorite.site_id == SitioHistorico.id).filter(Favorite.user_id == fav_uid)
+        except (ValueError, TypeError):
+            # Si viene algo inválido, simplemente ignoramos ese filtro
+            pass
+
+    return query
+
+
+def apply_order_and_paginate(query, filters: dict, page: int = 1, per_page: int = 10):
+    """Aplica ordenamiento y paginación sobre la query dada.
+
+    Soporta orden por fecha, nombre y por promedio de rating (reseñas aprobadas).
+    Retorna (sites, total).
+    """
+    total = query.count()
+
+    order_by = filters.get("order_by")
+    if order_by in ("rating-5-1", "rating-1-5"):
+        order_desc = order_by == "rating-5-1"
+        q = (
+            db.session.query(SitioHistorico, func.coalesce(func.avg(Review.rating), 0).label("avg_rating"))
+            .outerjoin(Review, (Review.site_id == SitioHistorico.id) & (Review.status == ReviewStatus.APPROVED))
+            .group_by(SitioHistorico.id)
+            .filter(SitioHistorico.id.in_(query.with_entities(SitioHistorico.id).subquery()))
+        )
+        if order_desc:
+            q = q.order_by(func.coalesce(func.avg(Review.rating), 0).desc())
+        else:
+            q = q.order_by(func.coalesce(func.avg(Review.rating), 0).asc())
+
+        rows = q.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
+        sites = [r[0] for r in rows]
+        return sites, total
+
+    # Orden por nombre o fecha
+    if order_by:
+        if order_by == "latest":
+            query = query.order_by(SitioHistorico.fechaRegistro.desc())
+        elif order_by == "oldest":
+            query = query.order_by(SitioHistorico.fechaRegistro.asc())
+        elif order_by == "name-asc":
+            query = query.order_by(SitioHistorico.nombre.asc())
+        elif order_by == "name-desc":
+            query = query.order_by(SitioHistorico.nombre.desc())
+
+    sites = query.offset((int(page) - 1) * int(per_page)).limit(int(per_page)).all()
+    return sites, total
 
 def apply_filters(query, filters: dict):
     """Aplica sobre la query los filtros que llegan desde el portal público.
@@ -338,7 +424,7 @@ def apply_filters(query, filters: dict):
             estado_enum = EstadoConservacion[filters["status"].upper()]
             query = query.filter(SitioHistorico.estado == estado_enum)
         except KeyError:
-            # Si viene algo inválido, simplemente ignoramos ese filtro
+            # Si viene algo inválido, simplemente ignora ese filtro
             pass
 
     # Si no mandan visibility, por defecto mostramos solo visibles
@@ -371,6 +457,9 @@ def apply_filters(query, filters: dict):
 
     # Ordenamiento configurable desde el portal
     if "order_by" in filters and filters["order_by"]:
+    # Limpia orden previo
+        query = query.order_by(None)
+        print(filters["order_by"])
         match filters["order_by"]:
             case "latest":
                 query = query.order_by(SitioHistorico.fechaRegistro.asc())
@@ -381,12 +470,6 @@ def apply_filters(query, filters: dict):
             case "name-desc":
                 query = query.order_by(SitioHistorico.nombre.desc())
 
-    # Filtros de lat/long crudos (todavía poco usados)
-    if "lat" in filters and filters["lat"]:
-        query = query.filter(lat=filters["lat"])
-
-    if "long" in filters and filters["long"]:
-        query = query.filter(long=filters["long"])
 
     return query
 

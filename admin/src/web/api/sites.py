@@ -1,8 +1,8 @@
 # admin/src/web/api/sites.py
 
 """
-API Sites
----------
+API de Sitios
+-------------
 Contiene los endpoints relacionados con sitios históricos, incluyendo:
 - Listado y filtros.
 - Creación de sitios.
@@ -37,9 +37,7 @@ from core.models.reviews import (
     ReviewStatus,
 )
 
-# del branch de tus compas: búsqueda por radio
-from core.services.sites_services import get_sites_within_radius
-
+# Nota: la lógica espacial ahora se maneja en `list_sites_with_filters` (PostGIS/ST_DWithin)
 
 # Blueprint principal con prefijo único
 sites_api_bp = Blueprint("sites_api", __name__, url_prefix="/api/sites")
@@ -149,28 +147,8 @@ def list_sites():
             )
         tags = get_tags_by_ids(tag_ids_list)
 
-    # Filtro por radio (lat, lng, radius)
-    if filters.get("lat") and filters.get("lng") and filters.get("radius"):
-        try:
-            lat = float(filters["lat"])
-            lng = float(filters["lng"])
-            radius = float(filters["radius"])
-        except ValueError:
-            return (
-                jsonify(
-                    {
-                        "error": {
-                            "code": "invalid_filters",
-                            "message": "lat, lng y radius deben ser numéricos",
-                        }
-                    }
-                ),
-                400,
-            )
-
-        sites = get_sites_within_radius(lat, lng, radius, filters, tags)
-    else:
-        sites = list_sites_with_filters(filters, tags)
+    # Toda la lógica (incluyendo lat/lng/radius) la resuelve list_sites_with_filters
+    sites = list_sites_with_filters(filters, tags)
 
     data = [site.to_dict() for site in sites]
 
@@ -216,23 +194,24 @@ def create_site():
 def get_site_by_id(id: int):
     """
     Devuelve un sitio histórico por su ID.
+    Además incrementa el contador de visitas.
     """
     site = get_site(id)
-
     if not site:
         return (
             jsonify(
                 {
                     "error": {
                         "code": "not_found",
-                        "message": f"El sitio {id} no existe.",
+                        "message": "No existe un sitio con ese id.",
                     }
                 }
             ),
             404,
         )
 
-    increment_site_visit_count(site)
+    # Contabilizamos la visita
+    increment_site_visit_count(id)
 
     return jsonify(site.to_dict()), 200
 
@@ -240,7 +219,6 @@ def get_site_by_id(id: int):
 # ----------------------------------------------------------------------
 #                           FAVORITOS
 # ----------------------------------------------------------------------
-
 @sites_api_bp.post("/<int:site_id>/favorite")
 @jwt_required()
 def toggle_favorite_api(site_id: int):
@@ -253,7 +231,8 @@ def toggle_favorite_api(site_id: int):
 
     Requiere JWT.
     """
-    user_id = get_jwt_identity()
+    # JWT guarda el id como string → lo convertimos a int
+    user_id = int(get_jwt_identity())
 
     site = db.session.get(SitioHistorico, site_id)
     if not site:
@@ -271,12 +250,8 @@ def get_my_favorites():
     Devuelve la lista de todos los sitios marcados como favoritos
     por el usuario autenticado.
     """
-    user_id = get_jwt_identity()
-    favorites = (
-        db.session.query(Favorite)
-        .filter_by(user_id=user_id)
-        .all()
-    )
+    user_id = int(get_jwt_identity())
+    favorites = db.session.query(Favorite).filter_by(user_id=user_id).all()
 
     return (
         jsonify(
@@ -291,6 +266,7 @@ def get_my_favorites():
         ),
         200,
     )
+
 
 # ----------------------------------------------------------------------
 #                               REVIEWS
@@ -448,7 +424,7 @@ def create_site_review(site_id: int):
             404,
         )
 
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     params = request.get_json() or {}
     params["site_id"] = site_id
     params["user_id"] = user_id
@@ -470,7 +446,6 @@ def create_site_review(site_id: int):
 
     review = create_review(**params)
     return jsonify(review.to_dict()), 201
-
 
 
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")
@@ -590,14 +565,6 @@ def get_most_visited_sites():
     """
 
     most_visited_sites = get_sites_by_visits()
-
     sites_data = [site.to_dict() for site in most_visited_sites]
 
-    return (
-        jsonify(
-            {
-                "data": sites_data,
-            }
-        ),
-        200,
-    )
+    return jsonify({"data": sites_data}), 200

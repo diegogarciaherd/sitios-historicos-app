@@ -32,7 +32,10 @@ from datetime import timedelta
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token
 
-from core.models.user import read_user_by_email
+from google.oauth2 import id_token
+from google.auth.transport import requests
+
+from core.models.user import read_user_by_email, create_user_from_google_auth
 from core.services.auth_service import authenticate
 
 # Blueprint con prefijo /api/auth
@@ -132,12 +135,95 @@ def login():
     # Si llegamos acá, las credenciales son válidas.
     # Generamos un JWT que el portal usará en el header Authorization.
     ttl = timedelta(hours=2)
-    access_token = create_access_token(identity=user.id, expires_delta=ttl)
+    # IMPORTANTE: identity como string para evitar "Subject must be a string"
+    access_token = create_access_token(identity=str(user.id), expires_delta=ttl)
 
     payload = {
-        # Lo que espera el portal
         "access_token": access_token,
-        # Alias por si en algún momento alguien sigue usando "token"
+        # Alias por compatibilidad (por si alguien usa "token")
+        "token": access_token,
+        "expires_in": int(ttl.total_seconds()),
+        "user_id": user.id,
+        "user": {
+            "id": user.id,
+            "name": getattr(user, "name", ""),
+            "last_name": getattr(user, "last_name", ""),
+            "email": user.email,
+        },
+    }
+
+    return jsonify(payload), 200
+
+
+@auth_api_bp.post("/google")
+def google_auth():
+    """
+    Endpoint de login con Google para el portal público.
+
+    Espera un JSON con:
+        { "token": "<id_token_de_google>" }
+
+    Verifica el token con Google, crea el usuario si no existe
+    y devuelve un JWT con la misma estructura que el login normal.
+    """
+    data = request.get_json() or {}
+
+    if "token" not in data:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "Parameter validation failed",
+                        "message": ["El token de Google es obligatorio."],
+                    }
+                }
+            ),
+            400,
+        )
+
+    # Verificamos el ID token de Google
+    idinfo = id_token.verify_oauth2_token(
+        data["token"],
+        requests.Request(),
+    )
+
+    # Buscamos o creamos el usuario
+    user = read_user_by_email(idinfo["email"])
+    if not user:
+        new_user_data = {
+            "email": idinfo["email"],
+            "name": idinfo.get("name", ""),
+        }
+        create_user_from_google_auth(new_user_data)
+        user = read_user_by_email(idinfo["email"])
+
+    # Generamos el JWT para el portal
+    ttl = timedelta(hours=2)
+    access_token = create_access_token(
+        identity=str(user.id),  # de nuevo, STRING
+        expires_delta=ttl,
+        additional_claims={
+            "email": user.email,
+            "name": getattr(user, "name", ""),
+            "last_name": getattr(user, "last_name", ""),
+        },
+    )
+
+    if not access_token:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "server_error",
+                        "message": "An unexpected error ocurred.",
+                    }
+                }
+            ),
+            500,
+        )
+
+    payload = {
+        "access_token": access_token,
         "token": access_token,
         "expires_in": int(ttl.total_seconds()),
         "user_id": user.id,
