@@ -18,7 +18,7 @@ from flask import (
 from core.database import db
 from core.services.auth_roles import require_permission
 from core.models.reviews import Review, ReviewStatus
-from core.models.sites import get_site
+from core.models.sites import get_site, update_rating_counters
 from .validators.review_validator import validate_review_data
 
 reviews_bp = Blueprint(
@@ -124,6 +124,10 @@ def approve(id: int):
     r.moderated_at = datetime.utcnow()
     r.reject_reason = None
     db.session.commit()
+
+    sitio = get_site(r.site_id)
+    if sitio:
+        update_rating_counters(sitio.id, r.rating)
 
     flash("Reseña aprobada.", "success")
     return redirect(request.referrer or url_for("reviews.moderate_list"))
