@@ -45,7 +45,9 @@ const handleLogout = () => {
 
 <template>
   <!-- 👇 acá el cambio importante: sticky + z-50 -->
-  <header class="w-full bg-slate-900/95 text-slate-50 border-b border-slate-800 sticky top-0 z-50">
+  <header
+    class="w-full bg-slate-900/95 text-slate-50 border-b border-slate-800 sticky top-0 z-2000"
+  >
     <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
       <!-- Logo + título -->
       <RouterLink to="/" class="flex items-center gap-2 hover:opacity-90 transition">
