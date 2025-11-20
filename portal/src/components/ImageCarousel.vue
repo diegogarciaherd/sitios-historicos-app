@@ -201,7 +201,13 @@ onBeforeUnmount(() => {
         class="card"
         :class="{ main: pos === 0, next: pos === 1, next2: pos === 2 }"
       >
-        <SiteCard :site="images[idx]?.sitio" @click="goTo(idx)" class="cursor-pointer" />
+        <SiteCard
+          :site="images[idx]?.sitio"
+          @click="
+            () => (idx === current ? $router.push(`/sitios/${images[idx]?.sitio.id}`) : goTo(idx))
+          "
+          class="cursor-pointer"
+        />
       </div>
     </div>
 
