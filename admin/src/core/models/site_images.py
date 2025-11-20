@@ -95,7 +95,12 @@ def get_images_by_site(site_id: int) -> list[SiteImages]:
     Returns:
         list[SiteImages]: Lista de instancias de SiteImages asociadas al sitio.
     """
-    return db.session.query(SiteImages).filter(SiteImages.site_id == site_id).order_by(SiteImages.order.asc()).all()
+    return (
+        db.session.query(SiteImages)
+        .filter(SiteImages.site_id == site_id)
+        .order_by(SiteImages.order.asc())
+        .all()
+    )
 
 
 def update_image_data(site_image_id: int, **kwargs):
@@ -192,6 +197,48 @@ def generate_data_for_update(request, site_id, images_to_ignore) -> list:
     return data_for_update
 
 
+def replace_site_image(objectName, request):
+    """Reemplaza una imagen existente en Minio y actualiza sus metadatos en la base de datos.
+
+    Args:
+        objectName (str): Nombre del objeto de la imagen a reemplazar.
+        request: Objeto de la solicitud que contiene los datos de la nueva imagen.
+    """
+
+    # Obtenemos la imagen original de la base de datos segun su object_name
+    original_site_image = (
+        db.session.query(SiteImages)
+        .filter(SiteImages.object_name == objectName)
+        .first()
+    )
+
+    if not original_site_image:
+        raise ValueError(f"Imagen con object_name {objectName} no encontrada.")
+
+    client_storage = current_app.storage
+    bucket_name = current_app.config.get("MINIO_BUCKET")
+
+    image_file = request.files.get(f"replace-image-file-{objectName}")
+    new_object_name = f"public/sites/{original_site_image.site_id}/{uuid.uuid4()}{image_file.filename}"
+
+    # Reemplazar la imagen en Minio
+    client_storage.put_object(
+        bucket_name=bucket_name,
+        object_name=new_object_name,
+        data=image_file,
+        length=fstat(image_file.fileno()).st_size,
+        content_type=image_file.content_type,
+    )
+
+    # Eliminar la imagen original de Minio
+    client_storage.remove_object(bucket_name, original_site_image.object_name)
+
+    # Actualizar los metadatos en la base de datos
+    original_site_image.object_name = new_object_name
+
+    db.session.commit()
+
+
 def generate_data_for_create(request, site_id) -> list:
     """Genera una lista de diccionarios con los datos de las nuevas imágenes a crear asociadas a un sitio histórico.
 
@@ -221,6 +268,35 @@ def generate_data_for_create(request, site_id) -> list:
             )
 
     return data_for_create
+
+
+def valdiate_images_to_replace(request, imagesToReplace) -> list:
+    """Valida el formato y tamaño de las imágenes que se desean reemplazar.
+
+    Args:
+        request: Objeto de la solicitud que contiene los datos de las imágenes.
+        imagesToReplace: Lista de imágenes que se desean reemplazar.
+
+    Returns:
+        list: Lista de errores encontrados durante la validación.
+    """
+
+    errors = []
+    allowed_formats = ["image/jpg", "image/jpeg", "image/png", "image/webp"]
+    maxSize = 5 * 1024 * 1024  # 5 MB
+
+    if len(imagesToReplace) > 0:
+        for img_name in imagesToReplace:
+            image_file = request.files.get(f"replace-image-file-{img_name}")
+
+            file_size = fstat(image_file.fileno()).st_size
+
+            if image_file.content_type.lower() not in allowed_formats:
+                errors.append("Formato de imagen no permitido.")
+            if file_size > maxSize:
+                errors.append("El tamaño de la imagen excede el límite de 5 MB.")
+
+    return errors
 
 
 def validate_site_images_data(request, site_id, images_to_ignore=[]) -> list:
