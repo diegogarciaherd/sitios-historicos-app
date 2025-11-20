@@ -2,7 +2,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Topbar from '@/components/Topbar.vue'
+import Topbar from '@/components/TopbarPhone.vue'
 import { useAuth, handleCredentialResponse } from '@/composables/useAuth'
 import { onMounted } from 'vue'
 

@@ -14,7 +14,7 @@
 
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Topbar from '@/components/Topbar.vue'
+import Topbar from '@/components/TopbarPhone.vue'
 import { useAuth } from '@/composables/useAuth'
 import { getMyFavoritesRequest } from '@/api/favorites'
 
@@ -28,7 +28,7 @@ const favorites = ref([])
 /**
  * Carga la lista de favoritos del usuario logueado.
  */
-async function loadFavorites () {
+async function loadFavorites() {
   // Si no hay sesión, mando al login
   if (!isAuthenticated.value || !token.value) {
     router.push({ name: 'login' })
@@ -64,9 +64,7 @@ onMounted(loadFavorites)
 
       <section class="bg-slate-900/70 rounded-xl shadow-lg p-6 border border-slate-700">
         <!-- Estado de carga -->
-        <p v-if="loading" class="text-slate-200">
-          Cargando favoritos...
-        </p>
+        <p v-if="loading" class="text-slate-200">Cargando favoritos...</p>
 
         <!-- Error al cargar -->
         <p v-else-if="errorMessage" class="text-sm text-red-400">

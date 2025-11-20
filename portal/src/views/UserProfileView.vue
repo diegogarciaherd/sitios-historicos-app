@@ -21,23 +21,15 @@
             </div>
           </div>
 
-          <button class="back-button" type="button" @click="goBack">
-            ← Volver
-          </button>
+          <button class="back-button" type="button" @click="goBack">← Volver</button>
         </header>
 
         <!-- Pestañas -->
         <nav class="tabs">
-          <button
-            :class="{ active: activeTab === 'reviews' }"
-            @click="activeTab = 'reviews'"
-          >
+          <button :class="{ active: activeTab === 'reviews' }" @click="activeTab = 'reviews'">
             Mis reseñas
           </button>
-          <button
-            :class="{ active: activeTab === 'favorites' }"
-            @click="activeTab = 'favorites'"
-          >
+          <button :class="{ active: activeTab === 'favorites' }" @click="activeTab = 'favorites'">
             Mis favoritos
           </button>
         </nav>
@@ -58,9 +50,7 @@
           <ul v-else class="item-list">
             <li v-for="review in reviews" :key="review.id" class="item-card">
               <h3 class="item-title">{{ review.site_name }}</h3>
-              <p class="meta">
-                {{ formatDate(review.created_at) }} · ★ {{ review.rating }}
-              </p>
+              <p class="meta">{{ formatDate(review.created_at) }} · ★ {{ review.rating }}</p>
               <p class="excerpt">
                 {{ review.excerpt }}
               </p>
@@ -76,9 +66,7 @@
             </button>
             <span>Página {{ reviewsMeta.page }}</span>
             <button
-              :disabled="
-                reviewsMeta.page * reviewsMeta.per_page >= reviewsMeta.total
-              "
+              :disabled="reviewsMeta.page * reviewsMeta.per_page >= reviewsMeta.total"
               @click="changeReviewsPage(reviewsMeta.page + 1)"
             >
               Siguiente
@@ -107,10 +95,7 @@
             </li>
           </ul>
 
-          <div
-            v-if="favoritesMeta.total > favoritesMeta.per_page"
-            class="pager"
-          >
+          <div v-if="favoritesMeta.total > favoritesMeta.per_page" class="pager">
             <button
               :disabled="favoritesMeta.page === 1"
               @click="changeFavoritesPage(favoritesMeta.page - 1)"
@@ -119,10 +104,7 @@
             </button>
             <span>Página {{ favoritesMeta.page }}</span>
             <button
-              :disabled="
-                favoritesMeta.page * favoritesMeta.per_page >=
-                favoritesMeta.total
-              "
+              :disabled="favoritesMeta.page * favoritesMeta.per_page >= favoritesMeta.total"
               @click="changeFavoritesPage(favoritesMeta.page + 1)"
             >
               Siguiente
@@ -137,7 +119,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Topbar from '@/components/Topbar.vue'
+import Topbar from '@/components/TopbarPhone.vue'
 import { useAuth } from '@/composables/useAuth'
 import { fetchMyReviews, fetchMyFavorites } from '@/api/profile'
 
@@ -219,9 +201,7 @@ const reviewsOrderLabel = computed(() =>
 )
 
 const favoritesOrderLabel = computed(() =>
-  favoritesOrder.value === 'desc'
-    ? 'Más nuevos primero'
-    : 'Más antiguos primero',
+  favoritesOrder.value === 'desc' ? 'Más nuevos primero' : 'Más antiguos primero',
 )
 
 // Paginación

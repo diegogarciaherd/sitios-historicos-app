@@ -3,7 +3,7 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Topbar from '@/components/Topbar.vue'
+import Topbar from '@/components/TopbarPhone.vue'
 import { getSiteById, getSiteCoverImage, getSiteImages } from '@/api/sites'
 import { getSiteReviews, createSiteReview } from '@/api/reviews'
 import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'

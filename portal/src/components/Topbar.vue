@@ -3,156 +3,170 @@
 /**
  * Topbar del portal público.
  *
+ * Acá muestro:
  * - Logo + link a la home.
+ * - Buscador simple con selector de criterio (nombre/provincia/ciudad).
  * - Link a "Sitios históricos".
  * - Links estáticos a "Acerca de" y "Contacto".
- * - Según autenticación:
- *   - Si NO hay token → botón "Iniciar sesión".
- *   - Si SÍ hay token → botones "Mi perfil", "Mis favoritos" y "Cerrar sesión".
+ * - Y según si estoy logueada o no:
+ *   - "Iniciar sesión" (si NO hay token)
+ *   - Un menú de cuenta con accesos a favoritos y logout (si SÍ hay token)
  */
 
-import { computed } from 'vue'
-import { useRouter, useRoute, RouterLink } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
-const route = useRoute()
+const { isAuthenticated, currentUserEmail, logout } = useAuth()
 
-const { isAuthenticated, currentUser, logout } = useAuth()
+const accountMenuOpen = ref(false)
+const accountMenuRef = ref(null)
 
-const userName = computed(
-  () => currentUser.value?.name || currentUser.value?.email || 'Cuenta',
-)
+const searchbarOption = ref('search')
+const searchQuery = ref('')
 
-const goToLogin = () => {
-  if (route.name === 'login') return
-  router.push({ name: 'login' })
+function toggleAccountMenu() {
+  accountMenuOpen.value = !accountMenuOpen.value
 }
 
-const goToProfile = () => {
-  if (route.name === 'profile') return
-  router.push({ name: 'profile' })
+function closeAccountMenu() {
+  accountMenuOpen.value = false
 }
 
-const goToFavorites = () => {
-  if (route.name === 'favorites') return
-  router.push({ name: 'favorites' })
+function handleDocumentClick(event) {
+  if (!accountMenuRef.value) return
+  if (accountMenuRef.value.contains(event.target)) return
+  accountMenuOpen.value = false
 }
 
-const handleLogout = () => {
+/**
+ * Cierro sesión y vuelvo a la página principal del portal.
+ */
+async function handleLogout() {
+  closeAccountMenu()
   logout()
-  router.push({ name: 'home' })
+  try {
+    await router.push({ name: 'home' })
+  } catch (e) {
+    // Si ya estoy en home, no pasa nada
+    console.error(e)
+  }
 }
+
+function handleSearch() {
+  const query = searchQuery.value.trim()
+  if (query === '') return
+
+  router.push(`/sitios?${searchbarOption.value}=${encodeURIComponent(query)}`)
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
-  <!-- 👇 acá el cambio importante: sticky + z-50 -->
-  <header
-    class="w-full bg-slate-900/95 text-slate-50 border-b border-slate-800 sticky top-0 z-50"
+  <div
+    class="w-full justify-between items-center px-8 py-4 flex fixed top-0 bg-transparent z-1000 bg-linear-to-b from-gray-400 via-30% to-transparent"
   >
-    <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-4">
-      <!-- Logo + título -->
-      <RouterLink
-        to="/"
-        class="flex items-center gap-2 hover:opacity-90 transition"
+    <!-- Logo + título, siempre lleva a la home -->
+    <RouterLink class="flex flex-row items-center gap-3" to="/">
+      <img src="@/assets/logo.png" alt="Logo" class="w-8" />
+      <h1 class="text-[1.5rem] text-white hover:text-sky-300 transition-colors duration-300">
+        Registro de sitios históricos
+      </h1>
+    </RouterLink>
+
+    <!-- Buscador + selector (branch de tus compas) -->
+    <div class="relative right-2 w-[40%] hidden md:block">
+      <input
+        type="text"
+        class="flex w-full rounded-full bg-transparent border border-white/50 focus:border-white focus:bg-white/20 focus:outline-none transition-colors duration-300 text-white px-4 py-1 pr-28"
+        placeholder="Buscar..."
+        v-model="searchQuery"
+        v-on:keyup.enter="handleSearch"
+      />
+      <select
+        class="absolute top-1/2 right-0 -translate-y-1/2 text-gray-600 bg-white outline-none border-none appearance-none pr-6 pl-3 py-1 rounded-r-full text-sm"
+        v-model="searchbarOption"
       >
-        <div
-          class="w-8 h-8 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold"
-        >
-          RS
-        </div>
-        <span class="font-semibold tracking-tight text-sm sm:text-base">
-          Registro de sitios históricos
-        </span>
+        <option value="search" selected>Nombre</option>
+        <option value="province">Provincia</option>
+        <option value="city">Ciudad</option>
+      </select>
+    </div>
+
+    <!-- Navegación principal -->
+    <nav class="flex items-center gap-6">
+      <!-- Botón a la vista de sitios históricos (branch compas) -->
+      <RouterLink
+        to="/sitios"
+        class="rounded-lg bg-sky-900 px-4 py-2 text-white text-sm md:text-base hover:scale-105 transition-transform duration-300"
+      >
+        Sitios históricos
       </RouterLink>
 
-      <!-- Navegación principal -->
-      <nav class="hidden md:flex items-center gap-4 text-sm">
-        <RouterLink
-          to="/sitios"
-          class="hover:text-sky-300 transition"
-          :class="{
-            'text-sky-300':
-              route.name === 'sites-list' || route.name === 'site-detail',
-          }"
-        >
-          Sitios históricos
-        </RouterLink>
-        <RouterLink
-          to="/acerca"
-          class="hover:text-sky-300 transition"
-        >
-          Acerca de
-        </RouterLink>
-        <RouterLink
-          to="/contacto"
-          class="hover:text-sky-300 transition"
-        >
-          Contacto
-        </RouterLink>
-      </nav>
+      <!-- Si NO estoy logueada, muestro solo "Iniciar sesión" -->
+      <RouterLink
+        v-if="!isAuthenticated"
+        to="/login"
+        class="text-white text-sm md:text-base hover:text-sky-300 transition-colors duration-300"
+      >
+        Iniciar sesión
+      </RouterLink>
 
-      <!-- Área de cuenta -->
-      <div class="flex items-center gap-2">
-        <!-- Si NO está autenticada: botón de login -->
+      <!-- Si estoy logueada, muestro Mis favoritos + Cerrar sesión -->
+      <div v-else class="ml-6 relative" ref="accountMenuRef">
         <button
-          v-if="!isAuthenticated"
           type="button"
-          class="px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-sky-500 hover:bg-sky-600 transition shadow-sm"
-          @click="goToLogin"
+          class="flex items-center gap-2 rounded-lg bg-slate-800/80 px-4 py-2 text-white text-sm md:text-base border border-slate-600 hover:border-sky-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 transition-colors duration-300"
+          @click.stop="toggleAccountMenu"
+          @keydown.escape.prevent="closeAccountMenu"
+          aria-haspopup="true"
+          :aria-expanded="accountMenuOpen"
         >
-          Iniciar sesión
+          Cuenta
         </button>
 
-        <!-- Si está autenticada: perfil + favoritos + logout -->
         <div
-          v-else
-          class="flex items-center gap-2"
+          v-if="accountMenuOpen"
+          class="absolute right-0 mt-2 w-52 rounded-xl border border-slate-700 bg-slate-900/95 shadow-lg py-2 z-50"
+          role="menu"
         >
-          <button
-            type="button"
-            class="hidden sm:inline-flex px-3 py-1.5 rounded-full text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 transition"
-            @click="goToProfile"
+          <p
+            class="px-4 pb-2 text-xs text-slate-400 border-b border-slate-700"
+            v-if="currentUserEmail"
+          >
+            Sesión iniciada como
+            <span class="block font-semibold text-slate-200">{{ currentUserEmail }}</span>
+          </p>
+          <RouterLink
+            to="/perfil"
+            class="block px-4 py-2 text-sm text-slate-100 hover:bg-slate-800 transition-colors duration-200"
+            role="menuitem"
+            @click="closeAccountMenu"
           >
             Mi perfil
-          </button>
-
+          </RouterLink>
           <button
             type="button"
-            class="hidden sm:inline-flex px-3 py-1.5 rounded-full text-xs sm:text-sm bg-slate-800 hover:bg-slate-700 transition"
-            @click="goToFavorites"
-          >
-            Mis favoritos
-          </button>
-
-          <!-- Avatar / nombre -->
-          <div class="hidden sm:flex flex-col items-end">
-            <span class="text-xs font-semibold leading-tight">
-              {{ userName }}
-            </span>
-            <button
-              type="button"
-              class="text-[11px] text-slate-400 hover:text-sky-300 transition"
-              @click="handleLogout"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-
-          <!-- En mobile solo mostramos un botón simple de logout -->
-          <button
-            type="button"
-            class="sm:hidden px-2 py-1 rounded-full text-xs bg-slate-800 hover:bg-slate-700 transition"
+            class="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-slate-800 transition-colors duration-200 cursor-pointer"
+            role="menuitem"
             @click="handleLogout"
           >
-            Salir
+            Cerrar sesión
           </button>
         </div>
       </div>
-    </div>
-  </header>
+    </nav>
+  </div>
 </template>
 
 <style scoped>
-/* Todo el estilo está con Tailwind en el template. */
+/* Por ahora no necesito estilos extra, todo va con Tailwind. */
 </style>
