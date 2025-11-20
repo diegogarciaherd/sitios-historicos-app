@@ -45,8 +45,19 @@ async function getSites(filters = {}) {
   }
 }
 
-async function getSitesNearby({ lat, lng, radius, page, per_page, order_by, tags, city, province, search, favorites }) {
-  
+async function getSitesNearby({
+  lat,
+  lng,
+  radius,
+  page,
+  per_page,
+  order_by,
+  tags,
+  city,
+  province,
+  search,
+  favorites,
+}) {
   const params = { lat, lng, radius }
   if (page !== undefined) params.page = page
   if (per_page !== undefined) params.per_page = per_page
@@ -111,6 +122,18 @@ async function getMostVisitedSites() {
   }
 }
 
+async function getFavoriteSites({ page = 1, perPage = 25, order = 'desc', paginated = true } = {}) {
+  const response = await api.get('/sites/favorites', {
+    params: {
+      page,
+      per_page: perPage,
+      order,
+      paginated: paginated ? 1 : undefined,
+    },
+  })
+  console.log('Favorite sites response:', response.data.data)
+  return response.data.data
+}
 export {
   getSites,
   getSitesNearby,
@@ -118,4 +141,5 @@ export {
   getSiteById,
   getSiteImages,
   getMostVisitedSites,
+  getFavoriteSites,
 }

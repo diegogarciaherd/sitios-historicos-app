@@ -311,6 +311,92 @@ def get_my_favorites():
         200,
     )
 
+@sites_api_bp.get("/favorites")
+@jwt_required()
+def get_favorites():
+    """
+    Devuelve los sitios marcados como favoritos por el usuario autenticado.
+
+    Compatibilidad:
+    - Si NO se envían parámetros de paginación/orden → devuelve una lista simple
+      (comportamiento anterior, usado por FavoritesView).
+    - Si se envían page/per_page/order o 'paginated' → devuelve { data, meta }.
+    """
+    user_id = int(get_jwt_identity())
+    params = request.args.to_dict(flat=True)
+
+    # ¿El caller quiere paginación?
+    wants_pagination = any(
+        key in params for key in ("page", "per_page", "order", "paginated")
+    )
+
+    base_query = db.session.query(Favorite).filter_by(user_id=user_id)
+
+    if not wants_pagination:
+        favorites = base_query.all()
+        return (
+            jsonify(
+                [
+                    fav.site.to_dict()
+                    for fav in favorites
+                ]
+            ),
+            200,
+        )
+
+    # Con paginación
+    errors = check_pagination_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    page = int(params.get("page", 1) or 1)
+    per_page = int(params.get("per_page", 25) or 25)
+    order = params.get("order", "desc")
+
+    query = base_query
+    if order == "asc":
+        query = query.order_by(Favorite.created_at.asc())
+    else:
+        query = query.order_by(Favorite.created_at.desc())
+
+    total = query.count()
+    favorites = (
+        query.offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    data = [
+        fav.site.to_dict()
+        for fav in favorites
+    ]
+
+    return (
+        jsonify(
+            {
+                "data": data,
+                "meta": {
+                    "total": total,
+                    "page": page,
+                    "per_page": per_page,
+                },
+            }
+        ),
+        200,
+    )
+
+
 
 # ----------------------------------------------------------------------
 #                               REVIEWS

@@ -4,7 +4,7 @@
 import SitesCarousel from './SitesCarousel.vue'
 import SiteCarouselButton from './SiteCarouselButton.vue'
 import { onBeforeMount, reactive, ref } from 'vue'
-import { getSites } from '@/api/sites'
+import { getSites, getFavoriteSites } from '@/api/sites'
 import { useAuth } from '@/composables/useAuth'
 
 // featuredSites son todos los sitios que agarro y luego distribuyo en los disintos carruseles.
@@ -39,6 +39,7 @@ onBeforeMount(async () => {
     carouselOptions.value.push({
       id: 'favorites',
       label: 'Favoritos',
+      sites_function: () => getFavoriteSites({ page: 1, perPage: 10, order: 'desc' }),
     })
   }
   selectedCarousel.value = ref(carouselOptions.value[0]?.id ?? null)

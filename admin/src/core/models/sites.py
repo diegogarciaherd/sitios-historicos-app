@@ -478,7 +478,6 @@ def apply_filters(query, filters: dict):
     if "order_by" in filters and filters["order_by"]:
         # Limpia orden previo
         query = query.order_by(None)
-        print(filters["order_by"])
         match filters["order_by"]:
             case "latest":
                 query = query.order_by(SitioHistorico.fechaRegistro.asc())

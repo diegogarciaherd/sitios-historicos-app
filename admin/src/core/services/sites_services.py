@@ -43,6 +43,5 @@ def get_sites_within_radius(lat, lng, radius_km):
 
         if dist <= radius_km:
             filtered.append(site)
-        print("User:", lat, lng)
 
     return filtered
