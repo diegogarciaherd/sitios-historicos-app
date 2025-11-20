@@ -4,11 +4,19 @@ import axios from 'axios'
 /**
  * Instancia base de axios para hablar con la API de Flask.
  *
- * Ojo: esta instancia NO comparte headers automáticamente con axios global,
- * por eso abajo le agrego un interceptor para inyectar el JWT desde localStorage.
+ * Usamos la MISMA variable de entorno que el login (`useAuth`):
+ *   VITE_API_BASE_URL
+ *
+ * Si no está definida, por defecto apuntamos a http://localhost:5000,
+ * que es donde corre Flask en desarrollo.
  */
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BASE_API_URL || 'http://localhost:5000/api'
+  // Todas las rutas de este cliente van contra /api del backend
+  baseURL: `${API_BASE_URL}/api`
 })
 
 // Antes de cada request, si hay un JWT lo agrego como Authorization: Bearer <token>

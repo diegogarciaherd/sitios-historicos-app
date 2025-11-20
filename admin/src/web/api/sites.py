@@ -264,7 +264,6 @@ def toggle_favorite_api(site_id: int):
     return jsonify({"favorite": created, "site_id": site_id}), 200
 
 
-
 @sites_api_bp.get("/users/me/favorites")
 @jwt_required()
 def get_my_favorites():
