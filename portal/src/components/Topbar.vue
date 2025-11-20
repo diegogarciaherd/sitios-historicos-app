@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
       <!-- Botón a la vista de sitios históricos (branch compas) -->
       <RouterLink
         to="/sitios"
-        class="rounded-lg bg-sky-900 px-6 py-3 text-white text-lg hover:scale-105 transition-transform duration-300"
+        class="rounded-lg bg-sky-900 px-4 py-2 text-white text-sm md:text-base hover:scale-105 transition-transform duration-300"
       >
         Sitios históricos
       </RouterLink>
@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
       <RouterLink
         v-if="!isAuthenticated"
         to="/login"
-        class="ml-6 text-white text-lg hover:text-sky-300 transition-colors duration-300"
+        class="text-white text-sm md:text-base hover:text-sky-300 transition-colors duration-300"
       >
         Iniciar sesión
       </RouterLink>

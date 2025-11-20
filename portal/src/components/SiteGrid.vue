@@ -24,13 +24,26 @@ async function fetchSites() {
     // Si los filtros contienen lat y lng, hacemos una búsqueda estricta por mapa
     if (props.siteFilters && props.siteFilters.lat && props.siteFilters.lng) {
       try {
+        // forward pagination and other filters to the main /sites endpoint
         const resp = await getSitesNearby({
           lat: props.siteFilters.lat,
           lng: props.siteFilters.lng,
           radius: props.siteFilters.radius || 5,
+          page: props.page || 1,
+          per_page: perPage,
+          order_by: props.siteFilters.order_by,
+          tags: props.siteFilters.tags,
+          city: props.siteFilters.city,
+          province: props.siteFilters.province,
+          search: props.siteFilters.search,
+          favorites: props.siteFilters.favorites,
         })
-        sites.value = resp.data || []
-        totalPages.value = 1
+
+       
+        const payload = resp.data || {}
+        sites.value = payload.data || []
+        const total = payload.meta?.total || 0
+        totalPages.value = Math.ceil(total / perPage)
         return
       } catch (err) {
         console.error('Error fetching nearby sites:', err)

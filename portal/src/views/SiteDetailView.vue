@@ -1,4 +1,5 @@
 <!-- src/views/SiteDetailView.vue -->
+<!-- src/views/SiteDetailView.vue -->
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -14,16 +15,27 @@ import { useSiteSearch } from '@/composables/useSiteSearch'
 const route = useRoute()
 const router = useRouter()
 const { isAuthenticated } = useAuth()
-const { goBackToList } = useSiteSearch()
+
+const siteId = computed(() => Number(route.params.id))
+
+// Estado del sitio
 const site = ref(null)
-const loadingSite = ref(false)
-const errorSite = ref('')
+const loadingSite = ref(true)
+const siteError = ref('')
 
-const reviews = ref([])
-const loadingReviews = ref(false)
+// Imágenes
+const coverImage = ref(null)
+const siteImages = ref([])
+const loadingImages = ref(false)
 
+// Favoritos
 const isFavorite = ref(false)
 const loadingFavorite = ref(false)
+
+// Reseñas
+const reviews = ref([])
+const loadingReviews = ref(false)
+const hasReviews = computed(() => reviews.value.length > 0)
 
 const newReviewTitle = ref('')
 const newReviewBody = ref('')
@@ -31,41 +43,45 @@ const newReviewRating = ref(5)
 const creatingReview = ref(false)
 const createReviewError = ref('')
 
-const siteId = computed(() => Number(route.params.id))
-const siteImages = ref([])
+// Búsqueda (si tus compas lo usan)
+useSiteSearch()
 
-const showFullDescription = ref(false)
-
+/**
+ * Carga los datos del sitio.
+ */
 async function loadSite() {
   loadingSite.value = true
-  errorSite.value = ''
-
+  siteError.value = ''
   try {
     const data = await getSiteById(siteId.value)
-    site.value = data
-    site.value.image = await getSiteCoverImage(siteId.value)
+    site.value = data || null
+    coverImage.value = await getSiteCoverImage(siteId.value)
   } catch (error) {
     console.error('Error cargando sitio:', error)
-    errorSite.value = 'No se pudo cargar el sitio.'
+    siteError.value = 'No se pudo cargar la información del sitio.'
   } finally {
     loadingSite.value = false
   }
 }
 
-async function loadReviews() {
-  loadingReviews.value = true
-
+/**
+ * Carga las imágenes del sitio.
+ */
+async function loadImages() {
+  loadingImages.value = true
   try {
-    const data = await getSiteReviews(siteId.value)
-    // Si el backend devuelve [reviews, meta], usar data[0]; si es array directo, usar data
-    reviews.value = Array.isArray(data) ? data : Array.isArray(data[0]) ? data[0] : []
+    const images = await getSiteImages(siteId.value)
+    siteImages.value = images || []
   } catch (error) {
-    console.error('Error cargando reseñas:', error)
+    console.error('Error cargando imágenes del sitio:', error)
   } finally {
-    loadingReviews.value = false
+    loadingImages.value = false
   }
 }
 
+/**
+ * Carga el estado de favorito para este sitio.
+ */
 async function loadFavoriteState() {
   if (!isAuthenticated.value) {
     isFavorite.value = false
@@ -82,15 +98,9 @@ async function loadFavoriteState() {
   }
 }
 
-async function loadImages() {
-  try {
-    const images = await getSiteImages(siteId.value)
-    siteImages.value = images
-  } catch (error) {
-    console.error('Error cargando imágenes del sitio:', error)
-  }
-}
-
+/**
+ * Alterna el favorito del sitio actual.
+ */
 async function handleToggleFavorite() {
   if (!isAuthenticated.value) {
     router.push({ name: 'login' })
@@ -103,7 +113,7 @@ async function handleToggleFavorite() {
     if (typeof data.favorite === 'boolean') {
       isFavorite.value = data.favorite
     } else {
-      // fallback si el backend no devuelve el flag
+      // Fallback por si algún día cambia el backend
       isFavorite.value = !isFavorite.value
     }
   } catch (error) {
@@ -113,6 +123,24 @@ async function handleToggleFavorite() {
   }
 }
 
+/**
+ * Carga las reseñas del sitio.
+ */
+async function loadReviews() {
+  loadingReviews.value = true
+  try {
+    const data = await getSiteReviews(siteId.value)
+    reviews.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('Error cargando reseñas:', error)
+  } finally {
+    loadingReviews.value = false
+  }
+}
+
+/**
+ * Crea una nueva reseña para este sitio.
+ */
 async function handleCreateReview() {
   if (!isAuthenticated.value) {
     router.push({ name: 'login' })
@@ -131,10 +159,12 @@ async function handleCreateReview() {
 
     await createSiteReview(siteId.value, payload)
 
-    // Limpiamos el formulario y recargamos reseñas
+    // Limpio el formulario
     newReviewTitle.value = ''
     newReviewBody.value = ''
     newReviewRating.value = 5
+
+    // Recargo reseñas
     await loadReviews()
   } catch (error) {
     console.error('Error creando reseña:', error)
@@ -144,13 +174,12 @@ async function handleCreateReview() {
   }
 }
 
-const hasReviews = computed(() => reviews.value.length > 0)
-
+// Carga inicial
 onMounted(async () => {
   await loadSite()
-  if (site.value) {
-    await Promise.all([loadReviews(), loadFavoriteState(), loadImages()])
-  }
+  await loadImages()
+  await loadFavoriteState()
+  await loadReviews()
 })
 </script>
 
