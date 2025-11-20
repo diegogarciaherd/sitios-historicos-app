@@ -58,11 +58,12 @@
           :lat-lng="selectedLocation"
         />
 
-        <!-- Marcadores de sitios dentro del radio -->
+        <!-- Marcadores de sitios dentro del radio (icono naranja) -->
         <l-marker
           v-for="site in sitesMarkers"
           :key="`site-marker-${site.id}`"
           :lat-lng="[site.lat, site.lng]"
+          :icon="orangeIcon"
         >
           <l-popup>
             <div class="max-w-xs">
@@ -91,6 +92,26 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { LMap, LTileLayer, LMarker, LCircle, LPopup } from "@vue-leaflet/vue-leaflet"
 import { getSitesNearby } from '@/api/sites'
+import L from 'leaflet'
+
+// Icono default Leaflet
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+})
+
+// Icono naranja para sitios cercanos
+const orangeIcon = L.icon({
+  iconUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-orange.png',
+  iconRetinaUrl: 'https://cdn.jsdelivr.net/gh/pointhi/leaflet-color-markers@master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28],
+})
 
 const emit = defineEmits(["nearby-sites"])
 const router = useRouter()
