@@ -4,6 +4,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Topbar from '@/components/Topbar.vue'
 import { useAuth } from '@/composables/useAuth'
+import { onMounted } from "vue";
+import { handleCredentialResponse } from '@/api/auth';
 
 const router = useRouter()
 const { isAuthenticated, login } = useAuth()
@@ -28,6 +30,18 @@ async function handleSubmit () {
 
   router.push({ name: 'home' })
 }
+
+onMounted(() => {
+  window.google.accounts.id.initialize({
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+    callback: () => (handleCredentialResponse, router.push("/"))
+  });
+
+  window.google.accounts.id.renderButton(
+    document.getElementById("googleBtn"),
+    { theme: "outline", size: "large" }
+  );
+});
 </script>
 
 <template>
@@ -79,8 +93,9 @@ async function handleSubmit () {
       </section>
 
       <p class="mt-4 text-xs text-slate-400">
-        Si todavía no tenés cuenta, podés registrarte desde la sección correspondiente del portal.
+        Si contas con una cuenta de Google:
       </p>
+      <div id="googleBtn" style="margin-top: 5px"></div>
     </main>
   </div>
 </template>

@@ -31,7 +31,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(nullable=False)
     name: Mapped[str] = mapped_column(nullable=False)
     last_name: Mapped[str] = mapped_column(nullable=False)
-    password: Mapped[str] = mapped_column(nullable=False)
+    password: Mapped[str] = mapped_column(nullable=True)
     active: Mapped[bool] = mapped_column(nullable=True, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
@@ -216,4 +216,10 @@ def list_all_users() -> list[User]:
 
     return query
 
-
+def create_user_from_google_auth(data: dict):
+    data["last_name"] = " "
+    user = User(**data)
+    db.session.add(user)
+    db.session.commit()
+    new_user_id = read_user_by_email(data["email"]).id
+    UserRole.create_entry(new_user_id, 4)
