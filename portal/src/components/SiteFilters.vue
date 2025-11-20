@@ -161,6 +161,13 @@ defineExpose({
           <p v-else class="text-sm text-gray-500">Cargando tags...</p>
         </div>
 
+                <!-- Favoritos -->
+        <div class="flex items-center gap-2">
+          <input id="fav" type="checkbox" v-model="favorites" class="w-4 h-4" />
+          <label for="fav" class="text-sm text-gray-700">Solo favoritos</label>
+        </div>
+
+
         <!-- Botón de limpiar -->
         <div class="pt-2">
           <button
