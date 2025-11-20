@@ -364,6 +364,10 @@ def apply_order_and_paginate(query, filters: dict, page: int = 1, per_page: int 
     Soporta orden por fecha, nombre y por promedio de rating (reseñas aprobadas).
     Retorna (sites, total).
     """
+    if not page:
+        page = 1
+    if not per_page:
+        per_page = 10
     total = query.count()
 
     order_by = filters.get("order_by")

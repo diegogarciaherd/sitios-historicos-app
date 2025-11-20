@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Navegación principal -->
-    <nav class="flex items-center">
+    <nav class="flex items-center gap-6">
       <!-- Botón a la vista de sitios históricos (branch compas) -->
       <RouterLink
         to="/sitios"

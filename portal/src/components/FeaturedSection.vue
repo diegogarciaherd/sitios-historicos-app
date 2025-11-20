@@ -22,7 +22,7 @@ onBeforeMount(async () => {
     {
       id: 'top-rated',
       label: 'Mejor puntuados',
-      sites_function: () => getSites({ sort_by: 'rating', order: 'desc' }),
+      sites_function: () => getSites({ page: 1, per_page: 10, sort_by: 'rating', order: 'desc' }),
     },
     {
       id: 'most-visited',
@@ -32,7 +32,8 @@ onBeforeMount(async () => {
     {
       id: 'new-additions',
       label: 'Nuevas incorporaciones',
-      sites_function: () => getSites({ sort_by: 'created_at', order: 'desc' }),
+      sites_function: () =>
+        getSites({ page: 1, per_page: 10, sort_by: 'created_at', order: 'desc' }),
     },
   ]
   if (isAuthenticated.value) {

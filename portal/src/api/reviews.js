@@ -13,7 +13,7 @@ import api from './base'
  * Acá normalizo y devuelvo directamente el array de reseñas,
  * así el resto del código trabaja siempre con un array simple.
  */
-export async function getSiteReviews (siteId) {
+export async function getSiteReviews(siteId) {
   const response = await api.get(`/sites/${siteId}/reviews`)
   const payload = response.data
 
@@ -34,7 +34,8 @@ export async function getSiteReviews (siteId) {
  * Crea una reseña para un sitio.
  * params debe incluir al menos: { title, body, rating }
  */
-export async function createSiteReview (siteId, params) {
+export async function createSiteReview(siteId, params) {
+  console.log('Creating review with params:', params)
   const response = await api.post(`/sites/${siteId}/reviews`, params)
   return response.data
 }

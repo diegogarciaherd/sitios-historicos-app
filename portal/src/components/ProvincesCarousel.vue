@@ -17,19 +17,19 @@ const loading = ref(true)
 async function fetchSitios() {
   try {
     // Obtengo el primer sitio de la provincia y le agrego una imagen.
-    sitioBuenosAires.value = await getSites({ province: 'Buenos Aires' })
+    sitioBuenosAires.value = await getSites({ page: 1, per_page: 1, province: 'Buenos Aires' })
     sitioBuenosAires.value = sitioBuenosAires.value.data[0]
     sitioBuenosAires.value.link = 'Buenos_Aires'
 
-    sitioSalta.value = await getSites({ province: 'Salta' })
+    sitioSalta.value = await getSites({ page: 1, per_page: 1, province: 'Salta' })
     sitioSalta.value = sitioSalta.value.data[0]
     sitioSalta.value.link = 'Salta'
 
-    sitioMendoza.value = await getSites({ province: 'Mendoza' })
+    sitioMendoza.value = await getSites({ page: 1, per_page: 1, province: 'Mendoza' })
     sitioMendoza.value = sitioMendoza.value.data[0]
     sitioMendoza.value.link = 'Mendoza'
 
-    sitioTucuman.value = await getSites({ province: 'Tucumán' })
+    sitioTucuman.value = await getSites({ page: 1, per_page: 1, province: 'Tucumán' })
     sitioTucuman.value = sitioTucuman.value.data[0]
     sitioTucuman.value.link = 'Tucumán'
 

@@ -11,12 +11,11 @@ import axios from 'axios'
  * que es donde corre Flask en desarrollo.
  */
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000'
 
 const api = axios.create({
   // Todas las rutas de este cliente van contra /api del backend
-  baseURL: `${API_BASE_URL}/api`
+  baseURL: `${API_BASE_URL}/api`,
 })
 
 // Antes de cada request, si hay un JWT lo agrego como Authorization: Bearer <token>
@@ -31,7 +30,7 @@ api.interceptors.request.use(
     }
     return config
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 )
 
 export default api

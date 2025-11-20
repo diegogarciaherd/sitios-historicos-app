@@ -99,7 +99,7 @@ def check_filters(filters: dict) -> dict:
 # ----------------------------------------------------------------------
 #                           LISTADO Y FILTROS DE SITIOS
 # ----------------------------------------------------------------------
-@sites_api_bp.get("/")
+@sites_api_bp.get("")
 def list_sites():
     """
     Lista sitios históricos con filtros opcionales:
@@ -150,7 +150,7 @@ def list_sites():
     # Toda la lógica (incluyendo lat/lng/radius) la resuelve list_sites_with_filters
     sites = list_sites_with_filters(filters, tags)
 
-    data = [site.to_dict() for site in sites]
+    data = [site.to_dict() for site in sites[0]]
 
     return jsonify({"data": data}), 200
 
