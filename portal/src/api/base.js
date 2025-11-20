@@ -14,7 +14,7 @@ import axios from 'axios'
  */
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar'
+  import.meta.env.VITE_API_URL || 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar'
 
 const api = axios.create({
   // Todas las rutas de este cliente van contra /api del backend
