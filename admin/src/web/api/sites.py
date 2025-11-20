@@ -263,7 +263,7 @@ def get_sites_nearby():
 
     Espera query params:
         lat (float): latitud
-        long (float): longitud
+        lng (float): longitud
         radius (int/float): radio en kilómetros
     """
     params = request.args.to_dict()
@@ -274,7 +274,7 @@ def get_sites_nearby():
         long = float(params.get("lng", ""))
         radius = float(params.get("radius", ""))
     except ValueError:
-        errors["coords"] = "lat, long y radius deben ser numéricos."
+        errors["coords"] = "lat, lng y radius deben ser numéricos."
 
     if errors:
         return (

@@ -29,6 +29,10 @@ from flask_jwt_extended import create_access_token
 
 from core.services.auth_service import authenticate
 
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from core.models.user import read_user_by_email, create_user_from_google_auth
+
 # Blueprint con prefijo /api/auth
 auth_api_bp = Blueprint("auth_api", __name__, url_prefix="/api/auth")
 
@@ -128,3 +132,59 @@ def login_api():
         ),
         200,
     )
+
+@auth_api_bp.post("/google")
+def google_auth():
+    token = request.get_json()
+    
+    idinfo = id_token.verify_oauth2_token(
+        token["token"],
+        requests.Request()
+    )
+
+    user = read_user_by_email(idinfo["email"])
+    if not user:
+        new_user_data = {}
+        new_user_data["email"] = idinfo["email"]
+        new_user_data["name"] = idinfo["name"]
+        create_user_from_google_auth(new_user_data)
+        user = read_user_by_email(idinfo["email"])
+    
+    access_token = create_access_token(
+        identity=user.id,
+        expires_delta=timedelta(hours=2),
+        additional_claims={
+            "email": user.email,
+            "name": getattr(user, "name", ""),
+            "last_name": getattr(user, "last_name", ""),
+        },
+    )
+
+    if access_token:
+        return (
+            jsonify(
+                {
+                    "access_token": access_token,
+                    "user_id": user.id,
+                    "user": {
+                        "id": user.id,
+                        "name": getattr(user, "name", ""),
+                        "last_name": getattr(user, "last_name", ""),
+                        "email": user.email,
+                    },
+                }
+            ),
+            200,
+        )
+    else:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "server_error",
+                        "message": "An unexpected error ocurred.",
+                    }
+                }
+            ),
+            500,
+        )

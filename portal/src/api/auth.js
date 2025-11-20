@@ -15,3 +15,10 @@ export async function loginRequest (email, password) {
   })
   return response.data
 }
+
+export async function handleCredentialResponse(response) {
+  const token = response.credential;
+  const res = await api.post("/auth/google", { token });
+  const jwt = res.data.access_token;
+  localStorage.setItem('jwt', jwt);
+}

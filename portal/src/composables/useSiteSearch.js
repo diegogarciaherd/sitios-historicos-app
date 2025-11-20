@@ -115,12 +115,16 @@ export function useSiteSearch() {
 
     
     if (combined.lat && combined.lng) {
-      const mapOnly = {
-        lat: combined.lat,
-        lng: combined.lng,
-      }
-      if (combined.radius) mapOnly.radius = combined.radius
-      return { ...mapOnly, page: page.value }
+  const mapOnly = {
+    lat: combined.lat,
+    lng: combined.lng,
+  }
+
+  if (combined.radius) mapOnly.radius = combined.radius
+  if (combined.order_by) mapOnly.order_by = combined.order_by 
+
+  return { ...mapOnly, page: page.value }
+
     }
 
     return combined
