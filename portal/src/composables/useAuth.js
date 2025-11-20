@@ -18,7 +18,7 @@ import axios from 'axios'
 import api from '../api/base'
 
 // URL base de la API (sin /api al final, lo agrego a mano donde haga falta)
-const API_BASE_URL = 'https://admin-grupo45.proyecto2025.linti.unlp.edu.ar'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // Estado global simple en memoria (para todo el portal)
 const token = ref(localStorage.getItem('jwt') || null)
