@@ -32,7 +32,7 @@ async function handleSubmit() {
 
 onMounted(() => {
   window.google.accounts.id.initialize({
-    client_id: '142783810526-nift4tloa68nlj18e1argct67s3l22jh.apps.googleusercontent.com',
+    client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '', // acá vas a tener que poner el client id de google, entre las comillas
     callback: (response) => {
       handleCredentialResponse(response).then(() => {
         if (isAuthenticated.value) {
