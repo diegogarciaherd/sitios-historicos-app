@@ -162,8 +162,8 @@
                 </form>
               </div>
               <div v-else class="review-body">
-                <p v-if="review.title" class="review-title">{{ review.title }}</p>
-                <p class="excerpt">
+                <p v-if="review.title" class="text-lg">{{ review.title }}</p>
+                <p class="text-sm">
                   {{ review.body }}
                 </p>
               </div>
@@ -628,10 +628,6 @@ const goBack = () => {
   margin-bottom: 0.25rem;
 }
 
-.excerpt {
-  font-size: 0.9rem;
-}
-
 .review-actions {
   position: absolute;
   top: 0.6rem;
@@ -652,12 +648,6 @@ const goBack = () => {
   margin-top: 0.6rem;
   display: grid;
   gap: 0.35rem;
-}
-
-.review-title {
-  margin: 0;
-  font-weight: 600;
-  font-size: 0.92rem;
 }
 
 .edit-review-form {
