@@ -43,6 +43,42 @@ const newReviewRating = ref(5)
 const creatingReview = ref(false)
 const createReviewError = ref('')
 
+const averageRating = computed(() => {
+  if (!site.value || !site.value.cantidadResenas) return 0
+  const total = Number(site.value.puntuacionTotal) || 0
+  const count = Number(site.value.cantidadResenas) || 0
+  if (!count) return 0
+  const avg = total / count
+  if (!Number.isFinite(avg)) return 0
+  return Math.min(5, Math.max(0, avg))
+})
+
+const ratingCount = computed(() => {
+  if (!site.value) return 0
+  const count = Number(site.value.cantidadResenas)
+  return Number.isFinite(count) && count > 0 ? count : 0
+})
+
+const ratingStars = computed(() => {
+  return Array.from({ length: 5 }, (_, index) => {
+    const value = averageRating.value - index
+    if (value >= 1) return 100
+    if (value <= 0) return 0
+    return Math.round(value * 100)
+  })
+})
+
+const ratingAriaLabel = computed(() => {
+  const count = ratingCount.value
+  if (!count) return 'Sin reseñas registradas'
+  const plural = count === 1 ? 'reseña' : 'reseñas'
+  return `Puntuación promedio ${averageRating.value.toFixed(1)} de 5 basada en ${count} ${plural}`
+})
+
+const starPath =
+  'M22,9.81a1,1,0,0,0-.83-.69l-5.7-.78L12.88,3.53a1,1,0,0,0-1.76,0L8.57,8.34l-5.7.78a1,1,0,0,0-.82.69,1,1,0,0,0,.28,1l4.09,3.73-1,5.24A1,1,0,0,0,6.88,20.9L12,18.38l5.12,2.52a1,1,0,0,0,.44.1,1,1,0,0,0,1-1.18l-1-5.24,4.09-3.73A1,1,0,0,0,22,9.81Z'
+const starUid = Math.random().toString(36).slice(2, 8)
+
 // Búsqueda (si tus compas lo usan)
 useSiteSearch()
 
@@ -54,6 +90,7 @@ async function loadSite() {
   siteError.value = ''
   try {
     const data = await getSiteById(siteId.value)
+    console.log('Datos del sitio cargados:', data)
     site.value = data || null
     coverImage.value = await getSiteCoverImage(siteId.value)
   } catch (error) {
@@ -237,6 +274,55 @@ function goBackToList() {
                   {{ site.nombre }}
                 </h2>
                 <p class="mt-1 text-sm text-slate-300">{{ site.ciudad }} - {{ site.provincia }}</p>
+                <div class="mt-1 flex items-center gap-3 text-sm text-slate-300">
+                  <span>Puntuación:</span>
+                  <div
+                    class="rating-stars"
+                    role="img"
+                    :aria-label="ratingAriaLabel"
+                    :title="ratingAriaLabel"
+                  >
+                    <svg
+                      v-for="(fill, index) in ratingStars"
+                      :key="`star-${index}`"
+                      viewBox="0 0 24 24"
+                      class="rating-star"
+                    >
+                      <defs>
+                        <clipPath :id="`clip-star-${starUid}-${index}`">
+                          <path :d="starPath" />
+                        </clipPath>
+                      </defs>
+                      <rect
+                        width="24"
+                        height="24"
+                        fill="rgba(148, 163, 184, 0.3)"
+                        :clip-path="`url(#clip-star-${starUid}-${index})`"
+                      />
+                      <rect
+                        :width="(fill / 100) * 24"
+                        height="24"
+                        fill="#facc15"
+                        :clip-path="`url(#clip-star-${starUid}-${index})`"
+                      />
+                      <path
+                        :d="starPath"
+                        fill="none"
+                        stroke="#facc15"
+                        stroke-width="1.2"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <span class="text-xs text-slate-400">
+                    <template v-if="ratingCount">
+                      {{ averageRating.toFixed(1) }} / 5 · {{ ratingCount }} reseña{{
+                        ratingCount === 1 ? '' : 's'
+                      }}
+                    </template>
+                    <template v-else> Sin reseñas </template>
+                  </span>
+                </div>
               </div>
 
               <!-- Descripción breve -->
@@ -472,4 +558,19 @@ function goBackToList() {
   </div>
 </template>
 
-<style></style>
+<style scoped>
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rating-star {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.rating-star rect {
+  transition: width 200ms ease;
+}
+</style>

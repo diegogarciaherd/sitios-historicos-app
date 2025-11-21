@@ -171,6 +171,8 @@ class SitioHistorico(Base):
             "visible": self.visible,
             "tags": [tag.to_dict() for tag in self.tags],
             "cantVisitas": self.cantVisitas,
+            "puntuacionTotal": self.puntuacionTotal,
+            "cantidadResenas": self.cantidadResenas,
         }
 
 

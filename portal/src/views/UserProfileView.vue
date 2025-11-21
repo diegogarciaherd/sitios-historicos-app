@@ -26,6 +26,7 @@
 
         <!-- Pestañas -->
         <nav class="tabs">
+          <span class="tabs-indicator" :style="tabIndicatorStyle" aria-hidden="true"></span>
           <button :class="{ active: activeTab === 'reviews' }" @click="activeTab = 'reviews'">
             Mis reseñas
           </button>
@@ -129,6 +130,13 @@ const { currentUser, isAuthenticated } = useAuth()
 const user = computed(() => currentUser.value)
 
 const activeTab = ref('reviews')
+
+const tabIndicatorStyle = computed(() => {
+  const index = activeTab.value === 'favorites' ? 1 : 0
+  return {
+    transform: `translateX(${index * 100}%)`,
+  }
+})
 
 // RESEÑAS
 const reviews = ref([])
@@ -327,11 +335,13 @@ const goBack = () => {
 
 /* pestañas */
 .tabs {
+  position: relative;
   display: flex;
   border-radius: 999px;
   background: #e5e7eb;
   padding: 0.25rem;
   margin-bottom: 1.25rem;
+  overflow: hidden;
 }
 
 .tabs button {
@@ -343,11 +353,26 @@ const goBack = () => {
   border-radius: 999px;
   font-size: 0.9rem;
   cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: color 220ms ease;
 }
 
 .tabs button.active {
-  background: #2563eb;
   color: #ffffff;
+}
+
+.tabs-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  border-radius: 999px;
+  transform: translateX(0);
+  transition: transform 320ms ease;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.25);
 }
 
 /* contenido */
