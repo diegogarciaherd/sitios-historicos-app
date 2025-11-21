@@ -171,6 +171,8 @@ class SitioHistorico(Base):
             "visible": self.visible,
             "tags": [tag.to_dict() for tag in self.tags],
             "cantVisitas": self.cantVisitas,
+            "puntuacionTotal": self.puntuacionTotal,
+            "cantidadResenas": self.cantidadResenas,
         }
 
 
@@ -237,6 +239,9 @@ def create_sites(**kwargs):
     if año_inauguracion:
         kwargs["añoInauguracion"] = int(año_inauguracion)
 
+    kwargs["puntuacionTotal"] = 0
+    kwargs["cantidadResenas"] = 0
+
     # Creo el sitio con los campos relevantes
     site = SitioHistorico(
         nombre=kwargs.get("nombre"),
@@ -248,6 +253,8 @@ def create_sites(**kwargs):
         añoInauguracion=kwargs.get("añoInauguracion"),
         categoria=kwargs.get("categoria"),
         visible=kwargs.get("visible", True),
+        puntuacionTotal=kwargs.get("puntuacionTotal"),
+        cantidadResenas=kwargs.get("cantidadResenas"),
     )
 
     # Si tengo coordenadas, armo el POINT

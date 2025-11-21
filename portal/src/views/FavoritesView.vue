@@ -53,7 +53,7 @@ onMounted(loadFavorites)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+  <div class="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-white">
     <Topbar />
 
     <main class="max-w-5xl mx-auto pt-28 px-4 pb-12">
