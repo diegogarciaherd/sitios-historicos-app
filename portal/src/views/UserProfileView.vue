@@ -144,12 +144,50 @@
                       required
                     ></textarea>
                   </label>
-                  <label class="form-label">
-                    Calificación
-                    <select v-model.number="editReviewForm.rating" class="form-select" required>
-                      <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
-                    </select>
-                  </label>
+                  <div>
+                    <label class="flex items-center gap-2 text-xs mb-1">
+                      Calificación
+                      <span class="text-[0.7rem] text-slate-400"
+                        >{{ editReviewForm.rating }} / 5</span
+                      >
+                    </label>
+                    <div
+                      class="review-rating-picker"
+                      role="radiogroup"
+                      :aria-label="reviewRatingAria"
+                    >
+                      <button
+                        v-for="star in interactiveReviewStars"
+                        :key="star.value"
+                        type="button"
+                        class="review-rating-button"
+                        :class="{ filled: star.filled }"
+                        role="radio"
+                        :aria-checked="editReviewForm.rating === star.value"
+                        :aria-label="star.label"
+                        @click="selectReviewRating(star.value)"
+                        @mouseenter="hoverReviewRating = star.value"
+                        @mouseleave="hoverReviewRating = 0"
+                        @focus="hoverReviewRating = star.value"
+                        @blur="hoverReviewRating = 0"
+                        @keydown="handleReviewStarKeydown($event, star.value)"
+                      >
+                        <svg viewBox="0 0 24 24" class="review-rating-icon" aria-hidden="true">
+                          <path
+                            :d="starPath"
+                            :fill="star.filled ? '#facc15' : 'rgba(148, 163, 184, 0.3)'"
+                          />
+                          <path
+                            :d="starPath"
+                            fill="none"
+                            stroke="#facc15"
+                            stroke-width="1.2"
+                            stroke-linejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                   <p v-if="editReviewError" class="form-error">{{ editReviewError }}</p>
                   <div class="form-actions">
                     <button type="button" class="btn-secondary" @click="cancelEditingReview">
@@ -270,6 +308,8 @@ const favorites = ref([])
 const favoritesMeta = ref({ page: 1, per_page: 25, total: 0 })
 const favoritesOrder = ref('desc')
 const loadingFavorites = ref(false)
+
+const hoverReviewRating = ref(0)
 
 // Carga
 const loadReviews = async () => {
@@ -451,6 +491,93 @@ const goBack = () => {
     router.push({ name: 'sites-list' })
   }
 }
+
+const ratingStars = computed(() => {
+  return Array.from({ length: 5 }, (_, index) => {
+    const value = averageRating.value - index
+    if (value >= 1) return 100
+    if (value <= 0) return 0
+    return Math.round(value * 100)
+  })
+})
+
+const ratingAriaLabel = computed(() => {
+  const count = ratingCount.value
+  if (!count) return 'Sin reseñas registradas'
+  const plural = count === 1 ? 'reseña' : 'reseñas'
+  return `Puntuación promedio ${averageRating.value.toFixed(1)} de 5 basada en ${count} ${plural}`
+})
+
+const interactiveReviewStars = computed(() => {
+  const display = hoverReviewRating.value || editReviewForm.rating
+  return Array.from({ length: 5 }, (_, index) => {
+    const value = index + 1
+    return {
+      value,
+      filled: value <= display,
+      label: `${value} estrella${value > 1 ? 's' : ''}`,
+    }
+  })
+})
+
+const reviewRatingAria = computed(() => {
+  const value = editReviewForm.rating
+  return `Puntaje seleccionado: ${value} estrella${value === 1 ? '' : 's'}`
+})
+
+const selectReviewRating = (value) => {
+  editReviewForm.rating = value
+  hoverReviewRating.value = 0
+}
+
+const handleReviewStarKeydown = (event, value) => {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    const nextValue = Math.min(5, value + 1)
+    selectReviewRating(nextValue)
+    requestAnimationFrame(() => {
+      event.currentTarget?.nextElementSibling?.focus()
+    })
+    return
+  }
+
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+    event.preventDefault()
+    const prevValue = Math.max(1, value - 1)
+    selectReviewRating(prevValue)
+    requestAnimationFrame(() => {
+      event.currentTarget?.previousElementSibling?.focus()
+    })
+    return
+  }
+
+  if (event.key === 'Home') {
+    event.preventDefault()
+    selectReviewRating(1)
+    requestAnimationFrame(() => {
+      event.currentTarget?.parentElement?.firstElementChild?.focus()
+    })
+    return
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault()
+    selectReviewRating(5)
+    requestAnimationFrame(() => {
+      event.currentTarget?.parentElement?.lastElementChild?.focus()
+    })
+    return
+  }
+
+  if (event.key === ' ' || event.key === 'Spacebar' || event.key === 'Enter') {
+    event.preventDefault()
+    selectReviewRating(value)
+  }
+}
+
+const starPath =
+  'M22,9.81a1,1,0,0,0-.83-.69l-5.7-.78L12.88,3.53a1,1,0,0,0-1.76,0L8.57,8.34l-5.7.78a1,1,0,0,0-.82.69,1,1,0,0,0,.28,1l4.09,3.73-1,5.24A1,1,0,0,0,6.88,20.9L12,18.38l5.12,2.52a1,1,0,0,0,.44.1,1,1,0,0,0,1-1.18l-1-5.24,4.09-3.73A1,1,0,0,0,22,9.81Z'
+const starUid = Math.random().toString(36).slice(2, 8)
 </script>
 
 <style scoped>
@@ -823,5 +950,41 @@ const goBack = () => {
   .back-button {
     align-self: flex-end;
   }
+}
+
+.review-rating-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.review-rating-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    background 150ms ease;
+}
+
+.review-rating-button:hover,
+.review-rating-button:focus-visible {
+  background: rgba(56, 189, 248, 0.12);
+  outline: none;
+}
+
+.review-rating-button.filled .review-rating-icon {
+  transform: scale(1.05);
+}
+
+.review-rating-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  transition: transform 150ms ease;
 }
 </style>

@@ -34,6 +34,7 @@ from core.models.reviews import (
     delete_review,
     ReviewStatus,
     get_reviews_by_user_id,
+    update_review,
 )
 
 # Nota: la lógica espacial ahora se maneja en `list_sites_with_filters` (PostGIS/ST_DWithin)
@@ -638,6 +639,47 @@ def get_my_reviews():
         ),
         200,
     )
+
+@sites_api_bp.post("/users/me/reviews/<int:review_id>")
+@jwt_required()
+def update_my_review(review_id: int):
+    """
+    Actualiza la reseña especificada del usuario autenticado.
+    """
+    user_id = int(get_jwt_identity())
+    params = request.get_json() or {}
+
+    review = get_review_by_id(review_id)
+    if not review or review.user_id != user_id:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "not_found",
+                        "message": f"La reseña {review_id} no existe o no pertenece al usuario.",
+                    }
+                }
+            ),
+            404,
+        )
+
+    errors = check_review_post_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    message = update_review(review_id, **params)
+    return jsonify({"message": message}), 200
 
 
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")

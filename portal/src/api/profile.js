@@ -28,5 +28,5 @@ export function fetchMyFavorites({
 }
 
 export function updateMyReview(reviewId, payload) {
-  return api.put(`/sites/users/me/reviews/${reviewId}`, payload)
+  return api.post(`/sites/users/me/reviews/${reviewId}`, payload)
 }
