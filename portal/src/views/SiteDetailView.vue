@@ -10,7 +10,6 @@ import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
 import { useAuth } from '@/composables/useAuth'
 import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
 import SiteMap from '@/components/SiteMap.vue'
-import { useSiteSearch } from '@/composables/useSiteSearch'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,6 +39,7 @@ const hasReviews = computed(() => reviews.value.length > 0)
 const newReviewTitle = ref('')
 const newReviewBody = ref('')
 const newReviewRating = ref(5)
+const hoverReviewRating = ref(0)
 const creatingReview = ref(false)
 const createReviewError = ref('')
 
@@ -75,12 +75,76 @@ const ratingAriaLabel = computed(() => {
   return `Puntuación promedio ${averageRating.value.toFixed(1)} de 5 basada en ${count} ${plural}`
 })
 
+const interactiveReviewStars = computed(() => {
+  const display = hoverReviewRating.value || newReviewRating.value
+  return Array.from({ length: 5 }, (_, index) => {
+    const value = index + 1
+    return {
+      value,
+      filled: value <= display,
+      label: `${value} estrella${value > 1 ? 's' : ''}`,
+    }
+  })
+})
+
+const reviewRatingAria = computed(() => {
+  const value = newReviewRating.value
+  return `Puntaje seleccionado: ${value} estrella${value === 1 ? '' : 's'}`
+})
+
+const selectReviewRating = (value) => {
+  newReviewRating.value = value
+  hoverReviewRating.value = 0
+}
+
+const handleReviewStarKeydown = (event, value) => {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+    event.preventDefault()
+    const nextValue = Math.min(5, value + 1)
+    selectReviewRating(nextValue)
+    requestAnimationFrame(() => {
+      event.currentTarget?.nextElementSibling?.focus()
+    })
+    return
+  }
+
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+    event.preventDefault()
+    const prevValue = Math.max(1, value - 1)
+    selectReviewRating(prevValue)
+    requestAnimationFrame(() => {
+      event.currentTarget?.previousElementSibling?.focus()
+    })
+    return
+  }
+
+  if (event.key === 'Home') {
+    event.preventDefault()
+    selectReviewRating(1)
+    requestAnimationFrame(() => {
+      event.currentTarget?.parentElement?.firstElementChild?.focus()
+    })
+    return
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault()
+    selectReviewRating(5)
+    requestAnimationFrame(() => {
+      event.currentTarget?.parentElement?.lastElementChild?.focus()
+    })
+    return
+  }
+
+  if (event.key === ' ' || event.key === 'Spacebar' || event.key === 'Enter') {
+    event.preventDefault()
+    selectReviewRating(value)
+  }
+}
+
 const starPath =
   'M22,9.81a1,1,0,0,0-.83-.69l-5.7-.78L12.88,3.53a1,1,0,0,0-1.76,0L8.57,8.34l-5.7.78a1,1,0,0,0-.82.69,1,1,0,0,0,.28,1l4.09,3.73-1,5.24A1,1,0,0,0,6.88,20.9L12,18.38l5.12,2.52a1,1,0,0,0,.44.1,1,1,0,0,0,1-1.18l-1-5.24,4.09-3.73A1,1,0,0,0,22,9.81Z'
 const starUid = Math.random().toString(36).slice(2, 8)
-
-// Búsqueda (si tus compas lo usan)
-useSiteSearch()
 
 /**
  * Carga los datos del sitio.
@@ -90,7 +154,6 @@ async function loadSite() {
   siteError.value = ''
   try {
     const data = await getSiteById(siteId.value)
-    console.log('Datos del sitio cargados:', data)
     site.value = data || null
     coverImage.value = await getSiteCoverImage(siteId.value)
   } catch (error) {
@@ -202,6 +265,7 @@ async function handleCreateReview() {
     newReviewTitle.value = ''
     newReviewBody.value = ''
     newReviewRating.value = 5
+    hoverReviewRating.value = 0
 
     // Recargo reseñas
     await loadReviews()
@@ -448,15 +512,42 @@ function goBackToList() {
               </div>
 
               <div>
-                <label class="block text-xs mb-1">Puntaje</label>
-                <select
-                  v-model.number="newReviewRating"
-                  class="w-full px-2 py-1.5 rounded bg-slate-800 border border-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
-                >
-                  <option v-for="n in 5" :key="n" :value="n">
-                    {{ n }} estrella{{ n > 1 ? 's' : '' }}
-                  </option>
-                </select>
+                <label class="flex items-center gap-2 text-xs mb-1">
+                  Puntaje
+                  <span class="text-[0.7rem] text-slate-400">{{ newReviewRating }} / 5</span>
+                </label>
+                <div class="review-rating-picker" role="radiogroup" :aria-label="reviewRatingAria">
+                  <button
+                    v-for="star in interactiveReviewStars"
+                    :key="star.value"
+                    type="button"
+                    class="review-rating-button"
+                    :class="{ filled: star.filled }"
+                    role="radio"
+                    :aria-checked="newReviewRating === star.value"
+                    :aria-label="star.label"
+                    @click="selectReviewRating(star.value)"
+                    @mouseenter="hoverReviewRating = star.value"
+                    @mouseleave="hoverReviewRating = 0"
+                    @focus="hoverReviewRating = star.value"
+                    @blur="hoverReviewRating = 0"
+                    @keydown="handleReviewStarKeydown($event, star.value)"
+                  >
+                    <svg viewBox="0 0 24 24" class="review-rating-icon" aria-hidden="true">
+                      <path
+                        :d="starPath"
+                        :fill="star.filled ? '#facc15' : 'rgba(148, 163, 184, 0.3)'"
+                      />
+                      <path
+                        :d="starPath"
+                        fill="none"
+                        stroke="#facc15"
+                        stroke-width="1.2"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <p v-if="createReviewError" class="text-xs text-red-400">
@@ -539,9 +630,23 @@ function goBackToList() {
             class="border border-slate-700 rounded-lg p-3 bg-slate-900/80"
           >
             <header class="flex justify-between items-center mb-1">
-              <h4 class="text-sm font-semibold text-white">
-                {{ review.title }}
-              </h4>
+              <div>
+                <div class="flex flex-row items-center gap-2 mb-1">
+                  <div class="avatar">
+                    <span>{{
+                      review.user
+                        ? review.user.name.charAt(0) + review.user.last_name.charAt(0)
+                        : ''
+                    }}</span>
+                  </div>
+                  <p class="text-sm text-slate-400">
+                    {{ review.user ? review.user.name + ' ' + review.user.last_name : 'Anónimo' }}
+                  </p>
+                </div>
+                <h4 class="text-sm font-semibold text-white">
+                  {{ review.title }}
+                </h4>
+              </div>
               <div class="text-xs text-sky-300">⭐ {{ review.rating }}/5</div>
             </header>
             <p class="text-xs text-slate-200 whitespace-pre-line">
@@ -572,5 +677,54 @@ function goBackToList() {
 
 .rating-star rect {
   transition: width 200ms ease;
+}
+
+.avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #60a5fa, #1e40af);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f9fafb;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.review-rating-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.review-rating-button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    background 150ms ease;
+}
+
+.review-rating-button:hover,
+.review-rating-button:focus-visible {
+  background: rgba(56, 189, 248, 0.12);
+  outline: none;
+}
+
+.review-rating-button.filled .review-rating-icon {
+  transform: scale(1.05);
+}
+
+.review-rating-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  transition: transform 150ms ease;
 }
 </style>

@@ -1,716 +1,786 @@
 {% extends "sites_layout.html" %} {% block title %}Sitios Históricos{% endblock
 %} {% block head_styles %}
 <link
-	rel="stylesheet"
-	href="{{ url_for('static', filename='css/sites.css') }}"
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/sites.css') }}"
 />
 {% endblock %} {% block site_navigation_links %}
 <div class="nav-section">
-	<a href="{{ url_for('sites.list_all_sites') }}"
-		>Gestion de sitios históricos</a
-	>
-	{% if can('tags.manage') %}
-	<a href="{{ url_for('tags.tags_list') }}">Crear tag</a>
-	{% endif%}
+    <a href="{{ url_for('sites.list_all_sites') }}"
+        >Gestion de sitios históricos</a
+    >
+    {% if can('tags.manage') %}
+    <a href="{{ url_for('tags.tags_list') }}">Crear tag</a>
+    {% endif%}
 </div>
 {% endblock %} {% block content %}
 <div class="container">
-	<div class="header-section">
-		<h1>Sitios Históricos</h1>
-		{% with messages = get_flashed_messages(with_categories=true) %} {% if
-		messages %} {% for category, message in messages %}
-		<div
-			class="alert alert-{{ 'success' if category == 'success' else 'danger' if category == 'error' else 'info' }} alert-dismissible fade show custom-flash"
-		>
-			{{ message }}
-			<span class="close-btn" data-bs-dismiss="alert" aria-label="Close"
-				>&times;</span
-			>
-		</div>
-		{% endfor %} {% endif %} {% endwith %}
-		<!-- Barra de navegación con acciones -->
-		<nav class="sites-navbar">
-			<div class="search-container">
-				<input
-					type="text"
-					id="searchInput"
-					placeholder="Buscar sitio por nombre, descripcion..."
-					class="search-input"
-				/>
-				<button type="button" id="searchBtn" class="btn btn-info btn-sm">
-					<span class="search-icon">🔍</span>
-				</button>
-			</div>
+    <div class="header-section">
+        <h1>Sitios Históricos</h1>
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div
+            class="alert alert-{{ 'success' if category == 'success' else 'danger' if category == 'error' else 'info' }} alert-dismissible fade show custom-flash"
+        >
+            {{ message }}
+            <span class="close-btn" data-bs-dismiss="alert" aria-label="Close"
+                >&times;</span
+            >
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+        <!-- Barra de navegación con acciones -->
+        <nav class="sites-navbar">
+            <div class="search-container">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Buscar sitio por nombre, descripcion..."
+                    class="search-input"
+                />
+                <button
+                    type="button"
+                    id="searchBtn"
+                    class="btn btn-info btn-sm"
+                >
+                    <span class="search-icon">🔍</span>
+                </button>
+            </div>
 
-			<div class="actions-group">
-				{% if can('sites.create') %}
-				<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary">
-					<span class="btn-icon">➕</span>
-					Crear Sitio
-				</a>
-				{% endif %} {% if can('sites.view') %}
-				<button id="exportCsvBtn" class="exportCsvBtn">
-					<span class="btn-icon">📄</span>
-					Exportar CSV
-				</button>
-				{% endif %}
-			</div>
-		</nav>
-	</div>
+            <div class="actions-group">
+                {% if can('sites.create') %}
+                <a
+                    href="{{ url_for('sites.create_site') }}"
+                    class="btn btn-primary"
+                >
+                    <span class="btn-icon">➕</span>
+                    Crear Sitio
+                </a>
+                {% endif %} {% if can('sites.view') %}
+                <button id="exportCsvBtn" class="exportCsvBtn">
+                    <span class="btn-icon">📄</span>
+                    Exportar CSV
+                </button>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
 
-	<div class="filter-container">
-		<div class="filter-row">
-			<div class="filter-selector">
-				<label for="cityFilter">Ciudad:</label>
-				<select id="cityFilter">
-					<option value="all-cities">Todas las ciudades</option>
-					{% for city in cities %}
-					<option value="{{ city }}">{{ city }}</option>
-					{% endfor %}
-				</select>
-			</div>
+    <div class="filter-container">
+        <div class="filter-row">
+            <div class="filter-selector">
+                <label for="cityFilter">Ciudad:</label>
+                <select id="cityFilter">
+                    <option value="all-cities">Todas las ciudades</option>
+                    {% for city in cities %}
+                    <option value="{{ city }}">{{ city }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-			<div class="filter-selector">
-				<label for="provinceFilter">Provincia:</label>
-				<select id="provinceFilter">
-					<option value="all-states">Todas las provincias</option>
-					{% for province in provinces %}
-					<option value="{{ province }}">{{ province }}</option>
-					{% endfor %}
-				</select>
-			</div>
+            <div class="filter-selector">
+                <label for="provinceFilter">Provincia:</label>
+                <select id="provinceFilter">
+                    <option value="all-states">Todas las provincias</option>
+                    {% for province in provinces %}
+                    <option value="{{ province }}">{{ province }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-			<div class="filter-status">
-				<label>Estado de conservacion:</label>
-				<div class="status-buttons" id="statusButtons">
-					<button>Todos</button>
-					<button>Bueno</button>
-					<button>Regular</button>
-					<button>Malo</button>
-				</div>
-			</div>
+            <div class="filter-status">
+                <label>Estado de conservacion:</label>
+                <div class="status-buttons" id="statusButtons">
+                    <button>Todos</button>
+                    <button>Bueno</button>
+                    <button>Regular</button>
+                    <button>Malo</button>
+                </div>
+            </div>
 
-			<div class="filter-date">
-				<label>Fecha de registro: <span>(Desde - Hasta)</span></label>
-				<div>
-					<input type="date" id="startDate" />
-					<span> - </span>
-					<input type="date" id="endDate" />
-				</div>
-			</div>
-		</div>
+            <div class="filter-date">
+                <label>Fecha de registro: <span>(Desde - Hasta)</span></label>
+                <div>
+                    <input type="date" id="startDate" />
+                    <span> - </span>
+                    <input type="date" id="endDate" />
+                </div>
+            </div>
+        </div>
 
-		<div class="filter-row">
-			<div class="filter-status">
-				<label>Tags</label>
-				<div class="status-buttons" id="tagsButtons">
-					<button>Sin tags</button>
-					{% for tag in tags %}<button>{{ tag }}</button>{% endfor %}
-				</div>
-			</div>
+        <div class="filter-row">
+            <div class="filter-status">
+                <label>Tags</label>
+                <div class="status-buttons" id="tagsButtons">
+                    <button>Sin tags</button>
+                    {% for tag in tags %}<button>{{ tag }}</button>{% endfor %}
+                </div>
+            </div>
 
-			<label>
-				<input type="checkbox" id="visibilidad" name="visibilidad" />
-				Visibles
-			</label>
-		</div>
-	</div>
+            <label>
+                <input type="checkbox" id="visibilidad" name="visibilidad" />
+                Visibles
+            </label>
+        </div>
+    </div>
 
-	<div class="view-options">
-		<p>Resultados: <span id="resultsCount">{{ sites|length }}</span></p>
-		<button class="btn btn-outline btn-sm" id="clearFiltersBtn">
-			Limpiar filtros
-		</button>
-		<button
-			class="btn btn-outline btn-sm"
-			id="gridViewBtn"
-			title="Vista de cuadrícula"
-		>
-			<span class="btn-icon">⊞</span>
-		</button>
-		<button
-			class="btn btn-outline btn-sm active"
-			id="listViewBtn"
-			title="Vista de lista"
-		>
-			<span class="btn-icon">☰</span>
-		</button>
-	</div>
+    <div class="view-options">
+        <p>Resultados: <span id="resultsCount">{{ sites|length }}</span></p>
+        <button class="btn btn-outline btn-sm" id="clearFiltersBtn">
+            Limpiar filtros
+        </button>
+        <button
+            class="btn btn-outline btn-sm"
+            id="gridViewBtn"
+            title="Vista de cuadrícula"
+        >
+            <span class="btn-icon">⊞</span>
+        </button>
+        <button
+            class="btn btn-outline btn-sm active"
+            id="listViewBtn"
+            title="Vista de lista"
+        >
+            <span class="btn-icon">☰</span>
+        </button>
+    </div>
 
-	<div id="sites-data" data-sites="{{ sitesJson }}" style="display: none"></div>
+    <div
+        id="sites-data"
+        data-sites="{{ sitesJson }}"
+        style="display: none"
+    ></div>
 
-	{% if sites %}
-	<div class="sites-list">
-		{% for site in sites %}
-		<div class="site-card">
-			<h3>{{ site.nombre }}</h3>
-			<p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
-			{% if site.descripcionBreve %}
-			<p class="description">{{ site.descripcionBreve }}</p>
-			{% endif %} {% if site.cover_image %}
-			<picture class="site-cover-image">
-				<img
-					src="{{ image_url(site.cover_image.object_name)}}"
-					alt="{{site.cover_image.alt_text}}"
-				/>
-			</picture>
-			{% endif %}
+    {% if sites %}
+    <div class="sites-list">
+        {% for site in sites %}
+        <div class="site-card">
+            <h3>{{ site.nombre }}</h3>
+            <p class="location">{{ site.ciudad }}, {{ site.provincia }}</p>
+            {% if site.descripcionBreve %}
+            <p class="description">{{ site.descripcionBreve }}</p>
+            {% endif %} {% if site.cover_image %}
+            <picture class="site-cover-image">
+                <img
+                    src="{{ image_url(site.cover_image.object_name)}}"
+                    alt="{{site.cover_image.alt_text}}"
+                />
+            </picture>
+            {% endif %}
 
-			<div class="site-meta">
-				<span class="category">{{ site.categoria or 'Sin categoría' }}</span>
-				<span class="estado estado-{{ site.estado.value.lower() }}"
-					>{{ site.estado.value }}</span
-				>
-				<span class="category"
-					>Visible: {% if site.visible %}Sí{% else %}No{% endif %}</span
-				>
-			</div>
-			<div class="site-actions">
-				{% if can('sites.view') %}
-				<a
-					href="{{ url_for('sites.view_site', id=site.id) }}"
-					class="btn btn-sm btn-info"
-					>Ver</a
-				>
-				{% endif %} {% if can('sites.edit') %}
-				<a
-					href="{{ url_for('sites.edit_site', id=site.id) }}"
-					class="btn btn-sm btn-warning"
-					>Editar</a
-				>
-				{% endif %} {# Acceso directo al historial (si tiene permiso)#} {% if
-				can('sites.history_view') %}
-				<a
-					href="{{ url_for('sites.view_history', id=site.id) }}"
-					class="btn btn-sm btn-secondary"
-					>Historial</a
-				>
-				{% endif %} {% if can('sites.delete') %}
-				<form
-					method="POST"
-					action="{{ url_for('sites.delete_site', id=site.id) }}"
-					style="display: inline"
-					onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
-				>
-					<button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
-				</form>
-				{% endif %}
-			</div>
-		</div>
-		{% endfor %}
-	</div>
+            <div class="site-meta">
+                <span class="category"
+                    >{{ site.categoria or 'Sin categoría' }}</span
+                >
+                <span class="estado estado-{{ site.estado.value.lower() }}"
+                    >{{ site.estado.value }}</span
+                >
+                <span class="category"
+                    >Visible: {% if site.visible %}Sí{% else %}No{% endif
+                    %}</span
+                >
+            </div>
+            <div class="site-actions">
+                {% if can('sites.view') %}
+                <a
+                    href="{{ url_for('sites.view_site', id=site.id) }}"
+                    class="btn btn-sm btn-info"
+                    >Ver</a
+                >
+                {% endif %} {% if can('sites.edit') %}
+                <a
+                    href="{{ url_for('sites.edit_site', id=site.id) }}"
+                    class="btn btn-sm btn-warning"
+                    >Editar</a
+                >
+                {% endif %} {# Acceso directo al historial (si tiene permiso)#}
+                {% if can('sites.history_view') %}
+                <a
+                    href="{{ url_for('sites.view_history', id=site.id) }}"
+                    class="btn btn-sm btn-secondary"
+                    >Historial</a
+                >
+                {% endif %} {% if can('sites.delete') %}
+                <form
+                    method="POST"
+                    action="{{ url_for('sites.delete_site', id=site.id) }}"
+                    style="display: inline"
+                    onsubmit="return confirm('¿Estás seguro de que quieres eliminar este sitio?')"
+                >
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        Eliminar
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 
-	<!-- Paginación -->
-	{% if pagination.total > 0 %}
-	<div class="pagination-container">
-		<!-- Información de resultados -->
-		<div class="pagination-info">
-			Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a {{
-			[pagination.page * pagination.per_page, pagination.total] | min }} de {{
-			pagination.total }} sitios
-		</div>
+    <!-- Paginación -->
+    {% if pagination.total > 0 %}
+    <div class="pagination-container">
+        <!-- Información de resultados -->
+        <div class="pagination-info">
+            Mostrando {{ ((pagination.page - 1) * pagination.per_page + 1) }} a
+            {{ [pagination.page * pagination.per_page, pagination.total] | min
+            }} de {{ pagination.total }} sitios
+        </div>
 
-		<nav class="pagination">
-			<!-- Botones izquierda -->
-			{% if pagination.has_prev %}
-			<a href="?page=1" class="pagination-btn">« Primera</a>
-			<a href="?page={{ pagination.prev_num }}" class="pagination-btn"
-				>‹ Anterior</a
-			>
-			{% endif %}
+        <nav class="pagination">
+            <!-- Botones izquierda -->
+            {% if pagination.has_prev %}
+            <a href="?page=1" class="pagination-btn">« Primera</a>
+            <a href="?page={{ pagination.prev_num }}" class="pagination-btn"
+                >‹ Anterior</a
+            >
+            {% endif %}
 
-			<!-- Números de página - SIEMPRE VISIBLES -->
-			{% if pagination.pages > 1 %} {% set start_page = [1, pagination.page - 2]
-			| max %} {% set end_page = [pagination.pages, pagination.page + 2] | min
-			%} {% if start_page > 1 %}
-			<span class="pagination-ellipsis">...</span>
-			{% endif %} {% for page_num in range(start_page, end_page + 1) %} {% if
-			page_num == pagination.page %}
-			<span class="pagination-btn pagination-current">{{ page_num }}</span>
-			{% else %}
-			<a href="?page={{ page_num }}" class="pagination-btn">{{ page_num }}</a>
-			{% endif %} {% endfor %} {% if end_page < pagination.pages %}
-			<span class="pagination-ellipsis">...</span>
-			{% endif %} {% else %}
-			<!-- Cuando solo hay UNA página, mostrar igual pero deshabilitado -->
-			<span class="pagination-btn pagination-current">1</span>
-			{% endif %}
+            <!-- Números de página - SIEMPRE VISIBLES -->
+            {% if pagination.pages > 1 %} {% set start_page = [1,
+            pagination.page - 2] | max %} {% set end_page = [pagination.pages,
+            pagination.page + 2] | min %} {% if start_page > 1 %}
+            <span class="pagination-ellipsis">...</span>
+            {% endif %} {% for page_num in range(start_page, end_page + 1) %} {%
+            if page_num == pagination.page %}
+            <span class="pagination-btn pagination-current"
+                >{{ page_num }}</span
+            >
+            {% else %}
+            <a href="?page={{ page_num }}" class="pagination-btn"
+                >{{ page_num }}</a
+            >
+            {% endif %} {% endfor %} {% if end_page < pagination.pages %}
+            <span class="pagination-ellipsis">...</span>
+            {% endif %} {% else %}
+            <!-- Cuando solo hay UNA página, mostrar igual pero deshabilitado -->
+            <span class="pagination-btn pagination-current">1</span>
+            {% endif %}
 
-			<!-- Botones derecha -->
-			{% if pagination.has_next %}
-			<a href="?page={{ pagination.next_num }}" class="pagination-btn"
-				>Siguiente ›</a
-			>
-			<a href="?page={{ pagination.pages }}" class="pagination-btn">Última »</a>
-			{% endif %}
-		</nav>
-	</div>
-	{% else %}
-	<div class="empty-state">
-		<p>Sin resultados.</p>
-		{% if can('sites.create') %}
-		<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
-			>Crear un sitio</a
-		>
-		{% endif %}
-	</div>
-	{% endif %} {% else %}
-	<div class="empty-state">
-		<p>Sin resultados.</p>
-		{% if can('sites.create') %}
-		<a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
-			>Crear un sitio</a
-		>
-		{% endif %}
-	</div>
-	{% endif %}
+            <!-- Botones derecha -->
+            {% if pagination.has_next %}
+            <a href="?page={{ pagination.next_num }}" class="pagination-btn"
+                >Siguiente ›</a
+            >
+            <a href="?page={{ pagination.pages }}" class="pagination-btn"
+                >Última »</a
+            >
+            {% endif %}
+        </nav>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>Sin resultados.</p>
+        {% if can('sites.create') %}
+        <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
+            >Crear un sitio</a
+        >
+        {% endif %}
+    </div>
+    {% endif %} {% else %}
+    <div class="empty-state">
+        <p>Sin resultados.</p>
+        {% if can('sites.create') %}
+        <a href="{{ url_for('sites.create_site') }}" class="btn btn-primary"
+            >Crear un sitio</a
+        >
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
 <script>
-	// Estado global para almacenar los filtros actuales
-	let currentFilters = {
-		city: '',
-		province: '',
-		status: '',
-		startDate: '',
-		endDate: '',
-		tags: [],
-		visibility: true,
-		search: ''
-	}
+    // Estado global para almacenar los filtros actuales
+    let currentFilters = {
+        city: "",
+        province: "",
+        status: "",
+        startDate: "",
+        endDate: "",
+        tags: [],
+        visibility: true,
+        search: "",
+    };
 
-	// ### INICIALIZACIÓN ###
-	window.addEventListener('load', () => {
-		// Cargar filtros desde URL al iniciar
-		loadFiltersFromURL()
-		
-		// Configurar event listeners
-		setupEventListeners()
-		
-		// Configurar vista (grid/list)
-		setupViewToggle()
-	})
+    // ### INICIALIZACIÓN ###
+    window.addEventListener("load", () => {
+        // Cargar filtros desde URL al iniciar
+        loadFiltersFromURL();
 
-	// Cargar filtros desde parámetros URL
-	function loadFiltersFromURL() {
-		const urlParams = new URLSearchParams(window.location.search)
-		
-		// Ciudad
-		const cityFilter = document.getElementById('cityFilter')
-		const city = urlParams.get('city') || 'all-cities'
-		cityFilter.value = city
-		currentFilters.city = city === 'all-cities' ? '' : city
+        // Configurar event listeners
+        setupEventListeners();
 
-		// Provincia
-		const provinceFilter = document.getElementById('provinceFilter')
-		const province = urlParams.get('province') || 'all-states'
-		provinceFilter.value = province
-		currentFilters.province = province === 'all-states' ? '' : province
+        // Configurar vista (grid/list)
+        setupViewToggle();
+    });
 
-		// Estado de conservación
-		const status = urlParams.get('status') || 'Todos'
-		const statusButtons = document.getElementById('statusButtons')
-		statusButtons.querySelectorAll('button').forEach(btn => {
-			if (btn.textContent === status) {
-				btn.classList.add('active')
-			} else {
-				btn.classList.remove('active')
-			}
-		})
-		currentFilters.status = status === 'Todos' ? '' : status
+    // Cargar filtros desde parámetros URL
+    function loadFiltersFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
 
-		// Fechas
-		const startDate = urlParams.get('startDate') || ''
-		const endDate = urlParams.get('endDate') || ''
-		document.getElementById('startDate').value = startDate
-		document.getElementById('endDate').value = endDate
-		currentFilters.startDate = startDate
-		currentFilters.endDate = endDate
-		updateDateLimits()
+        // Ciudad
+        const cityFilter = document.getElementById("cityFilter");
+        const city = urlParams.get("city") || "all-cities";
+        cityFilter.value = city;
+        currentFilters.city = city === "all-cities" ? "" : city;
 
-		// Tags
-		const tags = urlParams.get('tags') ? urlParams.get('tags').split(',') : []
-		const tagsButtons = document.getElementById('tagsButtons')
-		if (tags.length === 0) {
-			tagsButtons.querySelectorAll('button').forEach(btn => {
-				btn.classList.remove('active')
-			})
-			tagsButtons.querySelector('button').classList.add('active')
-		} else {
-			tagsButtons.querySelectorAll('button').forEach(btn => {
-				if (tags.includes(btn.textContent)) {
-					btn.classList.add('active')
-				} else {
-					btn.classList.remove('active')
-				}
-			})
-		}
-		currentFilters.tags = tags
+        // Provincia
+        const provinceFilter = document.getElementById("provinceFilter");
+        const province = urlParams.get("province") || "all-states";
+        provinceFilter.value = province;
+        currentFilters.province = province === "all-states" ? "" : province;
 
-		// Visibilidad
-		const visibility = urlParams.get('visibility')
-		const isVisible = visibility !== 'false'
-		document.getElementById('visibilidad').checked = isVisible
-		currentFilters.visibility = isVisible
+        // Estado de conservación
+        const status = urlParams.get("status") || "Todos";
+        const statusButtons = document.getElementById("statusButtons");
+        statusButtons.querySelectorAll("button").forEach((btn) => {
+            if (btn.textContent === status) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+        currentFilters.status = status === "Todos" ? "" : status;
 
-		// Búsqueda
-		const search = urlParams.get('search') || ''
-		document.getElementById('searchInput').value = search
-		currentFilters.search = search
-	}
+        // Fechas
+        const startDate = urlParams.get("startDate") || "";
+        const endDate = urlParams.get("endDate") || "";
+        document.getElementById("startDate").value = startDate;
+        document.getElementById("endDate").value = endDate;
+        currentFilters.startDate = startDate;
+        currentFilters.endDate = endDate;
+        updateDateLimits();
 
-	// Configurar todos los event listeners
-	function setupEventListeners() {
-		// BOTÓN DE BÚSQUEDA - Ahora aplica TODOS los filtros
-		document.getElementById('searchBtn').addEventListener('click', applyAllFilters)
-		
-		// Botón limpiar filtros
-		document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters)
-		
-		// Búsqueda con Enter
-		document.getElementById('searchInput').addEventListener('keypress', (e) => {
-			if (e.key === 'Enter') {
-				applyAllFilters()
-			}
-		})
-		
-		// Filtros individuales (solo actualizan el estado, no aplican)
-		setupFilterListeners()
-	}
+        // Tags
+        const tags = urlParams.get("tags")
+            ? urlParams.get("tags").split(",")
+            : [];
+        const tagsButtons = document.getElementById("tagsButtons");
+        if (tags.length === 0) {
+            tagsButtons.querySelectorAll("button").forEach((btn) => {
+                btn.classList.remove("active");
+            });
+            tagsButtons.querySelector("button").classList.add("active");
+        } else {
+            tagsButtons.querySelectorAll("button").forEach((btn) => {
+                if (tags.includes(btn.textContent)) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
+            });
+        }
+        currentFilters.tags = tags;
 
-	// Configurar listeners para filtros individuales
-	function setupFilterListeners() {
-		// Ciudad - solo actualiza estado
-		document.getElementById('cityFilter').addEventListener('change', (event) => {
-			const selectedCity = event.target.value
-			currentFilters.city = selectedCity === 'all-cities' ? '' : selectedCity
-		})
+        // Visibilidad
+        const visibility = urlParams.get("visibility");
+        const isVisible = visibility !== "false";
+        document.getElementById("visibilidad").checked = isVisible;
+        currentFilters.visibility = isVisible;
 
-		// Provincia - solo actualiza estado
-		document.getElementById('provinceFilter').addEventListener('change', (event) => {
-			const selectedProvince = event.target.value
-			currentFilters.province = selectedProvince === 'all-states' ? '' : selectedProvince
-		})
+        // Búsqueda
+        const search = urlParams.get("search") || "";
+        document.getElementById("searchInput").value = search;
+        currentFilters.search = search;
+    }
 
-		// Estado de conservación - solo actualiza estado
-		document.getElementById('statusButtons').querySelectorAll('button').forEach(button => {
-			button.addEventListener('click', () => {
-				const statusButtons = document.getElementById('statusButtons')
-				statusButtons.querySelectorAll('button').forEach(btn => {
-					btn.classList.remove('active')
-				})
-				button.classList.add('active')
-				
-				const status = button.textContent
-				currentFilters.status = status === 'Todos' ? '' : status
-			})
-		})
+    // Configurar todos los event listeners
+    function setupEventListeners() {
+        // BOTÓN DE BÚSQUEDA - Ahora aplica TODOS los filtros
+        document
+            .getElementById("searchBtn")
+            .addEventListener("click", applyAllFilters);
 
-		// Fechas - solo actualiza estado y límites
-		document.getElementById('startDate').addEventListener('change', (event) => {
-			currentFilters.startDate = event.target.value
-			updateDateLimits()
-		})
+        // Botón limpiar filtros
+        document
+            .getElementById("clearFiltersBtn")
+            .addEventListener("click", clearFilters);
 
-		document.getElementById('endDate').addEventListener('change', (event) => {
-			currentFilters.endDate = event.target.value
-			updateDateLimits()
-		})
+        // Búsqueda con Enter
+        document
+            .getElementById("searchInput")
+            .addEventListener("keypress", (e) => {
+                if (e.key === "Enter") {
+                    applyAllFilters();
+                }
+            });
 
-		// Tags - solo actualiza estado
-		document.getElementById('tagsButtons').querySelectorAll('button').forEach(button => {
-			button.addEventListener('click', () => {
-				const tagsButtons = document.getElementById('tagsButtons')
-				const allButton = tagsButtons.querySelector('button')
-				
-				if (button.textContent === 'Sin tags') {
-					tagsButtons.querySelectorAll('button').forEach(btn => {
-						btn.classList.remove('active')
-					})
-					button.classList.add('active')
-					currentFilters.tags = []
-				} else {
-					button.classList.toggle('active')
-					allButton.classList.remove('active')
-					
-					const activeTags = Array.from(tagsButtons.querySelectorAll('button'))
-						.filter(btn => btn !== allButton && btn.classList.contains('active'))
-						.map(btn => btn.textContent)
-					
-					currentFilters.tags = activeTags
-					
-					if (activeTags.length === 0) {
-						allButton.classList.add('active')
-					}
-				}
-			})
-		})
+        // Filtros individuales (solo actualizan el estado, no aplican)
+        setupFilterListeners();
+    }
 
-		// Visibilidad - solo actualiza estado
-		document.getElementById('visibilidad').addEventListener('change', (event) => {
-			currentFilters.visibility = event.target.checked
-		})
+    // Configurar listeners para filtros individuales
+    function setupFilterListeners() {
+        // Ciudad - solo actualiza estado
+        document
+            .getElementById("cityFilter")
+            .addEventListener("change", (event) => {
+                const selectedCity = event.target.value;
+                currentFilters.city =
+                    selectedCity === "all-cities" ? "" : selectedCity;
+            });
 
-		// Búsqueda - solo actualiza estado
-		document.getElementById('searchInput').addEventListener('input', (event) => {
-			currentFilters.search = event.target.value.trim()
-		})
-	}
+        // Provincia - solo actualiza estado
+        document
+            .getElementById("provinceFilter")
+            .addEventListener("change", (event) => {
+                const selectedProvince = event.target.value;
+                currentFilters.province =
+                    selectedProvince === "all-states" ? "" : selectedProvince;
+            });
 
-	// Actualizar límites de fechas
-	function updateDateLimits() {
-		const startDateInput = document.getElementById('startDate')
-		const endDateInput = document.getElementById('endDate')
-		
-		if (currentFilters.startDate) {
-			endDateInput.min = currentFilters.startDate
-		} else {
-			endDateInput.min = ''
-		}
-		
-		if (currentFilters.endDate) {
-			startDateInput.max = currentFilters.endDate
-		} else {
-			startDateInput.max = ''
-		}
-	}
+        // Estado de conservación - solo actualiza estado
+        document
+            .getElementById("statusButtons")
+            .querySelectorAll("button")
+            .forEach((button) => {
+                button.addEventListener("click", () => {
+                    const statusButtons =
+                        document.getElementById("statusButtons");
+                    statusButtons.querySelectorAll("button").forEach((btn) => {
+                        btn.classList.remove("active");
+                    });
+                    button.classList.add("active");
 
-	// Aplicar TODOS los filtros (búsqueda + filtros)
-	function applyAllFilters() {
-		const url = new URL(window.location)
-		
-		// Limpiar parámetros existentes
-		url.search = ''
-		
-		// Agregar búsqueda de texto (si existe)
-		if (currentFilters.search) {
-			url.searchParams.set('search', currentFilters.search)
-		}
-		
-		// Agregar filtros de ubicación
-		if (currentFilters.city) url.searchParams.set('city', currentFilters.city)
-		if (currentFilters.province) url.searchParams.set('province', currentFilters.province)
-		
-		// Agregar filtro de estado
-		if (currentFilters.status) url.searchParams.set('status', currentFilters.status)
-		
-		// Agregar filtros de fecha
-		if (currentFilters.startDate) url.searchParams.set('startDate', currentFilters.startDate)
-		if (currentFilters.endDate) url.searchParams.set('endDate', currentFilters.endDate)
-		
-		// Agregar filtros de tags
-		if (currentFilters.tags.length > 0) url.searchParams.set('tags', currentFilters.tags.join(','))
-		
-		// Agregar filtro de visibilidad
-		if (!currentFilters.visibility) url.searchParams.set('visibility', 'false')
-		
-		// Siempre reiniciar a página 1 cuando se aplican nuevos filtros
-		url.searchParams.delete('page')
-		
-		console.log('Aplicando filtros:', currentFilters) // Para debugging
-		
-		// Navegar a la nueva URL
-		window.location = url.href
-	}
+                    const status = button.textContent;
+                    currentFilters.status = status === "Todos" ? "" : status;
+                });
+            });
 
-	// Limpiar todos los filtros
-	function clearFilters() {
-		// Resetear estado
-		currentFilters = {
-			city: '',
-			province: '',
-			status: '',
-			startDate: '',
-			endDate: '',
-			tags: [],
-			visibility: true,
-			search: ''
-		}
-		
-		// Resetear UI
-		document.getElementById('cityFilter').value = 'all-cities'
-		document.getElementById('provinceFilter').value = 'all-states'
-		
-		// Estado de conservación
-		const statusButtons = document.getElementById('statusButtons')
-		statusButtons.querySelectorAll('button').forEach(btn => {
-			btn.classList.remove('active')
-		})
-		statusButtons.querySelector('button').classList.add('active')
-		
-		// Fechas
-		document.getElementById('startDate').value = ''
-		document.getElementById('endDate').value = ''
-		updateDateLimits()
-		
-		// Tags
-		const tagsButtons = document.getElementById('tagsButtons')
-		tagsButtons.querySelectorAll('button').forEach(btn => {
-			btn.classList.remove('active')
-		})
-		tagsButtons.querySelector('button').classList.add('active')
-		
-		// Visibilidad
-		document.getElementById('visibilidad').checked = true
-		
-		// Búsqueda
-		document.getElementById('searchInput').value = ''
-		
-		// Aplicar filtros vacíos (recargar sin parámetros)
-		applyAllFilters()
-	}
+        // Fechas - solo actualiza estado y límites
+        document
+            .getElementById("startDate")
+            .addEventListener("change", (event) => {
+                currentFilters.startDate = event.target.value;
+                updateDateLimits();
+            });
 
-	// Configurar toggle de vista (grid/list) 
-	function setupViewToggle() {
-		const gridViewBtn = document.getElementById('gridViewBtn')
-		const listViewBtn = document.getElementById('listViewBtn')
-		const sitesList = document.querySelector('.sites-list')
+        document
+            .getElementById("endDate")
+            .addEventListener("change", (event) => {
+                currentFilters.endDate = event.target.value;
+                updateDateLimits();
+            });
 
-		gridViewBtn.addEventListener('click', function () {
-			sitesList.className = 'sites-list grid-view'
-			gridViewBtn.classList.add('active')
-			listViewBtn.classList.remove('active')
-			localStorage.setItem('sitesView', 'grid')
-		})
+        // Tags - solo actualiza estado
+        document
+            .getElementById("tagsButtons")
+            .querySelectorAll("button")
+            .forEach((button) => {
+                button.addEventListener("click", () => {
+                    const tagsButtons = document.getElementById("tagsButtons");
+                    const allButton = tagsButtons.querySelector("button");
 
-		listViewBtn.addEventListener('click', function () {
-			sitesList.className = 'sites-list list-view'
-			listViewBtn.classList.add('active')
-			gridViewBtn.classList.remove('active')
-			localStorage.setItem('sitesView', 'list')
-		})
+                    if (button.textContent === "Sin tags") {
+                        tagsButtons
+                            .querySelectorAll("button")
+                            .forEach((btn) => {
+                                btn.classList.remove("active");
+                            });
+                        button.classList.add("active");
+                        currentFilters.tags = [];
+                    } else {
+                        button.classList.toggle("active");
+                        allButton.classList.remove("active");
 
-		const savedView = localStorage.getItem('sitesView') || 'grid'
-		if (savedView === 'list') {
-			listViewBtn.click()
-		} else {
-			gridViewBtn.click()
-		}
-	}
+                        const activeTags = Array.from(
+                            tagsButtons.querySelectorAll("button")
+                        )
+                            .filter(
+                                (btn) =>
+                                    btn !== allButton &&
+                                    btn.classList.contains("active")
+                            )
+                            .map((btn) => btn.textContent);
 
-	// Funcion para exportar a CSV 
-	document.getElementById('exportCsvBtn').addEventListener('click', () => {
-		const sitesDataElement = document.getElementById('sites-data')
-		let currentSites = sitesDataElement.getAttribute('data-sites')
-		currentSites = JSON.parse(currentSites)
+                        currentFilters.tags = activeTags;
 
-		if (currentSites.length === 0) {
-			alert('No hay datos para exportar')
-			return
-		}
+                        if (activeTags.length === 0) {
+                            allButton.classList.add("active");
+                        }
+                    }
+                });
+            });
 
-		const baseUrl = '{{ url_for("sites.export_csv") }}'
-		fetch(baseUrl, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ sites: currentSites }),
-		})
-			.then(async response => {
-				const dispositionHeader = response.headers.get('Content-Disposition')
-				let filename = 'sitios_historicos.csv'
+        // Visibilidad - solo actualiza estado
+        document
+            .getElementById("visibilidad")
+            .addEventListener("change", (event) => {
+                currentFilters.visibility = event.target.checked;
+            });
 
-				if (dispositionHeader && dispositionHeader.includes('filename=')) {
-					const filenameMatch = dispositionHeader.match(/filename="?([^"]+)"?/)
-					if (filenameMatch.length > 1) {
-						filename = filenameMatch[1]
-					}
-				}
+        // Búsqueda - solo actualiza estado
+        document
+            .getElementById("searchInput")
+            .addEventListener("input", (event) => {
+                currentFilters.search = event.target.value.trim();
+            });
+    }
 
-				return { blob: await response.blob(), filename: filename }
-			})
-			.then(({ blob, filename }) => {
-				const url = window.URL.createObjectURL(blob)
-				const a = document.createElement('a')
-				a.href = url
-				a.download = filename
-				document.body.appendChild(a)
-				a.click()
-				a.remove()
-			})
-			.catch(err => console.log('Error al exportar CSV:', err))
-	})
+    // Actualizar límites de fechas
+    function updateDateLimits() {
+        const startDateInput = document.getElementById("startDate");
+        const endDateInput = document.getElementById("endDate");
 
-	// Auto-close alerts 
-	document.addEventListener('DOMContentLoaded', () => {
-		const alerts = document.querySelectorAll('.alert')
-		alerts.forEach(alert => {
-			setTimeout(() => {
-				alert.classList.remove('show')
-				alert.classList.add('fade')
-				setTimeout(() => alert.remove(), 500)
-			}, 4000)
-		})
-	})
+        if (currentFilters.startDate) {
+            endDateInput.min = currentFilters.startDate;
+        } else {
+            endDateInput.min = "";
+        }
+
+        if (currentFilters.endDate) {
+            startDateInput.max = currentFilters.endDate;
+        } else {
+            startDateInput.max = "";
+        }
+    }
+
+    // Aplicar TODOS los filtros (búsqueda + filtros)
+    function applyAllFilters() {
+        const url = new URL(window.location);
+
+        // Limpiar parámetros existentes
+        url.search = "";
+
+        // Agregar búsqueda de texto (si existe)
+        if (currentFilters.search) {
+            url.searchParams.set("search", currentFilters.search);
+        }
+
+        // Agregar filtros de ubicación
+        if (currentFilters.city)
+            url.searchParams.set("city", currentFilters.city);
+        if (currentFilters.province)
+            url.searchParams.set("province", currentFilters.province);
+
+        // Agregar filtro de estado
+        if (currentFilters.status)
+            url.searchParams.set("status", currentFilters.status);
+
+        // Agregar filtros de fecha
+        if (currentFilters.startDate)
+            url.searchParams.set("startDate", currentFilters.startDate);
+        if (currentFilters.endDate)
+            url.searchParams.set("endDate", currentFilters.endDate);
+
+        // Agregar filtros de tags
+        if (currentFilters.tags.length > 0)
+            url.searchParams.set("tags", currentFilters.tags.join(","));
+
+        // Agregar filtro de visibilidad
+        if (!currentFilters.visibility)
+            url.searchParams.set("visibility", "false");
+
+        // Siempre reiniciar a página 1 cuando se aplican nuevos filtros
+        url.searchParams.delete("page");
+
+        // Navegar a la nueva URL
+        window.location = url.href;
+    }
+
+    // Limpiar todos los filtros
+    function clearFilters() {
+        // Resetear estado
+        currentFilters = {
+            city: "",
+            province: "",
+            status: "",
+            startDate: "",
+            endDate: "",
+            tags: [],
+            visibility: true,
+            search: "",
+        };
+
+        // Resetear UI
+        document.getElementById("cityFilter").value = "all-cities";
+        document.getElementById("provinceFilter").value = "all-states";
+
+        // Estado de conservación
+        const statusButtons = document.getElementById("statusButtons");
+        statusButtons.querySelectorAll("button").forEach((btn) => {
+            btn.classList.remove("active");
+        });
+        statusButtons.querySelector("button").classList.add("active");
+
+        // Fechas
+        document.getElementById("startDate").value = "";
+        document.getElementById("endDate").value = "";
+        updateDateLimits();
+
+        // Tags
+        const tagsButtons = document.getElementById("tagsButtons");
+        tagsButtons.querySelectorAll("button").forEach((btn) => {
+            btn.classList.remove("active");
+        });
+        tagsButtons.querySelector("button").classList.add("active");
+
+        // Visibilidad
+        document.getElementById("visibilidad").checked = true;
+
+        // Búsqueda
+        document.getElementById("searchInput").value = "";
+
+        // Aplicar filtros vacíos (recargar sin parámetros)
+        applyAllFilters();
+    }
+
+    // Configurar toggle de vista (grid/list)
+    function setupViewToggle() {
+        const gridViewBtn = document.getElementById("gridViewBtn");
+        const listViewBtn = document.getElementById("listViewBtn");
+        const sitesList = document.querySelector(".sites-list");
+
+        gridViewBtn.addEventListener("click", function () {
+            sitesList.className = "sites-list grid-view";
+            gridViewBtn.classList.add("active");
+            listViewBtn.classList.remove("active");
+            localStorage.setItem("sitesView", "grid");
+        });
+
+        listViewBtn.addEventListener("click", function () {
+            sitesList.className = "sites-list list-view";
+            listViewBtn.classList.add("active");
+            gridViewBtn.classList.remove("active");
+            localStorage.setItem("sitesView", "list");
+        });
+
+        const savedView = localStorage.getItem("sitesView") || "grid";
+        if (savedView === "list") {
+            listViewBtn.click();
+        } else {
+            gridViewBtn.click();
+        }
+    }
+
+    // Funcion para exportar a CSV
+    document.getElementById("exportCsvBtn").addEventListener("click", () => {
+        const sitesDataElement = document.getElementById("sites-data");
+        let currentSites = sitesDataElement.getAttribute("data-sites");
+        currentSites = JSON.parse(currentSites);
+
+        if (currentSites.length === 0) {
+            alert("No hay datos para exportar");
+            return;
+        }
+
+        const baseUrl = '{{ url_for("sites.export_csv") }}';
+        fetch(baseUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ sites: currentSites }),
+        })
+            .then(async (response) => {
+                const dispositionHeader = response.headers.get(
+                    "Content-Disposition"
+                );
+                let filename = "sitios_historicos.csv";
+
+                if (
+                    dispositionHeader &&
+                    dispositionHeader.includes("filename=")
+                ) {
+                    const filenameMatch =
+                        dispositionHeader.match(/filename="?([^"]+)"?/);
+                    if (filenameMatch.length > 1) {
+                        filename = filenameMatch[1];
+                    }
+                }
+
+                return { blob: await response.blob(), filename: filename };
+            })
+            .then(({ blob, filename }) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch((err) => console.error("Error al exportar CSV:", err));
+    });
+
+    // Auto-close alerts
+    document.addEventListener("DOMContentLoaded", () => {
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach((alert) => {
+            setTimeout(() => {
+                alert.classList.remove("show");
+                alert.classList.add("fade");
+                setTimeout(() => alert.remove(), 500);
+            }, 4000);
+        });
+    });
 </script>
 
 <style>
-	/* Vista de lista */
-	.sites-list.list-view {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
+    /* Vista de lista */
+    .sites-list.list-view {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
 
-	.sites-list.list-view .site-card {
-		display: flex;
-		align-items: center;
-		padding: 1rem;
-		gap: 1rem;
-	}
+    .sites-list.list-view .site-card {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        gap: 1rem;
+    }
 
-	.sites-list.list-view .site-card h3 {
-		margin: 0;
-		flex: 1;
-	}
+    .sites-list.list-view .site-card h3 {
+        margin: 0;
+        flex: 1;
+    }
 
-	.sites-list.list-view .site-card .location {
-		margin: 0;
-		flex: 1;
-	}
+    .sites-list.list-view .site-card .location {
+        margin: 0;
+        flex: 1;
+    }
 
-	.sites-list.list-view .site-card .site-meta {
-		margin: 0;
-		flex: 1;
-	}
+    .sites-list.list-view .site-card .site-meta {
+        margin: 0;
+        flex: 1;
+    }
 
-	.sites-list.list-view .site-card .site-actions {
-		margin: 0;
-	}
+    .sites-list.list-view .site-card .site-actions {
+        margin: 0;
+    }
 
-	.alert-success {
-		background-color: #4caf50; /* Verde más intenso */
-		color: white;
-		border: none;
-		padding: 10px 20px;
-		border-radius: 5px;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	}
+    .alert-success {
+        background-color: #4caf50; /* Verde más intenso */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-	.custom-flash .close-btn {
-		float: right;
-		font-size: 1.4rem;
-		font-weight: bold;
-		line-height: 1;
-		color: white;
-		cursor: pointer;
-		margin-left: 10px;
-		transition: opacity 0.2s ease;
-	}
+    .custom-flash .close-btn {
+        float: right;
+        font-size: 1.4rem;
+        font-weight: bold;
+        line-height: 1;
+        color: white;
+        cursor: pointer;
+        margin-left: 10px;
+        transition: opacity 0.2s ease;
+    }
 
-	.custom-flash .close-btn:hover {
-		opacity: 0.8;
-	}
+    .custom-flash .close-btn:hover {
+        opacity: 0.8;
+    }
 
-	/* Responsive para vista de lista */
-	@media (max-width: 768px) {
-		.sites-list.list-view .site-card {
-			flex-direction: column;
-			align-items: stretch;
-			text-align: center;
-		}
-	}
+    /* Responsive para vista de lista */
+    @media (max-width: 768px) {
+        .sites-list.list-view .site-card {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: center;
+        }
+    }
 </style>
 
 {% endblock %}

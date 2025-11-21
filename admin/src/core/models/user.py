@@ -57,6 +57,13 @@ class User(Base):
     def __repr__(self):
         '''Representación en string del Usuario'''
         return f"<Usuario {self.id}: {self.email}, {self.name}, {self.last_name}, {self.active}>"
+    
+    def to_dict(self) -> dict:
+        '''Convierte el objeto Usuario a un diccionario'''
+        return {
+            "name": self.name,
+            "last_name": self.last_name,
+        }
 
 def create_user(**kwargs: dict) -> str:
     """

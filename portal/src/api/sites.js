@@ -131,7 +131,6 @@ async function getFavoriteSites({ page = 1, perPage = 25, order = 'desc', pagina
       paginated: paginated ? 1 : undefined,
     },
   })
-  console.log('Favorite sites response:', response.data.data)
   return response.data.data
 }
 export {

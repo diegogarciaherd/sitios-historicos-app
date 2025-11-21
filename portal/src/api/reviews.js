@@ -35,7 +35,6 @@ export async function getSiteReviews(siteId) {
  * params debe incluir al menos: { title, body, rating }
  */
 export async function createSiteReview(siteId, params) {
-  console.log('Creating review with params:', params)
   const response = await api.post(`/sites/${siteId}/reviews`, params)
   return response.data
 }
