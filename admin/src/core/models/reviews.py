@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Tuple, List, Optional
 
+from core.models.user import User
 from sqlalchemy import (
     String,
     Integer,
@@ -90,6 +91,7 @@ class Review(Base):
             "moderated_by": self.moderated_by,
             "moderated_at": self.moderated_at,
             "reject_reason": self.reject_reason,
+            "user": db.session.query(User).filter_by(id=self.user_id).first().to_dict() if self.user_id else None,
         }
 
 
