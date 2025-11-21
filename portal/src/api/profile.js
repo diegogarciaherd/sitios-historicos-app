@@ -11,7 +11,12 @@ export function fetchMyReviews({ page = 1, perPage = 25, order = 'desc' } = {}) 
   })
 }
 
-export function fetchMyFavorites({ page = 1, perPage = 25, order = 'desc', paginated = true } = {}) {
+export function fetchMyFavorites({
+  page = 1,
+  perPage = 25,
+  order = 'desc',
+  paginated = true,
+} = {}) {
   return api.get('/sites/users/me/favorites', {
     params: {
       page,
@@ -20,4 +25,8 @@ export function fetchMyFavorites({ page = 1, perPage = 25, order = 'desc', pagin
       paginated: paginated ? 1 : undefined,
     },
   })
+}
+
+export function updateMyReview(reviewId, payload) {
+  return api.put(`/sites/users/me/reviews/${reviewId}`, payload)
 }

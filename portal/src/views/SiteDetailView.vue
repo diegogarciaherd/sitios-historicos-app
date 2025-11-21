@@ -90,7 +90,6 @@ async function loadSite() {
   siteError.value = ''
   try {
     const data = await getSiteById(siteId.value)
-    console.log('Datos del sitio cargados:', data)
     site.value = data || null
     coverImage.value = await getSiteCoverImage(siteId.value)
   } catch (error) {
@@ -539,9 +538,23 @@ function goBackToList() {
             class="border border-slate-700 rounded-lg p-3 bg-slate-900/80"
           >
             <header class="flex justify-between items-center mb-1">
-              <h4 class="text-sm font-semibold text-white">
-                {{ review.title }}
-              </h4>
+              <div>
+                <div class="flex flex-row items-center gap-2 mb-1">
+                  <div class="avatar">
+                    <span>{{
+                      review.user
+                        ? review.user.name.charAt(0) + review.user.last_name.charAt(0)
+                        : ''
+                    }}</span>
+                  </div>
+                  <p class="text-sm text-slate-400">
+                    {{ review.user ? review.user.name + ' ' + review.user.last_name : 'Anónimo' }}
+                  </p>
+                </div>
+                <h4 class="text-sm font-semibold text-white">
+                  {{ review.title }}
+                </h4>
+              </div>
               <div class="text-xs text-sky-300">⭐ {{ review.rating }}/5</div>
             </header>
             <p class="text-xs text-slate-200 whitespace-pre-line">
@@ -572,5 +585,18 @@ function goBackToList() {
 
 .rating-star rect {
   transition: width 200ms ease;
+}
+
+.avatar {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #60a5fa, #1e40af);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f9fafb;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 </style>

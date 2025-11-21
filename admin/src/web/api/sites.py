@@ -12,6 +12,7 @@ Este módulo es utilizado por la aplicación pública mediante JWT.
 """
 
 # admin/src/web/api/sites.py
+import enum
 from core.database import db
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
@@ -618,7 +619,9 @@ def get_my_reviews():
                 "site_name": getattr(review.site, "nombre", None),
                 "rating": review.rating,
                 "created_at": review.created_at.isoformat(),
-                "excerpt": body[:160],
+                "body": body[:160],
+                "title": review.title,
+                "status": review.status.value if isinstance(review.status, enum.Enum) else review.status,
             }
         )
 
