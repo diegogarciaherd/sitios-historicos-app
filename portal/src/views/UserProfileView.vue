@@ -117,7 +117,16 @@
                     >
                       Ver sitio
                     </button>
+                    <button
+                      type="button"
+                      class="menu-item"
+                      role="menuitem"
+                      @click.stop="confirmDeleteReview(review)"
+                    >
+                      Eliminar reseña
+                    </button>
                   </div>
+
                 </div>
               </div>
 
@@ -272,7 +281,8 @@ import { ref, computed, onMounted, onBeforeUnmount, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import Topbar from '@/components/TopbarPhone.vue'
 import { useAuth } from '@/composables/useAuth'
-import { fetchMyReviews, fetchMyFavorites, updateMyReview } from '@/api/profile'
+import { fetchMyReviews, fetchMyFavorites, updateMyReview, deleteMyReview } from '@/api/profile'
+
 
 const router = useRouter()
 const { currentUser, isAuthenticated } = useAuth()
@@ -302,6 +312,7 @@ const editReviewForm = reactive({
 })
 const editReviewError = ref('')
 const savingReview = ref(false)
+const deleteReviewError = ref('') 
 
 // FAVORITOS
 const favorites = ref([])
@@ -443,6 +454,26 @@ const submitReviewEdit = async (review) => {
     savingReview.value = false
   }
 }
+
+const confirmDeleteReview = async (review) => {
+  closeReviewMenu()
+  const ok = window.confirm(
+    '¿Seguro que querés eliminar esta reseña? Esta acción no se puede deshacer.'
+  )
+  if (!ok) return
+
+  deleteReviewError.value = ''
+  try {
+    await deleteMyReview(review.site_id, review.id)
+    await loadReviews() // recarga la lista luego de borrar
+  } catch (error) {
+    console.error('Error deleting review:', error)
+    deleteReviewError.value = 'No se pudo eliminar la reseña. Intentá nuevamente.'
+  }
+}
+
+
+
 
 const handleGlobalClick = (event) => {
   if (openReviewMenuId.value === null) return

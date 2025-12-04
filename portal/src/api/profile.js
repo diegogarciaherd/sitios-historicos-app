@@ -30,3 +30,8 @@ export function fetchMyFavorites({
 export function updateMyReview(reviewId, payload) {
   return api.post(`/sites/users/me/reviews/${reviewId}`, payload)
 }
+
+export function deleteMyReview(siteId, reviewId) {
+  // usa el endpoint DELETE del back
+  return api.delete(`/sites/${siteId}/reviews/${reviewId}`)
+}
