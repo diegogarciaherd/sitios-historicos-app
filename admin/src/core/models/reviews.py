@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Tuple, List, Optional
 
+from core.models.user import User
 from sqlalchemy import (
     String,
     Integer,
@@ -90,6 +91,7 @@ class Review(Base):
             "moderated_by": self.moderated_by,
             "moderated_at": self.moderated_at,
             "reject_reason": self.reject_reason,
+            "user": db.session.query(User).filter_by(id=self.user_id).first().to_dict() if self.user_id else None,
         }
 
 
@@ -158,6 +160,20 @@ def delete_review(id: int) -> None:
     """
     db.session.query(Review).filter_by(id=id).delete()
     db.session.commit()
+
+def update_review(id: int, **kwargs: dict) -> str:
+    new_review = kwargs
+    old_review = db.session.query(Review).filter_by(id=id).first()
+    if not old_review:
+        return "Reseña no encontrada."
+    
+    for key, value in new_review.items():
+        setattr(old_review, key, value)
+    
+    old_review.updated_at = datetime.utcnow()
+    old_review.status = ReviewStatus.PENDING
+    db.session.commit()
+    return "Reseña actualizada correctamente."
 
 
 # ---------- Helpers para vistas públicas ----------

@@ -12,6 +12,7 @@ Este módulo es utilizado por la aplicación pública mediante JWT.
 """
 
 # admin/src/web/api/sites.py
+import enum
 from core.database import db
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
@@ -33,6 +34,7 @@ from core.models.reviews import (
     delete_review,
     ReviewStatus,
     get_reviews_by_user_id,
+    update_review,
 )
 
 # Nota: la lógica espacial ahora se maneja en `list_sites_with_filters` (PostGIS/ST_DWithin)
@@ -618,7 +620,9 @@ def get_my_reviews():
                 "site_name": getattr(review.site, "nombre", None),
                 "rating": review.rating,
                 "created_at": review.created_at.isoformat(),
-                "excerpt": body[:160],
+                "body": body[:160],
+                "title": review.title,
+                "status": review.status.value if isinstance(review.status, enum.Enum) else review.status,
             }
         )
 
@@ -635,6 +639,47 @@ def get_my_reviews():
         ),
         200,
     )
+
+@sites_api_bp.post("/users/me/reviews/<int:review_id>")
+@jwt_required()
+def update_my_review(review_id: int):
+    """
+    Actualiza la reseña especificada del usuario autenticado.
+    """
+    user_id = int(get_jwt_identity())
+    params = request.get_json() or {}
+
+    review = get_review_by_id(review_id)
+    if not review or review.user_id != user_id:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "not_found",
+                        "message": f"La reseña {review_id} no existe o no pertenece al usuario.",
+                    }
+                }
+            ),
+            404,
+        )
+
+    errors = check_review_post_params(params)
+    if errors:
+        return (
+            jsonify(
+                {
+                    "error": {
+                        "code": "invalid_data",
+                        "message": "Invalid input data",
+                        "details": errors,
+                    }
+                }
+            ),
+            400,
+        )
+
+    message = update_review(review_id, **params)
+    return jsonify({"message": message}), 200
 
 
 @sites_api_bp.get("/<int:site_id>/reviews/<int:review_id>")
@@ -694,10 +739,14 @@ def get_site_review_by_id(site_id: int, review_id: int):
 @jwt_required()
 def delete_site_review_by_id(site_id: int, review_id: int):
     """
-    Elimina (física) una reseña del sitio histórico especificado.
+    Elimina una reseña del sitio histórico especificado.
 
-    ATENCIÓN: Utiliza el mismo mecanismo que get_site_review_by_id().
+    - Requiere JWT.
+    - Solo permite borrar la reseña si pertenece al usuario autenticado
+      y al sitio indicado.
     """
+    user_id = int(get_jwt_identity())
+
     site = get_site(site_id)
     if not site:
         return (
@@ -712,8 +761,8 @@ def delete_site_review_by_id(site_id: int, review_id: int):
             404,
         )
 
-    reviews, total = get_reviews_by_site_id(site_id)
-    if review_id > total:
+    review = get_review_by_id(review_id)
+    if not review:
         return (
             jsonify(
                 {
@@ -726,19 +775,20 @@ def delete_site_review_by_id(site_id: int, review_id: int):
             404,
         )
 
-    if not reviews:
+    # Validar que la reseña sea del sitio echa por el usuario logueado
+    if review.site_id != site_id or review.user_id != user_id:
         return (
             jsonify(
                 {
                     "error": {
-                        "code": "server_error",
-                        "message": "An unexpected error ocurred.",
+                        "code": "forbidden",
+                        "message": "No tenés permiso para eliminar esta reseña.",
                     }
                 }
             ),
-            500,
+            403,
         )
 
-    delete_review(reviews[review_id - 1].id)
+    delete_review(review.id)
     # 204: sin body
     return ("", 204)
