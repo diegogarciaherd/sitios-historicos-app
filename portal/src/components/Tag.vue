@@ -1,39 +1,38 @@
 <template>
-    <button
-      type="button"
-      @click.stop="handleClick"
-      :class="[
-        'inline-flex items-center rounded-md px-2 py-1 text-xs font-medium transition-colors',
-        isSelected 
-          ? 'badge badge-success' 
-          : 'badge --badge-color'
-      ]"
-    >
-      {{ tag.name }}
-    </button>
-  </template>
-  
-  <script setup>
-  import { computed } from 'vue'
+  <button
+    type="button"
+    @click.stop="handleClick"
+    :class="[
+      'inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ease-in-out cursor-pointer transform active:scale-95',
+      isSelected 
+        ? 'badge badge-success shadow-sm hover:shadow hover:brightness-110' 
+        : 'badge --badge-color hover:shadow-md hover:scale-105 hover:bg-opacity-90'
+    ]"
+  >
+    {{ tag.name }}
+  </button>
+</template>
+
+<script setup>
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-  
-  const props = defineProps({
-    tag: {
-      type: Object,
-      required: true,
-    },
-    selectedTags: {
-      type: Array,
-      default: () => []
-    }
-    ,
-    navigate: {
-      type: Boolean,
-      default: false
-    }
-  })
-  
-  const emit = defineEmits(['toggle'])
+
+const props = defineProps({
+  tag: {
+    type: Object,
+    required: true,
+  },
+  selectedTags: {
+    type: Array,
+    default: () => []
+  },
+  navigate: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['toggle'])
 const router = useRouter()
 const route = useRoute()
 
@@ -49,12 +48,11 @@ function handleClick() {
     router.push({ name: 'sites-list', query: newQuery })
   }
 }
-  
-  const isSelected = computed(() => {
-    return props.selectedTags.some(t => 
-      (typeof t === 'object' && t.id === props.tag.id) || 
-      (typeof t === 'string' && t === props.tag.name)
-    )
-  })
-  </script>
-  
+
+const isSelected = computed(() => {
+  return props.selectedTags.some(t => 
+    (typeof t === 'object' && t.id === props.tag.id) || 
+    (typeof t === 'string' && t === props.tag.name)
+  )
+})
+</script>

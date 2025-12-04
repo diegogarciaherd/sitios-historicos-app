@@ -1,5 +1,4 @@
 <!-- src/views/SiteDetailView.vue -->
-<!-- src/views/SiteDetailView.vue -->
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -22,6 +21,7 @@ const siteId = computed(() => Number(route.params.id))
 const site = ref(null)
 const loadingSite = ref(true)
 const siteError = ref('')
+const showFullDescription=ref("false")
 
 // Imágenes
 const coverImage = ref(null)
@@ -31,6 +31,7 @@ const loadingImages = ref(false)
 // Favoritos
 const isFavorite = ref(false)
 const loadingFavorite = ref(false)
+
 
 // Reseñas
 const reviews = ref([])
