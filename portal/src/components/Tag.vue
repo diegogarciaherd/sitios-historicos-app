@@ -1,7 +1,7 @@
 <template>
     <button
       type="button"
-      @click="handleClick"
+      @click.stop="handleClick"
       :class="[
         'inline-flex items-center rounded-md px-2 py-1 text-xs font-medium transition-colors',
         isSelected 
@@ -26,6 +26,11 @@ import { useRouter, useRoute } from 'vue-router'
       type: Array,
       default: () => []
     }
+    ,
+    navigate: {
+      type: Boolean,
+      default: false
+    }
   })
   
   const emit = defineEmits(['toggle'])
@@ -36,14 +41,13 @@ function handleClick() {
   // Emitir el evento toggle para no romper consumidores existentes
   emit('toggle', props.tag)
 
-  // Navegar al listado con este tag como filtro (reemplaza otros tags)
-  const newQuery = { ...route.query }
-  // usar el nombre del tag en el query param 'tags'
-  newQuery.tags = String(props.tag.name)
-  // resetear pagina
-  newQuery.page = 1
-
-  router.push({ name: 'sites-list', query: newQuery })
+  // Solo navegar si el consumidor lo pidió explícitamente
+  if (props.navigate) {
+    const newQuery = { ...route.query }
+    newQuery.tags = String(props.tag.name)
+    newQuery.page = 1
+    router.push({ name: 'sites-list', query: newQuery })
+  }
 }
   
   const isSelected = computed(() => {

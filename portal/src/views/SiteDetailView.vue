@@ -405,6 +405,7 @@ function goBackToList() {
                   :key="tag.id || index"
                   :tag="tag"
                   :selected-tags="[]"
+                  :navigate="true"
                 />
               </div>
 

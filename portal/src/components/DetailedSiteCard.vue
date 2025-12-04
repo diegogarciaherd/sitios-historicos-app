@@ -132,6 +132,7 @@ onMounted(async () => {
           :key="tag.id || index"
           :tag="tag"
           :selected-tags="[]"
+          :navigate="true"
         />
       </div>
     </div>
