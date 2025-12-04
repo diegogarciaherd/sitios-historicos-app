@@ -10,6 +10,7 @@ import { toggleFavoriteRequest, getMyFavoritesRequest } from '@/api/favorites'
 import { useAuth } from '@/composables/useAuth'
 import SiteViewCarousel from '@/components/SiteViewCarousel.vue'
 import SiteMap from '@/components/SiteMap.vue'
+import Tag from '@/components/Tag.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -399,13 +400,12 @@ function goBackToList() {
 
               <!-- Tags -->
               <div class="flex flex-wrap gap-2">
-                <span
+                <Tag
                   v-for="(tag, index) in site.tags"
-                  :key="index"
-                  class="px-2 py-1 rounded-full bg-slate-700 text-xs text-slate-100"
-                >
-                  {{ tag.name }}
-                </span>
+                  :key="tag.id || index"
+                  :tag="tag"
+                  :selected-tags="[]"
+                />
               </div>
 
               <!-- Información adicional -->

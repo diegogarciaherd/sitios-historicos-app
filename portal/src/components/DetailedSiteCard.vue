@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getSiteCoverImage } from '../api/sites'
+import Tag from '@/components/Tag.vue'
 
 const props = defineProps({
   site: {
@@ -126,13 +127,12 @@ onMounted(async () => {
       </span>
 
       <div class="flex mt-2 space-2 flex-wrap max-h-14 items-end">
-        <span
+        <Tag
           v-for="(tag, index) in site.tags.slice(0, 5)"
-          :key="index"
-          class="rounded-full text-xs py-1 px-2 bg-gray-500"
-        >
-          {{ tag.name }}
-        </span>
+          :key="tag.id || index"
+          :tag="tag"
+          :selected-tags="[]"
+        />
       </div>
     </div>
   </div>
