@@ -21,7 +21,7 @@ const siteId = computed(() => Number(route.params.id))
 const site = ref(null)
 const loadingSite = ref(true)
 const siteError = ref('')
-const showFullDescription = ref('false')
+const showFullDescription=ref(false)
 
 // Imágenes
 const coverImage = ref(null)
@@ -504,26 +504,32 @@ function goBackToList() {
           </div>
 
           <!-- Accordion Descripción Completa -->
-          <div
-            class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200"
+        <div
+          class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200"
+        >
+          <button
+            class="w-full text-left flex justify-between items-center font-semibold text-sky-300"
+            @click="showFullDescription = !showFullDescription"
           >
-            <button
-              class="w-full text-left flex justify-between items-center font-semibold text-sky-300"
-              @click="showFullDescription = !showFullDescription"
-            >
-              Descripción completa
-              <span class="text-slate-400 text-xs">
-                {{ showFullDescription ? '▲' : '▼' }}
-              </span>
-            </button>
+        Descripción completa
+            <span class="text-slate-400 text-xs">
+              {{ showFullDescription ? '▲' : '▼' }}
+            </span>
+          </button>
 
-            <transition name="fade">
-              <p v-if="showFullDescription" class="mt-3 text-slate-300 leading-relaxed">
-                {{ site.descripcionCompleta }}
-              </p>
-            </transition>
-          </div>
-        </article>
+          <transition name="fade">
+            <p
+              v-if="showFullDescription"
+              class="mt-3 text-slate-300 leading-relaxed"
+            >
+          <!-- Si está vacío o es 'None', no mostrar nada -->
+            {{ (site.descripcionCompleta && site.descripcionCompleta !== 'None')
+            ? site.descripcionCompleta
+            : '' }}
+          </p>
+          </transition>
+        </div>
+      </article>
 
         <!-- Columna lateral: favorito + reseña rápida -->
         <aside class="space-y-4">
