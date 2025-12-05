@@ -21,7 +21,7 @@ const siteId = computed(() => Number(route.params.id))
 const site = ref(null)
 const loadingSite = ref(true)
 const siteError = ref('')
-const showFullDescription=ref("false")
+const showFullDescription = ref('false')
 
 // Imágenes
 const coverImage = ref(null)
@@ -31,7 +31,6 @@ const loadingImages = ref(false)
 // Favoritos
 const isFavorite = ref(false)
 const loadingFavorite = ref(false)
-
 
 // Reseñas
 const reviews = ref([])
@@ -44,6 +43,11 @@ const newReviewRating = ref(5)
 const hoverReviewRating = ref(0)
 const creatingReview = ref(false)
 const createReviewError = ref('')
+
+// errores de validación en el front
+const newReviewTitleError = ref('')
+const newReviewBodyError = ref('')
+const newReviewRatingError = ref('')
 
 const averageRating = computed(() => {
   if (!site.value || !site.value.cantidadResenas) return 0
@@ -244,6 +248,7 @@ async function loadReviews() {
 
 /**
  * Crea una nueva reseña para este sitio.
+ * Incluye validaciones en el front y manejo de errores del backend.
  */
 async function handleCreateReview() {
   if (!isAuthenticated.value) {
@@ -251,14 +256,58 @@ async function handleCreateReview() {
     return
   }
 
+  // limpiar errores previos
   createReviewError.value = ''
+  newReviewTitleError.value = ''
+  newReviewBodyError.value = ''
+  newReviewRatingError.value = ''
+
+  const title = (newReviewTitle.value || '').trim()
+  const body = (newReviewBody.value || '').trim()
+  const rating = Number(newReviewRating.value)
+
+  let hasError = false
+
+  // Validaciones que reflejan las del backend
+  // Título: obligatorio, máx. 120
+  if (!title) {
+    newReviewTitleError.value = 'El título es obligatorio.'
+    hasError = true
+  } else if (title.length > 120) {
+    newReviewTitleError.value = 'El título no puede superar los 120 caracteres.'
+    hasError = true
+  }
+
+  // Descripción: obligatoria, entre 20 y 1000
+  if (!body) {
+    newReviewBodyError.value = 'La descripción es obligatoria.'
+    hasError = true
+  } else if (body.length < 20) {
+    newReviewBodyError.value = 'La descripción debe tener al menos 20 caracteres.'
+    hasError = true
+  } else if (body.length > 1000) {
+    newReviewBodyError.value = 'La descripción no puede superar los 1000 caracteres.'
+    hasError = true
+  }
+
+  // Rating: obligatorio, entre 1 y 5
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    newReviewRatingError.value = 'El puntaje debe estar entre 1 y 5.'
+    hasError = true
+  }
+
+  if (hasError) {
+    createReviewError.value = 'Revisá los campos marcados en rojo.'
+    return
+  }
+
   creatingReview.value = true
 
   try {
     const payload = {
-      title: newReviewTitle.value,
-      body: newReviewBody.value,
-      rating: newReviewRating.value,
+      title,
+      body,
+      rating,
     }
 
     await createSiteReview(siteId.value, payload)
@@ -273,7 +322,25 @@ async function handleCreateReview() {
     await loadReviews()
   } catch (error) {
     console.error('Error creando reseña:', error)
-    createReviewError.value = 'No se pudo guardar la reseña.'
+
+    const details = error?.response?.data?.error?.details
+
+    if (details) {
+      if (details.title) {
+        newReviewTitleError.value = details.title
+      }
+      if (details.body) {
+        newReviewBodyError.value = details.body
+      }
+      if (details.rating) {
+        newReviewRatingError.value = details.rating
+      }
+
+      createReviewError.value =
+        details.title || details.body || details.rating || 'No se pudo guardar la reseña.'
+    } else {
+      createReviewError.value = 'No se pudo guardar la reseña.'
+    }
   } finally {
     creatingReview.value = false
   }
@@ -496,10 +563,13 @@ function goBackToList() {
                 <input
                   v-model="newReviewTitle"
                   type="text"
-                  required
-                  class="w-full px-2 py-1.5 rounded bg-slate-800 border border-slate-600 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  class="w-full px-2 py-1.5 rounded bg-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  :class="newReviewTitleError ? 'border border-red-500' : 'border border-slate-600'"
                   placeholder="Una breve frase que resuma tu opinión"
                 />
+                <p v-if="newReviewTitleError" class="mt-1 text-[0.7rem] text-red-400">
+                  {{ newReviewTitleError }}
+                </p>
               </div>
 
               <div>
@@ -507,10 +577,13 @@ function goBackToList() {
                 <textarea
                   v-model="newReviewBody"
                   rows="3"
-                  required
-                  class="w-full px-2 py-1.5 rounded bg-slate-800 border border-slate-600 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  class="w-full px-2 py-1.5 rounded bg-slate-800 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  :class="newReviewBodyError ? 'border border-red-500' : 'border border-slate-600'"
                   placeholder="Contá brevemente tu experiencia con este sitio"
                 ></textarea>
+                <p v-if="newReviewBodyError" class="mt-1 text-[0.7rem] text-red-400">
+                  {{ newReviewBodyError }}
+                </p>
               </div>
 
               <div>
@@ -518,7 +591,12 @@ function goBackToList() {
                   Puntaje
                   <span class="text-[0.7rem] text-slate-400">{{ newReviewRating }} / 5</span>
                 </label>
-                <div class="review-rating-picker" role="radiogroup" :aria-label="reviewRatingAria">
+                <div
+                  class="review-rating-picker"
+                  role="radiogroup"
+                  :aria-label="reviewRatingAria"
+                  :class="newReviewRatingError ? 'ring-1 ring-red-500 rounded-md px-1' : ''"
+                >
                   <button
                     v-for="star in interactiveReviewStars"
                     :key="star.value"
@@ -550,6 +628,9 @@ function goBackToList() {
                     </svg>
                   </button>
                 </div>
+                <p v-if="newReviewRatingError" class="mt-1 text-[0.7rem] text-red-400">
+                  {{ newReviewRatingError }}
+                </p>
               </div>
 
               <p v-if="createReviewError" class="text-xs text-red-400">
@@ -565,7 +646,8 @@ function goBackToList() {
               </button>
             </form>
           </section>
-          <!-- Bton para volver a la lista con los querys-->
+
+          <!-- Botón para volver a la lista con los querys-->
           <div class="mb-6">
             <button
               @click="goBackToList"

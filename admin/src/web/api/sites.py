@@ -312,6 +312,7 @@ def get_my_favorites():
         200,
     )
 
+
 @sites_api_bp.get("/favorites")
 @jwt_required()
 def get_favorites():
@@ -398,10 +399,16 @@ def get_favorites():
     )
 
 
-
 # ----------------------------------------------------------------------
 #                               REVIEWS
 # ----------------------------------------------------------------------
+
+# Reglas de validación de reseñas
+MIN_REVIEW_BODY_LEN = 20
+MAX_REVIEW_BODY_LEN = 1000
+MAX_REVIEW_TITLE_LEN = 120
+
+
 def check_pagination_params(params: dict) -> dict:
     """
     Chequea y sanitiza los parámetros de paginación para un GET
@@ -434,34 +441,63 @@ def check_pagination_params(params: dict) -> dict:
 
 def check_review_post_params(params: dict) -> dict:
     """
-    Chequea y sanitiza los parámetros de un POST para la creación de
-    una nueva reseña.
+    Chequea y sanitiza los parámetros de un POST/POST para la creación o
+    actualización de una reseña.
 
-    Args:
-        params (dict): Los datos de la nueva reseña.
-
-    Returns:
-        dict: errores si se produjeron.
+    Validaciones:
+    - rating obligatorio, entero entre 1 y 5.
+    - title obligatorio, sin espacios sobrantes, máx. 120 caracteres.
+    - body obligatorio, entre 20 y 1000 caracteres.
+    - status (opcional) mapeado a ReviewStatus.
     """
     errors: dict[str, str] = {}
 
-    if "rating" in params:
+    # -------- rating --------
+    rating_raw = params.get("rating")
+    if rating_raw is None:
+        errors["rating"] = "El puntaje es obligatorio."
+    else:
         try:
-            rating = int(params["rating"])
-            if rating > 5:
-                params["rating"] = 5
+            rating_int = int(rating_raw)
         except (TypeError, ValueError):
             errors["rating"] = "El puntaje debe ser numérico."
-    else:
-        errors["rating"] = "El puntaje es obligatorio."
+        else:
+            if rating_int < 1 or rating_int > 5:
+                errors["rating"] = "El puntaje debe estar entre 1 y 5."
+            else:
+                # guardamos el entero "limpio"
+                params["rating"] = rating_int
 
-    if "title" in params and not params["title"]:
+    # -------- title --------
+    title_raw = (params.get("title") or "").strip()
+    if not title_raw:
         errors["title"] = "El título es obligatorio."
+    elif len(title_raw) > MAX_REVIEW_TITLE_LEN:
+        errors["title"] = (
+            f"El título no puede superar los {MAX_REVIEW_TITLE_LEN} caracteres."
+        )
+    else:
+        params["title"] = title_raw
 
-    if "body" in params and not params["body"]:
+    # -------- body --------
+    body_raw = (params.get("body") or "").strip()
+    if not body_raw:
         errors["body"] = "La descripción es obligatoria."
+    else:
+        length = len(body_raw)
+        if length < MIN_REVIEW_BODY_LEN:
+            errors["body"] = (
+                f"La descripción debe tener al menos {MIN_REVIEW_BODY_LEN} caracteres."
+            )
+        elif length > MAX_REVIEW_BODY_LEN:
+            errors["body"] = (
+                f"La descripción no puede superar los {MAX_REVIEW_BODY_LEN} caracteres."
+            )
+        else:
+            params["body"] = body_raw
 
-    if "status" in params:
+    # -------- status (opcional) --------
+    if "status" in params and params["status"]:
         match params["status"]:
             case "pending":
                 params["status"] = ReviewStatus.PENDING
@@ -640,6 +676,7 @@ def get_my_reviews():
         200,
     )
 
+
 @sites_api_bp.post("/users/me/reviews/<int:review_id>")
 @jwt_required()
 def update_my_review(review_id: int):
@@ -775,7 +812,7 @@ def delete_site_review_by_id(site_id: int, review_id: int):
             404,
         )
 
-    # Validar que la reseña sea del sitio echa por el usuario logueado
+    # Validar que la reseña sea del sitio hecha por el usuario logueado
     if review.site_id != site_id or review.user_id != user_id:
         return (
             jsonify(
