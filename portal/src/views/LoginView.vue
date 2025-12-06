@@ -1,4 +1,3 @@
-<!-- src/views/LoginView.vue -->
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'

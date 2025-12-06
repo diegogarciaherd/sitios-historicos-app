@@ -1,4 +1,3 @@
-# admin/src/core/models/favorites.py
 """
 Modelo Favorite: representa la relación de sitios favoritos de un usuario.
 

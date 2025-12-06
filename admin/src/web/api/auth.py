@@ -1,4 +1,3 @@
-# admin/src/web/api/auth.py
 """
 Endpoints de autenticación para el portal público.
 
