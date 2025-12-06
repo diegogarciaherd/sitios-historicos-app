@@ -1,15 +1,20 @@
 import api from './base'
 
-export function fetchMyReviews({ page = 1, perPage = 25, order = 'desc' } = {}) {
+export function fetchMyReviews({ 
+  page = 1, 
+  perPage = 25, 
+  order = 'desc',
+  status = 'approved' 
+} = {}) {
   return api.get('/sites/users/me/reviews', {
     params: {
       page,
       per_page: perPage,
       order,
+      status: 'approved'
     },
   })
 }
-
 export function fetchMyFavorites({
   page = 1,
   perPage = 25,

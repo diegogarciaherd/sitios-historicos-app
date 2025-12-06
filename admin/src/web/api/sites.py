@@ -661,13 +661,13 @@ def get_my_reviews():
     page = int(params.get("page", 1) or 1)
     per_page = int(params.get("per_page", 25) or 25)
     order = params.get("order", "desc")
-    status = params.get("status", "all")  # Nuevo parámetro
+    status = params.get("status", "approved")
 
     # Validar que el status sea válido
     valid_statuses = ["all", "approved", "pending", "rejected"]
     if status not in valid_statuses:
-        status = "all"
-
+        status = "approved"  # Solo trae los aprobados ya que es lo que pide la consigna
+        
     reviews, total = get_reviews_by_user_id(user_id, page, per_page, order, status)
 
     data = []
