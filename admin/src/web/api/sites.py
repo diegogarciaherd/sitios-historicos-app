@@ -17,7 +17,7 @@ from core.database import db
 from core.models.favorites import Favorite
 from core.models.sites import SitioHistorico
 from core.services.favorite_service import toggle_favorite
-
+from core.models.reviews import create_review, Review
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
@@ -572,48 +572,66 @@ def get_site_reviews(id: int):
 
 @sites_api_bp.post("/<int:site_id>/reviews")
 @jwt_required()
-def create_site_review(site_id: int):
+def create_review_route(site_id):  
     """
-    Crea una nueva reseña para el sitio histórico especificado.
-    Requiere usuario autenticado (JWT).
+    Crea una nueva reseña para un sitio específico.
     """
-    site = get_site(site_id)
-    if not site:
-        return (
-            jsonify(
-                {
-                    "error": {
-                        "code": "not_found",
-                        "message": f"El sitio {site_id} no existe.",
-                    }
-                }
-            ),
-            404,
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # Validar datos requeridos
+        required_fields = ['rating', 'title', 'body']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'El campo {field} es requerido'
+                }), 400
+        
+        # Validar que el usuario no tenga ya una reseña para este sitio
+        existing_review = (
+            db.session.query(Review)
+            .filter(
+                Review.user_id == current_user_id,
+                Review.site_id == site_id
+            )
+            .first()
         )
-
-    user_id = int(get_jwt_identity())
-    params = request.get_json() or {}
-    params["site_id"] = site_id
-    params["user_id"] = user_id
-
-    errors = check_review_post_params(params)
-    if errors:
-        return (
-            jsonify(
-                {
-                    "error": {
-                        "code": "invalid_data",
-                        "message": "Invalid input data",
-                        "details": errors,
-                    }
-                }
-            ),
-            400,
+        
+        if existing_review:
+            return jsonify({
+                'success': False,
+                'error': 'Ya tienes una reseña para este sitio. Solo se permite una reseña por usuario.'
+            }), 400
+        
+        # Crear la reseña
+        review, message = create_review(
+            user_id=current_user_id,
+            site_id=site_id,
+            rating=data['rating'],
+            title=data['title'],
+            body=data['body']
         )
-
-    review = create_review(**params)
-    return jsonify(review.to_dict()), 201
-
+        
+        if not review:
+            return jsonify({
+                'success': False,
+                'error': message
+            }), 400
+            
+        return jsonify({
+            'success': True,
+            'message': '¡Reseña enviada exitosamente! Gracias por tu aporte.',
+            'review': review.to_dict()
+        }), 201
+        
+    except Exception as e:
+        print(f"Error creando reseña: {str(e)}")  
+        return jsonify({
+            'success': False,
+            'error': f'Error del servidor: {str(e)}'
+        }), 500
 
 @sites_api_bp.get("/users/me/reviews")
 @jwt_required()
@@ -643,8 +661,14 @@ def get_my_reviews():
     page = int(params.get("page", 1) or 1)
     per_page = int(params.get("per_page", 25) or 25)
     order = params.get("order", "desc")
+    status = params.get("status", "all")  # Nuevo parámetro
 
-    reviews, total = get_reviews_by_user_id(user_id, page, per_page, order)
+    # Validar que el status sea válido
+    valid_statuses = ["all", "approved", "pending", "rejected"]
+    if status not in valid_statuses:
+        status = "all"
+
+    reviews, total = get_reviews_by_user_id(user_id, page, per_page, order, status)
 
     data = []
     for review in reviews:
@@ -670,6 +694,8 @@ def get_my_reviews():
                     "total": total,
                     "page": page,
                     "per_page": per_page,
+                    "status": status,  # Incluir el estado actual en la respuesta
+                    "order": order,
                 },
             }
         ),
