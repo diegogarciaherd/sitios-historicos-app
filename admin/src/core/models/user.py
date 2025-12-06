@@ -1,4 +1,4 @@
-
+# admin/src/core/models/user.py
 from __future__ import annotations
 
 from core.database import Base

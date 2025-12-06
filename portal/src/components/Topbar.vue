@@ -1,3 +1,4 @@
+<!-- src/components/Topbar.vue -->
 <script setup>
 /**
  * Topbar del portal público.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Tuple, Optional
+from typing import Tuple, List, Optional
 
 from core.models.user import User
 from sqlalchemy import (
@@ -95,42 +95,14 @@ class Review(Base):
         }
 
 
-def create_review(**kwargs) -> Tuple[Review, str]:
+def create_review(**kwargs) -> Review:
     """
     Crea una nueva reseña a partir de los datos recibidos.
-    
-    Returns:
-        Tuple[Review, str]: La reseña creada y un mensaje de error/success
     """
-    # Extraer user_id y site_id para validación
-    user_id = kwargs.get('user_id')
-    site_id = kwargs.get('site_id')
-    
-    # Validar que el usuario no tenga ya una reseña para este sitio
-    if user_id and site_id:
-        existing_review = (
-            db.session.query(Review)
-            .filter(
-                Review.user_id == user_id,
-                Review.site_id == site_id
-            )
-            .first()
-        )
-        
-        if existing_review:
-            return None, "Ya tienes una reseña para este sitio. Solo se permite una reseña por usuario."
-    
-    try:
-        # Si pasa la validación, crear la reseña
-        review = Review(**kwargs)
-        db.session.add(review)
-        db.session.commit()
-        
-        return review, "¡Reseña enviada exitosamente! Gracias por tu aporte."
-    
-    except Exception as e:
-        db.session.rollback()
-        return None, f"Error al crear la reseña: {str(e)}"
+    review = Review(**kwargs)
+    db.session.add(review)
+    db.session.commit()
+    return review
 
 
 def get_reviews_by_site_id(
@@ -154,19 +126,17 @@ def get_reviews_by_user_id(
     page: int = 1,
     per_page: int = 25,
     order: str = "desc",
-    status: str = "all"  # Nuevo parámetro: "all", "approved", "pending", "rejected"
 ) -> tuple[list[Review], int]:
     """
     Devuelve una lista paginada de reseñas para un usuario dado,
     ordenadas por fecha (asc/desc).
     """
-    query = db.session.query(Review).filter(Review.user_id == user_id)
-    
-    # Filtrar por estado si no es "all"
-    if status != "all":
-        query = query.filter(Review.status == ReviewStatus(status))
-    
-    # Ordenar
+    query = (
+        db.session.query(Review)
+        .filter(Review.user_id == user_id)
+        .filter(Review.status == ReviewStatus.APPROVED)
+    )
+
     if order == "asc":
         query = query.order_by(Review.created_at.asc())
     else:
@@ -204,51 +174,6 @@ def update_review(id: int, **kwargs: dict) -> str:
     old_review.status = ReviewStatus.PENDING
     db.session.commit()
     return "Reseña actualizada correctamente."
-
-def user_has_review_for_site(user_id: int, site_id: int) -> bool:
-    """
-    Verifica si un usuario ya tiene una reseña (en cualquier estado) para un sitio específico.
-    
-    Args:
-        user_id: ID del usuario
-        site_id: ID del sitio histórico
-        
-    Returns:
-        True si el usuario ya tiene una reseña, False en caso contrario
-    """
-    # Verificar si existe alguna reseña del usuario para este sitio
-    # Incluimos todos los estados (PENDING, APPROVED, REJECTED)
-    existing_review = (
-        db.session.query(Review)
-        .filter(
-            Review.user_id == user_id,
-            Review.site_id == site_id
-        )
-        .first()
-    )
-    
-    return existing_review is not None
-
-
-def get_user_review_for_site(user_id: int, site_id: int) -> Optional[Review]:
-    """
-    Obtiene la reseña de un usuario para un sitio específico.
-    
-    Args:
-        user_id: ID del usuario
-        site_id: ID del sitio histórico
-        
-    Returns:
-        La reseña si existe, None en caso contrario
-    """
-    return (
-        db.session.query(Review)
-        .filter(
-            Review.user_id == user_id,
-            Review.site_id == site_id
-        )
-        .first()
-    )
 
 
 # ---------- Helpers para vistas públicas ----------

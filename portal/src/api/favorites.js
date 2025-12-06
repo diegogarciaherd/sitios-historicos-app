@@ -1,3 +1,4 @@
+// src/api/favorites.js
 import api from './base'
 
 /**

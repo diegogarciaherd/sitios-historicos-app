@@ -1,4 +1,4 @@
-
+<!-- src/views/FavoritesView.vue -->
 <script setup>
 /**
  * Vista: Mis sitios favoritos
