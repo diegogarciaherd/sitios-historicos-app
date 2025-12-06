@@ -12,12 +12,8 @@
               <span>{{ initials }}</span>
             </div>
             <div class="user-info">
-              <p class="name">
-                {{ displayName }}
-              </p>
-              <p class="email">
-                {{ user?.email }}
-              </p>
+              <p class="name">{{ displayName }}</p>
+              <p class="email">{{ user?.email }}</p>
             </div>
           </div>
 
@@ -41,13 +37,9 @@
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
               <div class="w-full sm:w-auto">
                 <h1 class="text-lg sm:text-xl font-semibold text-gray-800 mb-1">Mis reseñas</h1>
-
               </div>
               <div class="flex flex-col-2 xs:flex-row gap-3 w-full sm:w-auto">
-                
                 <div class="relative filter-dropdown w-full xs:w-auto">
-                  
-                  
                   <!-- Menú desplegable de filtros -->
                   <transition
                     enter-active-class="transition duration-100 ease-out"
@@ -57,12 +49,14 @@
                     leave-from-class="transform scale-100 opacity-100"
                     leave-to-class="transform scale-95 opacity-0"
                   >
-                    
                   </transition>
                 </div>
                 
                 <!-- Botón de orden -->
-                <button class="order-btn px-3 sm:px-4 py-2 w-full xs:w-auto bg-white hover:bg-gray-50 rounded-lg border border-gray-300 text-xs sm:text-sm font-medium text-gray-700 shadow-sm transition-colors flex items-center justify-center xs:justify-start gap-1 sm:gap-2" @click="toggleReviewsOrder">
+                <button 
+                  class="order-btn px-3 sm:px-4 py-2 w-full xs:w-auto bg-white hover:bg-gray-50 rounded-lg border border-gray-300 text-xs sm:text-sm font-medium text-gray-700 shadow-sm transition-colors flex items-center justify-center xs:justify-start gap-1 sm:gap-2" 
+                  @click="toggleReviewsOrder"
+                >
                   <svg class="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"/>
                   </svg>
@@ -85,230 +79,121 @@
             <li
               v-for="review in reviews"
               :key="review.id"
-              class="item-card relative bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow overflow-hidden"
-              :data-review-menu="review.id"
+              class="item-card bg-white rounded-lg border border-gray-200 hover:border-gray-300 p-3 transition-all hover:shadow-sm"
             >
-              <!-- BADGE DE ESTADO -->
-              <span
-                v-if="review.status"
-                class="px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-medium rounded-full text-white absolute top-3 right-3 sm:top-4 sm:right-4 z-10"
-                :class="{
-                  'bg-green-500': review.status === 'approved',
-                  'bg-yellow-500': review.status === 'pending',
-                  'bg-red-500': review.status === 'rejected',
-                }"
-              >
-                {{ getStatusText(review.status) }}
-              </span>
-              
-              <!-- Encabezado de la reseña -->
-              <div class="item-header mb-3 sm:mb-4">
-                <div class="pr-10 sm:pr-12">
-                  <h3 class="item-title text-base sm:text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
+              <!-- Fila superior: Título, alias y rating -->
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-semibold text-gray-800 truncate">
                     {{ review.site_name }}
                   </h3>
-                  <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500">
-                    <span class="flex items-center gap-1">
-                      <svg class="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
-                      {{ review.rating }}/5
-                    </span>
-                    <span class="hidden sm:inline">•</span>
-                    <span class="text-gray-400 hidden sm:inline">|</span>
-                    <span class="text-xs">{{ formatDate(review.created_at) }}</span>
-                  </div>
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-medium">
+                    {{ displayName }}
+                  </span>
+                  <span class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+                    {{ review.rating }}/5
+                  </span>
                 </div>
-                <div
-                  v-if="editingReviewId !== review.id"
-                  class="review-actions absolute top-3 right-3 sm:static sm:top-auto sm:right-auto"
+                <span class="text-xs text-gray-400">{{ formatDate(review.created_at) }}</span>
+              </div>
+              
+              <!-- Fila media: Título y descripción -->
+              <div class="mb-2">
+                <p v-if="review.title" class="text-xs font-medium text-gray-700 mb-1">
+                  {{ review.title }}
+                </p>
+                <p class="text-xs text-gray-600 line-clamp-2">
+                  {{ review.body }}
+                </p>
+              </div>
+              
+              <!-- Fila inferior: Acciones -->
+              <div class="flex items-center justify-between">
+                <button 
+                  @click="goToReviewSite(review)"
+                  class="text-xs text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
                 >
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                  </svg>
+                  Ver sitio
+                </button>
+                
+                <div class="flex items-center gap-2">
+                  <!-- Estado -->
+                  <span
+                    v-if="review.status"
+                    class="text-xs px-2 py-0.5 rounded-full"
+                    :class="{
+                      'bg-green-100 text-green-800': review.status === 'approved',
+                      'bg-yellow-100 text-yellow-800': review.status === 'pending',
+                      'bg-red-100 text-red-800': review.status === 'rejected',
+                    }"
+                  >
+                    {{ getStatusText(review.status) }}
+                  </span>
+                  
+                  <!-- Menú de opciones -->
                   <button
                     type="button"
-                    class="menu-trigger p-1 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    class="p-1 hover:bg-gray-100 rounded"
                     @click.stop="toggleReviewMenu(review.id)"
-                    aria-haspopup="true"
-                    :aria-expanded="openReviewMenuId === review.id"
                   >
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" fill="currentColor" viewBox="0 0 16 16">
+                    <svg class="w-3.5 h-3.5 text-gray-500" fill="currentColor" viewBox="0 0 16 16">
                       <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
                     </svg>
                   </button>
-                  <div v-if="openReviewMenuId === review.id" class="menu-panel" role="menu">
-                    <button
-                      type="button"
-                      class="menu-item"
-                      role="menuitem"
-                      @click.stop="startEditingReview(review)"
-                    >
-                      <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                      </svg>
-                      <span class="text-xs sm:text-sm">Editar reseña</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="menu-item"
-                      role="menuitem"
-                      @click.stop="goToReviewSite(review)"
-                    >
-                      <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                      </svg>
-                      <span class="text-xs sm:text-sm">Ver sitio</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="menu-item text-red-600 hover:bg-red-50"
-                      role="menuitem"
-                      @click.stop="confirmDeleteReview(review)"
-                    >
-                      <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                      <span class="text-xs sm:text-sm">Eliminar reseña</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- CONTENIDO DE LA RESEÑA O FORMULARIO DE EDICIÓN -->
-              <div v-if="editingReviewId === review.id" class="edit-review-form mt-4 pt-4 border-t border-gray-100">
-                <form @submit.prevent="submitReviewEdit(review)">
-                  <div class="space-y-4">
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Título
-                      </label>
-                      <input
-                        v-model="editReviewForm.title"
-                        type="text"
-                        class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Escribe un título para tu reseña"
-                        maxlength="120"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Descripción
-                      </label>
-                      <textarea
-                        v-model="editReviewForm.body"
-                        class="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-y min-h-[100px]"
-                        rows="4"
-                        placeholder="Describe tu experiencia en este sitio..."
-                        required
-                      ></textarea>
-                    </div>
-                    
-                    <div>
-                      <label class="block text-sm font-medium text-gray-700 mb-3">
-                        Calificación
-                      </label>
-                      <div class="review-rating-picker flex items-center gap-1">
-                        <button
-                          v-for="star in interactiveReviewStars"
-                          :key="star.value"
-                          type="button"
-                          class="review-rating-button p-0.5 sm:p-1 hover:scale-110 transition-transform"
-                          :class="{ 'filled': star.filled }"
-                          @click="selectReviewRating(star.value)"
-                          @mouseenter="hoverReviewRating = star.value"
-                          @mouseleave="hoverReviewRating = 0"
-                        >
-                          <svg viewBox="0 0 24 24" class="review-rating-icon w-6 h-6 sm:w-8 sm:h-8">
-                            <path
-                              :d="starPath"
-                              :fill="star.filled ? '#f59e0b' : '#e5e7eb'"
-                            />
-                          </svg>
-                        </button>
-                        <span class="ml-2 sm:ml-3 text-sm font-medium text-gray-700">
-                          {{ editReviewForm.rating }} / 5
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div v-if="editReviewError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p class="text-sm text-red-600 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                        </svg>
-                        {{ editReviewError }}
-                      </p>
-                    </div>
-                    
-                    <div class="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
-                      <button
-                        type="button"
-                        class="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg border border-gray-300 transition-colors w-full sm:w-auto"
-                        @click="cancelEditingReview"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        class="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 w-full sm:w-auto"
-                        :disabled="savingReview"
-                      >
-                        <svg v-if="savingReview" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        {{ savingReview ? 'Guardando...' : 'Guardar cambios' }}
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-              
-              <div v-else class="review-body">
-                <div class="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100">
-                  <p v-if="review.title" class="text-sm sm:text-base font-semibold text-gray-800 mb-2 sm:mb-3 line-clamp-2">
-                    {{ review.title }}
-                  </p>
-                  <p class="text-gray-600 leading-relaxed text-sm sm:text-base break-words whitespace-pre-line max-h-32 sm:max-h-48 overflow-y-auto pr-2">
-                    {{ review.body }}
-                  </p>
                 </div>
               </div>
             </li>
           </ul>
 
           <!-- PAGINACIÓN -->
-          <div v-if="reviewsMeta.total > reviewsMeta.per_page" class="pager mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <button
-                :disabled="reviewsMeta.page === 1"
-                @click="changeReviewsPage(reviewsMeta.page - 1)"
-                class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
-              >
-                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-                Anterior
-              </button>
-              
-              <div class="text-xs sm:text-sm text-gray-600 text-center">
-                <span class="font-semibold">{{ reviewsMeta.page }}</span> de 
-                <span class="font-semibold">{{ Math.ceil(reviewsMeta.total / reviewsMeta.per_page) }}</span>
-                <span class="mx-1 sm:mx-2 hidden xs:inline">•</span>
-                <span class="text-gray-500 block xs:inline mt-1 xs:mt-0">{{ reviewsMeta.total }} reseñas</span>
+          <div v-if="reviews.length > 0" class="page-indicator mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <!-- Indicador de página -->
+              <div class="flex items-center gap-2">
+                <div class="flex items-center">
+                  <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-l-lg text-sm font-medium">
+                    Página
+                  </span>
+                  <span class="px-3 py-1 bg-blue-600 text-white text-sm font-medium">
+                    {{ reviewsMeta.page }}
+                  </span>
+                  <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-r-lg text-sm font-medium">
+                    de {{ Math.max(1, Math.ceil(reviewsMeta.total / reviewsMeta.per_page)) }}
+                  </span>
+                </div>
+                
+                <!-- Contador de reseñas -->
+                <div class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm">
+                  {{ reviewsMeta.total }} reseña{{ reviewsMeta.total !== 1 ? 's' : '' }}
+                </div>
               </div>
               
-              <button
-                :disabled="reviewsMeta.page * reviewsMeta.per_page >= reviewsMeta.total"
-                @click="changeReviewsPage(reviewsMeta.page + 1)"
-                class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
-              >
-                Siguiente
-                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </button>
+              <!-- Botones de navegación (solo si hay más de una página) -->
+              <div v-if="reviewsMeta.total > reviewsMeta.per_page" class="flex items-center gap-2">
+                <button
+                  :disabled="reviewsMeta.page === 1"
+                  @click="changeReviewsPage(reviewsMeta.page - 1)"
+                  class="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Página anterior"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
+                <button
+                  :disabled="reviewsMeta.page * reviewsMeta.per_page >= reviewsMeta.total"
+                  @click="changeReviewsPage(reviewsMeta.page + 1)"
+                  class="p-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Página siguiente"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -321,7 +206,10 @@
                 <h2 class="text-lg sm:text-xl font-semibold text-gray-800 mb-1">Mis sitios favoritos</h2>
                 <p class="text-xs sm:text-sm text-gray-500">Los sitios que marcaste como favoritos</p>
               </div>
-              <button class="order-btn px-3 sm:px-4 py-2 w-full sm:w-auto bg-white hover:bg-gray-50 rounded-lg border border-gray-300 text-xs sm:text-sm font-medium text-gray-700 shadow-sm transition-colors flex items-center justify-center sm:justify-start gap-1 sm:gap-2" @click="toggleFavoritesOrder">
+              <button 
+                class="order-btn px-3 sm:px-4 py-2 w-full sm:w-auto bg-white hover:bg-gray-50 rounded-lg border border-gray-300 text-xs sm:text-sm font-medium text-gray-700 shadow-sm transition-colors flex items-center justify-center sm:justify-start gap-1 sm:gap-2" 
+                @click="toggleFavoritesOrder"
+              >
                 <svg class="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"/>
                 </svg>
@@ -339,7 +227,11 @@
           </p>
 
           <ul v-else class="item-list grid gap-3 sm:gap-4 md:grid-cols-2">
-            <li v-for="fav in favorites" :key="fav.site_id" class="item-card bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-shadow">
+            <li 
+              v-for="fav in favorites" 
+              :key="fav.site_id" 
+              class="item-card bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 hover:shadow-md transition-shadow"
+            >
               <h3 class="item-title text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-2 line-clamp-2">
                 {{ fav.site_name }}
               </h3>
@@ -388,6 +280,7 @@
     </main>
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, reactive } from 'vue'
 import { useRouter } from 'vue-router'
@@ -441,7 +334,6 @@ const loadReviews = async () => {
       page: reviewsMeta.value.page,
       perPage: reviewsMeta.value.per_page,
       order: reviewsOrder.value,
-      
     })
     reviews.value = data.data
     reviewsMeta.value = data.meta
@@ -668,7 +560,7 @@ const starPath = 'M22,9.81a1,1,0,0,0-.83-.69l-5.7-.78L12.88,3.53a1,1,0,0,0-1.76,
 <style scoped>
 .profile-page {
   min-height: 100vh;
-  background: #f3f4f6; /* gris clarito */
+  background: #f3f4f6;
 }
 
 /* contenedor general */
@@ -819,185 +711,20 @@ const starPath = 'M22,9.81a1,1,0,0,0-.83-.69l-5.7-.78L12.88,3.53a1,1,0,0,0-1.76,
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .item-card {
-  padding: 0.85rem 0.9rem;
-  border-radius: 0.75rem;
-  background: #f9fafb;
-  position: relative;
-}
-
-.item-title {
-  margin: 0 0 0.25rem;
-  font-size: 0.98rem;
-}
-
-.meta {
-  font-size: 0.8rem;
-  color: #6b7280;
-  margin-bottom: 0.25rem;
-}
-
-.review-actions {
-  position: absolute;
-  top: 0.6rem;
-  right: 0.6rem;
-}
-
-.item-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.item-header > div:first-child {
-  flex: 1;
-}
-
-.review-body {
-  margin-top: 0.6rem;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.edit-review-form {
-  margin-top: 0.75rem;
-}
-
-.edit-review-form form {
-  display: grid;
-  gap: 0.6rem;
-}
-
-.form-label {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.8rem;
-  color: #4b5563;
-}
-
-.form-input,
-.form-textarea,
-.form-select {
-  width: 100%;
-  border-radius: 0.6rem;
-  border: 1px solid #d1d5db;
-  padding: 0.55rem 0.7rem;
-  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
   background: #ffffff;
-  transition: border-color 180ms ease;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 130px;
-}
-
-.form-input:focus,
-.form-textarea:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
-}
-
-.btn-primary,
-.btn-secondary {
-  border-radius: 999px;
-  padding: 0.45rem 1.05rem;
-  font-size: 0.85rem;
-  border: none;
-  cursor: pointer;
-  transition: background 180ms ease;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: #ffffff;
-}
-
-.btn-primary:disabled {
-  opacity: 0.7;
-  cursor: default;
-}
-
-.btn-secondary {
-  background: #e5e7eb;
-  color: #1f2937;
-}
-
-.btn-secondary:hover {
-  background: #d1d5db;
-}
-
-.form-error {
-  color: #dc2626;
-  font-size: 0.8rem;
-}
-
-.menu-trigger {
-  width: 1.75rem;
-  height: 1.75rem;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: #6b7280;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition:
-    background 180ms ease,
-    color 180ms ease;
-}
-
-.menu-trigger:hover,
-.menu-trigger:focus-visible {
-  background: rgba(148, 163, 184, 0.25);
-  color: #1f2937;
-  outline: none;
-}
-
-.menu-panel {
-  position: absolute;
-  top: 3.5rem;
-  right: 0;
-  width: 176px;
-  padding: 0.35rem 0;
-  border-radius: 0.75rem;
-  background: #ffffff;
-  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.18);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  z-index: 15;
-}
-
-.menu-item {
-  width: 100%;
-  padding: 0.45rem 0.85rem;
-  background: transparent;
-  border: none;
-  text-align: left;
-  font-size: 0.85rem;
-  color: #1f2937;
-  cursor: pointer;
-  transition:
-    background 160ms ease,
-    color 160ms ease;
-}
-
-.menu-item:hover,
-.menu-item:focus-visible {
-  background: rgba(59, 130, 246, 0.12);
-  color: #1d4ed8;
-  outline: none;
+.item-card:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 /* paginador */
@@ -1035,41 +762,5 @@ const starPath = 'M22,9.81a1,1,0,0,0-.83-.69l-5.7-.78L12.88,3.53a1,1,0,0,0-1.76,
   .back-button {
     align-self: flex-end;
   }
-}
-
-.review-rating-picker {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.review-rating-button {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition:
-    transform 150ms ease,
-    background 150ms ease;
-}
-
-.review-rating-button:hover,
-.review-rating-button:focus-visible {
-  background: rgba(56, 189, 248, 0.12);
-  outline: none;
-}
-
-.review-rating-button.filled .review-rating-icon {
-  transform: scale(1.05);
-}
-
-.review-rating-icon {
-  width: 1.6rem;
-  height: 1.6rem;
-  transition: transform 150ms ease;
 }
 </style>
