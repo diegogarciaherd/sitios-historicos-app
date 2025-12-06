@@ -1,4 +1,3 @@
-<!-- src/views/SiteDetailView.vue -->
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -43,6 +42,9 @@ const newReviewRating = ref(5)
 const hoverReviewRating = ref(0)
 const creatingReview = ref(false)
 const createReviewError = ref('')
+const showSuccessMessage = ref(false)
+const reviewSubmissionError = ref('') // Para errores de backend (como "ya tiene reseña")
+
 
 // errores de validación en el front
 const newReviewTitleError = ref('')
@@ -96,6 +98,10 @@ const interactiveReviewStars = computed(() => {
 const reviewRatingAria = computed(() => {
   const value = newReviewRating.value
   return `Puntaje seleccionado: ${value} estrella${value === 1 ? '' : 's'}`
+})
+
+const canSubmitReview = computed(() => {
+  return isAuthenticated.value && !creatingReview.value
 })
 
 const selectReviewRating = (value) => {
@@ -256,8 +262,10 @@ async function handleCreateReview() {
     return
   }
 
-  // limpiar errores previos
+  // Limpiar todos los mensajes previos
   createReviewError.value = ''
+  reviewSubmissionError.value = ''
+  showSuccessMessage.value = false
   newReviewTitleError.value = ''
   newReviewBodyError.value = ''
   newReviewRatingError.value = ''
@@ -312,20 +320,39 @@ async function handleCreateReview() {
 
     await createSiteReview(siteId.value, payload)
 
-    // Limpio el formulario
+    // Mostrar mensaje de éxito
+    showSuccessMessage.value = true
+    
+    // Limpiar el formulario
     newReviewTitle.value = ''
     newReviewBody.value = ''
     newReviewRating.value = 5
     hoverReviewRating.value = 0
 
-    // Recargo reseñas
+    // Ocultar mensaje de éxito después de 5 segundos
+    setTimeout(() => {
+      showSuccessMessage.value = false
+    }, 5000)
+
+    // Recargar reseñas para mostrar la nueva
     await loadReviews()
+    
+    // Recargar datos del sitio para actualizar puntuación promedio
+    await loadSite()
+    
   } catch (error) {
     console.error('Error creando reseña:', error)
+    const responseData = error?.response?.data
 
-    const details = error?.response?.data?.error?.details
-
-    if (details) {
+    // Manejar error específico de "ya tiene reseña"
+    if (responseData?.error?.includes('Ya tienes una reseña')) {
+      reviewSubmissionError.value = responseData.error
+      userHasExistingReview.value = true
+    } 
+    // Manejar otros errores del backend
+    else if (responseData?.error?.details) {
+      const details = responseData.error.details
+      
       if (details.title) {
         newReviewTitleError.value = details.title
       }
@@ -336,10 +363,17 @@ async function handleCreateReview() {
         newReviewRatingError.value = details.rating
       }
 
-      createReviewError.value =
-        details.title || details.body || details.rating || 'No se pudo guardar la reseña.'
-    } else {
-      createReviewError.value = 'No se pudo guardar la reseña.'
+      createReviewError.value = 
+        details.title || details.body || details.rating || 
+        'No se pudo guardar la reseña.'
+    } 
+    // Error de validación general
+    else if (responseData?.error) {
+      reviewSubmissionError.value = responseData.error
+    }
+    // Error genérico
+    else {
+      reviewSubmissionError.value = 'No se pudo guardar la reseña. Por favor, intentá nuevamente.'
     }
   } finally {
     creatingReview.value = false
@@ -374,6 +408,9 @@ function goBackToList() {
 }
 </script>
 
+<!-- src/views/SiteDetailView.vue -->
+<!-- Mantén todo el script como está, solo corrige el template: -->
+
 <template>
   <div class="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-white">
     <Topbar />
@@ -383,8 +420,8 @@ function goBackToList() {
         Cargando sitio...
       </section>
 
-      <section v-else-if="errorSite" class="text-center text-red-400 py-12 text-sm">
-        {{ errorSite }}
+      <section v-else-if="siteError" class="text-center text-red-400 py-12 text-sm">
+        {{ siteError }}
       </section>
 
       <section v-else-if="site" class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -504,32 +541,32 @@ function goBackToList() {
           </div>
 
           <!-- Accordion Descripción Completa -->
-        <div
-          class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200"
-        >
-          <button
-            class="w-full text-left flex justify-between items-center font-semibold text-sky-300"
-            @click="showFullDescription = !showFullDescription"
+          <div
+            class="mt-6 bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-200"
           >
-        Descripción completa
-            <span class="text-slate-400 text-xs">
-              {{ showFullDescription ? '▲' : '▼' }}
-            </span>
-          </button>
-
-          <transition name="fade">
-            <p
-              v-if="showFullDescription"
-              class="mt-3 text-slate-300 leading-relaxed"
+            <button
+              class="w-full text-left flex justify-between items-center font-semibold text-sky-300"
+              @click="showFullDescription = !showFullDescription"
             >
-          <!-- Si está vacío o es 'None', no mostrar nada -->
-            {{ (site.descripcionCompleta && site.descripcionCompleta !== 'None')
-            ? site.descripcionCompleta
-            : '' }}
-          </p>
-          </transition>
-        </div>
-      </article>
+              Descripción completa
+              <span class="text-slate-400 text-xs">
+                {{ showFullDescription ? '▲' : '▼' }}
+              </span>
+            </button>
+
+            <transition name="fade">
+              <p
+                v-if="showFullDescription"
+                class="mt-3 text-slate-300 leading-relaxed"
+              >
+                <!-- Si está vacío o es 'None', no mostrar nada -->
+                {{ (site.descripcionCompleta && site.descripcionCompleta !== 'None')
+                  ? site.descripcionCompleta
+                  : '' }}
+              </p>
+            </transition>
+          </div>
+        </article>
 
         <!-- Columna lateral: favorito + reseña rápida -->
         <aside class="space-y-4">
@@ -556,8 +593,35 @@ function goBackToList() {
             </p>
           </section>
 
+          <!-- SECCIÓN DE RESEÑAS CORREGIDA -->
           <section class="bg-slate-900/70 rounded-xl border border-slate-700 p-4">
             <h3 class="text-base font-semibold text-sky-300 mb-2">Dejá tu reseña</h3>
+
+            <!-- Mensaje de éxito -->
+            <div 
+              v-if="showSuccessMessage" 
+              class="mb-3 p-3 bg-green-900/30 border border-green-600 rounded-lg"
+            >
+              <p class="text-sm text-green-300 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                ¡Reseña enviada exitosamente! Gracias por tu aporte.
+              </p>
+            </div>
+
+            <!-- Mensaje de error específico (como "ya tiene reseña") -->
+            <div 
+              v-if="reviewSubmissionError && !createReviewError" 
+              class="mb-3 p-3 bg-red-900/30 border border-red-600 rounded-lg"
+            >
+              <p class="text-sm text-red-300 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                {{ reviewSubmissionError }}
+              </p>
+            </div>
 
             <p v-if="!isAuthenticated" class="text-xs text-slate-300">
               Iniciá sesión para poder escribir una reseña sobre este sitio.
@@ -702,7 +766,7 @@ function goBackToList() {
         <SiteViewCarousel v-if="site" :images="siteImages" class="mt-8" />
       </section>
 
-      <!-- Sección de reseñas -->
+      <!-- Sección de reseñas de otros usuarios -->
       <section v-if="site" class="mt-8 bg-slate-900/70 rounded-xl border border-slate-700 p-6">
         <h3 class="text-lg font-semibold text-sky-300 mb-4">Reseñas de otros usuarios</h3>
 

@@ -1,4 +1,3 @@
-# src/core/services/auth_service.py
 from core.database import db
 from core.models.user import User
 from core.models.feature_flags import FeatureFlag
