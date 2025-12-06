@@ -154,7 +154,7 @@ def get_reviews_by_user_id(
     page: int = 1,
     per_page: int = 25,
     order: str = "desc",
-    status: str = "all"  # Nuevo parámetro: "all", "approved", "pending", "rejected"
+    status: str = "approved"  # Vuelve a traer las aprobadas
 ) -> tuple[list[Review], int]:
     """
     Devuelve una lista paginada de reseñas para un usuario dado,
