@@ -34,6 +34,3 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 ---                     |
 
-
-### Gestion de tags 
-/tags
