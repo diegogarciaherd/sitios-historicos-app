@@ -1,4 +1,3 @@
-// src/api/base.js
 import axios from 'axios'
 
 /**

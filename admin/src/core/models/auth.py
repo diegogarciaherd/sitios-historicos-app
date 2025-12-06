@@ -1,4 +1,3 @@
-# src/core/models/auth.py
 from sqlalchemy import Integer, String, DateTime, ForeignKey, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime

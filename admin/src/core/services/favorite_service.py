@@ -1,4 +1,3 @@
-# admin/src/core/services/favorite_service.py
 """
 Servicio de favoritos
 ---------------------
