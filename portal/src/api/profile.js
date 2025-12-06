@@ -1,4 +1,3 @@
-// src/api/profile.js
 import api from './base'
 
 export function fetchMyReviews({ page = 1, perPage = 25, order = 'desc' } = {}) {

@@ -1,4 +1,4 @@
-# admin/src/core/models/site_history.py
+
 """
 Modelo SiteChange: historial de cambios de un sitio histórico.
 
