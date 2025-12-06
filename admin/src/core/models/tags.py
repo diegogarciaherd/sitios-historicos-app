@@ -1,4 +1,4 @@
-
+# admin/src/core/models/tags.py
 from core.database import Base, db
 from sqlalchemy import String, func, DateTime
 from sqlalchemy.orm import Mapped, mapped_column

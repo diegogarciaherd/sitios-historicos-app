@@ -1,3 +1,4 @@
+// src/composables/useAuth.js
 /**
  * Manejo de autenticación en el portal público.
  *

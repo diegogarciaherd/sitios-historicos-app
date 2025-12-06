@@ -1,4 +1,4 @@
-
+# src/core/seeds_roles.py
 from core.database import db
 from core.models.auth import Role, Permission, RolePermission, BlockedUser
 from core.models.user import User, create_user, read_user_by_email

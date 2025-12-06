@@ -1,4 +1,4 @@
-
+# admin/src/core/database.py
 from flask_sqlalchemy_lite import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
