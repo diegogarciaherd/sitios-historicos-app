@@ -1,3 +1,5 @@
+# admin/src/core/models/sites.py
+
 from core.database import Base, db
 import enum
 from datetime import datetime
