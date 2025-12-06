@@ -408,8 +408,7 @@ function goBackToList() {
 }
 </script>
 
-<!-- src/views/SiteDetailView.vue -->
-<!-- Mantén todo el script como está, solo corrige el template: -->
+
 
 <template>
   <div class="min-h-screen bg-linear-to-b from-slate-900 to-slate-800 text-white">
