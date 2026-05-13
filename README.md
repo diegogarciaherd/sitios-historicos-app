@@ -43,6 +43,5 @@ La aplicación está compuesta por:
 
 ### Infraestructura
 - Docker
-- Docker Compose
 
 Proyecto académico desarrollado en la Facultad de Informática de la UNLP.
