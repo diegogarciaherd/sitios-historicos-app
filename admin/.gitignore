@@ -1,3 +1,4 @@
-./.env
-./static/images/*
-admin\static\images\*
+.env
+# Ignorar todas las imágenes dentro de admin/static/images
+static/images/
+static/images/*

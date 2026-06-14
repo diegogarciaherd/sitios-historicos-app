@@ -21,7 +21,8 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 
 ## Credenciales de prueba
 
-## Credenciales de prueba
+Todas creadas con el script seed_db con el fin de hacer realizar pruebas en desarrollo.
+
 
 | Usuario               | Contraseña  | Rol en la app | Permisos / Notas                        |
 |-----------------------|------------|---------------|----------------------------------------|

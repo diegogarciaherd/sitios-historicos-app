@@ -67,10 +67,6 @@ Algunas capturas de la aplicación en desarrollo:
 </p>
 
 <p align="center">
-	<img src="screenshots/image1.png" alt="Search view" width="800"/>
-</p>
-
-<p align="center">
 	<img src="screenshots/searchview.png" alt="Search view" width="800"/>
 </p>
 
