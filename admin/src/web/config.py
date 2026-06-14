@@ -35,10 +35,10 @@ class DevelopmentConfig(Config):
     DEBUG = True
 
     # Configuracion para Minio
-    MINIO_SERVER = "localhost:9000"
-    MINIO_ACCESS_KEY = "admin"
-    MINIO_SECRET_KEY = "admin12345"
-    MINIO_SECURE = False
+    MINIO_SERVER = environ.get("MINIO_SERVER", "localhost:9000")
+    MINIO_ACCESS_KEY = environ.get("MINIO_ACCESS_KEY", "minioadmin")
+    MINIO_SECRET_KEY = environ.get("MINIO_SECRET_KEY", "minioadmin123")
+    MINIO_SECURE = str(environ.get("MINIO_SECURE", "False")).lower() in ("1", "true", "yes")
     MINIO_BUCKET = "grupo45"
 
     # Configuración PostgreSQL para datos geoespaciales
